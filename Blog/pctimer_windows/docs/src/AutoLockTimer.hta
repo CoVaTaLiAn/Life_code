@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>PC自動ロックタイマー</title>
+    <hta:application
+        id="oHTA"
+        applicationname="AutoLockTimer"
+        border="dialog"
+        innerborder="no"
+        scroll="no"
+        sysmenu="yes"
+        maximizebutton="no"
+        minimizebutton="yes"
+        navigable="no"
+    />
+    <style>
+        /* --- 基本設定 --- */
+        body {
+            font-family: 'Segoe UI', 'Meiryo UI', sans-serif;
+            margin: 0;
+            padding: 15px;
+            height: 100vh;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* デフォルト（ブルー系）の背景 */
+            background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+            transition: background 0.5s;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+            width: 100%;
+            text-align: center;
+            position: relative;
+        }
+        h2 {
+            /* 右上のカラー選択と近すぎないように余白を拡大 */
+            margin-top: 25px;
+            font-size: 18px;
+            color: #4A90E2;
+            margin-bottom: 20px;
+        }
+
+        /* --- 丸いカラー選択（スウォッチ）UI --- */
+        .theme-selector {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            gap: 8px;
+        }
+        .theme-swatch {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid #fff;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .theme-swatch:hover {
+            transform: scale(1.15);
+        }
+        .theme-swatch.active {
+            border-color: #666;
+            transform: scale(1.15);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+
+        /* スウォッチの色定義 */
+        .swatch-blue    { background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%); }
+        .swatch-orange  { background: linear-gradient(135deg, #ffe259 0%, #ffa751 100%); }
+        .swatch-green   { background: linear-gradient(135deg, #a8e063 0%, #56ab2f 100%); }
+        .swatch-black   { background: #2c2c2c; }
+        .swatch-natural { background: linear-gradient(135deg, #f5f0e1 0%, #e6dcc3 100%); } /* 淡いナチュラル */
+
+        /* --- タイムピッカーUI --- */
+        .time-picker {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .time-column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+        }
+        .time-label {
+            font-size: 12px;
+            color: #666;
+            font-weight: bold;
+            margin-bottom: -2px;
+        }
+        .adjust-btn {
+            background: #f0f0f0;
+            color: #555;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            width: 50px;
+            height: 30px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            padding: 0;
+        }
+        .adjust-btn:hover:not(:disabled) {
+            background: #e4e4e4;
+            color: #333;
+        }
+        .adjust-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        select.time-select {
+            padding: 5px 10px;
+            font-size: 24px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            outline: none;
+            font-weight: bold;
+            color: #333;
+            cursor: pointer;
+            text-align: center;
+            appearance: none;
+        }
+        select.time-select:focus {
+            border-color: #4A90E2;
+        }
+        .colon {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 0 10px;
+            padding-top: 15px;
+        }
+
+        /* --- ボタン関連 --- */
+        .btn-group {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        button.main-btn {
+            padding: 10px 24px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            border-radius: 6px;
+            color: white;
+            transition: background 0.2s;
+        }
+        button.main-btn:disabled {
+            background: #cccccc !important;
+            cursor: not-allowed;
+        }
+        #btnSet { background: #4A90E2; }
+        #btnSet:hover:not(:disabled) { background: #357ABD; }
+        #btnCancel { background: #E94B3C; }
+        #btnCancel:hover:not(:disabled) { background: #C63929; }
+
+        /* --- ステータス表示領域 --- */
+        #status {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 12px;
+            color: #666;
+            font-size: 13px;
+            min-height: 55px;
+            border-left: 4px solid #ddd;
+            text-align: left;
+            line-height: 1.5;
+            transition: all 0.3s;
+        }
+        .status-active {
+            border-left-color: #4A90E2 !important;
+            background: #eaf4ff !important;
+        }
+        .status-cancel {
+            border-left-color: #E94B3C !important;
+            background: #ffebeb !important;
+        }
+        .countdown {
+            font-size: 16px;
+            font-weight: bold;
+            color: #E94B3C;
+            display: inline-block;
+            margin-top: 5px;
+            margin-bottom: 5px;
+        }
+        .lock-time-text {
+            color: #0056b3;
+            font-weight: bold;
+        }
+
+        /* =========================================
+           カラーテーマ上書き設定
+        ========================================= */
+
+        /* --- オレンジ系 --- */
+        body.theme-orange { background: linear-gradient(135deg, #ffe259 0%, #ffa751 100%); }
+        .theme-orange h2 { color: #E65100; }
+        .theme-orange select.time-select:focus { border-color: #F57C00; }
+        .theme-orange #btnSet { background: #F57C00; }
+        .theme-orange #btnSet:hover:not(:disabled) { background: #E65100; }
+        .theme-orange .status-active { border-left-color: #F57C00 !important; background: #FFF3E0 !important; }
+        .theme-orange .lock-time-text { color: #E65100; }
+
+        /* --- 緑系 --- */
+        body.theme-green { background: linear-gradient(135deg, #a8e063 0%, #56ab2f 100%); }
+        .theme-green h2 { color: #2E7D32; }
+        .theme-green select.time-select:focus { border-color: #43A047; }
+        .theme-green #btnSet { background: #43A047; }
+        .theme-green #btnSet:hover:not(:disabled) { background: #2E7D32; }
+        .theme-green .status-active { border-left-color: #43A047 !important; background: #E8F5E9 !important; }
+        .theme-green .lock-time-text { color: #2E7D32; }
+
+        /* --- ブラック系（単色） --- */
+        body.theme-black { background: #2c2c2c; }
+        .theme-black h2 { color: #333333; }
+        .theme-black select.time-select:focus { border-color: #333333; }
+        .theme-black #btnSet { background: #333333; }
+        .theme-black #btnSet:hover:not(:disabled) { background: #111111; }
+        .theme-black .status-active { border-left-color: #333333 !important; background: #F0F0F0 !important; }
+        .theme-black .lock-time-text { color: #333333; }
+
+        /* --- ナチュラル系（淡いグラデーション） --- */
+        body.theme-natural { background: linear-gradient(135deg, #f5f0e1 0%, #e6dcc3 100%); }
+        .theme-natural h2 { color: #6D4C41; }
+        .theme-natural select.time-select:focus { border-color: #8D6E63; }
+        .theme-natural #btnSet { background: #8D6E63; }
+        .theme-natural #btnSet:hover:not(:disabled) { background: #5D4037; }
+        .theme-natural .status-active { border-left-color: #8D6E63 !important; background: #EFEBE9 !important; }
+        .theme-natural .lock-time-text { color: #5D4037; }
+    </style>
+    <script language="JavaScript">
+        window.resizeTo(380, 480);
+
+        var timerId = null;
+        var targetTimeObj = null;
+        var formattedTimeStr = "";
+
+        window.onload = function() {
+            var hourSelect = document.getElementById("hourInput");
+            for(var i = 0; i < 24; i++) {
+                var opt = document.createElement("option");
+                var val = ('0' + i).slice(-2);
+                opt.value = val;
+                opt.text = val;
+                if(i === 18) opt.selected = true;
+                hourSelect.add(opt);
+            }
+
+            var minSelect = document.getElementById("minuteInput");
+            for(var j = 0; j < 60; j++) {
+                var opt = document.createElement("option");
+                var val = ('0' + j).slice(-2);
+                opt.value = val;
+                opt.text = val;
+                if(j === 30) opt.selected = true;
+                minSelect.add(opt);
+            }
+        };
+
+        // テーマ変更（丸いアイコンクリック時）
+        function changeTheme(theme) {
+            if(theme === "blue") {
+                document.body.className = "";
+            } else {
+                document.body.className = "theme-" + theme;
+            }
+
+            var swatches = document.getElementsByClassName("theme-swatch");
+            for(var i = 0; i < swatches.length; i++) {
+                swatches[i].className = swatches[i].className.replace(" active", "");
+                if(swatches[i].className.indexOf("swatch-" + theme) > -1) {
+                    swatches[i].className += " active";
+                }
+            }
+        }
+
+        function adjustTime(dh, dm) {
+            var hSelect = document.getElementById("hourInput");
+            var mSelect = document.getElementById("minuteInput");
+
+            var d = new Date(2000, 0, 1, parseInt(hSelect.value, 10), parseInt(mSelect.value, 10), 0);
+            d.setHours(d.getHours() + dh);
+            d.setMinutes(d.getMinutes() + dm);
+
+            hSelect.value = ('0' + d.getHours()).slice(-2);
+            mSelect.value = ('0' + d.getMinutes()).slice(-2);
+        }
+
+        function toggleInputs(disabled) {
+            document.getElementById("hourInput").disabled = disabled;
+            document.getElementById("minuteInput").disabled = disabled;
+            document.getElementById("btnSet").disabled = disabled;
+            document.getElementById("btnCancel").disabled = !disabled;
+
+            var adjustBtns = document.getElementsByClassName("adjust-btn");
+            for(var i=0; i<adjustBtns.length; i++) {
+                adjustBtns[i].disabled = disabled;
+            }
+        }
+
+        function setTimer() {
+            var h = document.getElementById("hourInput").value;
+            var m = document.getElementById("minuteInput").value;
+
+            var now = new Date();
+            targetTimeObj = new Date(now.getFullYear(), now.getMonth(), now.getDate(), parseInt(h, 10), parseInt(m, 10), 0);
+
+            if (targetTimeObj <= now) {
+                targetTimeObj.setDate(targetTimeObj.getDate() + 1);
+            }
+
+            formattedTimeStr = targetTimeObj.getFullYear() + "/" +
+                                ('0' + (targetTimeObj.getMonth() + 1)).slice(-2) + "/" +
+                                ('0' + targetTimeObj.getDate()).slice(-2) + " " +
+                                ('0' + targetTimeObj.getHours()).slice(-2) + ":" +
+                                ('0' + targetTimeObj.getMinutes()).slice(-2);
+
+            document.getElementById("status").className = "status-active";
+            toggleInputs(true);
+
+            updateCountdownDisplay();
+            timerId = setInterval(checkTime, 1000);
+        }
+
+        function cancelTimer() {
+            if (timerId !== null) {
+                clearInterval(timerId);
+                timerId = null;
+            }
+
+            var statusEl = document.getElementById("status");
+            statusEl.innerHTML = "<strong style='color:#c82333;'>タイマーをキャンセルしました。</strong>";
+            statusEl.className = "status-cancel";
+
+            toggleInputs(false);
+        }
+
+        function updateCountdownDisplay() {
+            var now = new Date();
+            var diff = targetTimeObj - now;
+
+            if (diff > 0) {
+                var h = Math.floor(diff / (1000 * 60 * 60));
+                var m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                var s = Math.floor((diff % (1000 * 60)) / 1000);
+
+                var countdownStr = (h > 0 ? h + "時間 " : "") + m + "分 " + s + "秒";
+
+                var statusEl = document.getElementById("status");
+                statusEl.innerHTML = "<span class='lock-time-text'>" + formattedTimeStr + "</span> にロックします。<br>" +
+                                     "<span class='countdown'>残り: " + countdownStr + "</span><br>" +
+                                     "<span style='font-size:11px; color:#777;'>※この画面は最小化して作業を続けてください。</span>";
+            }
+        }
+
+        function checkTime() {
+            var now = new Date();
+            if (now >= targetTimeObj) {
+                clearInterval(timerId);
+                timerId = null;
+
+                var statusEl = document.getElementById("status");
+                statusEl.innerHTML = "<strong>ロックを実行しました。</strong>";
+                statusEl.className = "";
+
+                toggleInputs(false);
+
+                try {
+                    var shell = new ActiveXObject("WScript.Shell");
+                    shell.Run("rundll32.exe user32.dll,LockWorkStation", 0, false);
+                } catch (e) {
+                    alert("ロックの実行に失敗しました。");
+                }
+            } else {
+                updateCountdownDisplay();
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+
+        <!-- 丸いカラーアイコンの選択 -->
+        <div class="theme-selector">
+            <div class="theme-swatch swatch-blue active" onclick="changeTheme('blue')" title="ブルー"></div>
+            <div class="theme-swatch swatch-orange" onclick="changeTheme('orange')" title="オレンジ"></div>
+            <div class="theme-swatch swatch-green" onclick="changeTheme('green')" title="グリーン"></div>
+            <div class="theme-swatch swatch-black" onclick="changeTheme('black')" title="ブラック"></div>
+            <div class="theme-swatch swatch-natural" onclick="changeTheme('natural')" title="ナチュラル"></div>
+        </div>
+
+        <h2>🔒 PC Auto Locker</h2>
+
+        <div class="time-picker">
+            <div class="time-column">
+                <span class="time-label">時</span>
+                <button class="adjust-btn" onclick="adjustTime(1, 0)">＋</button>
+                <select id="hourInput" class="time-select"></select>
+                <button class="adjust-btn" onclick="adjustTime(-1, 0)">－</button>
+            </div>
+            <div class="colon">:</div>
+            <div class="time-column">
+                <span class="time-label">分</span>
+                <button class="adjust-btn" onclick="adjustTime(0, 1)">＋</button>
+                <select id="minuteInput" class="time-select"></select>
+                <button class="adjust-btn" onclick="adjustTime(0, -1)">－</button>
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button id="btnSet" class="main-btn" onclick="setTimer()">セット</button>
+            <button id="btnCancel" class="main-btn" onclick="cancelTimer()" disabled>キャンセル</button>
+        </div>
+
+        <div id="status">時間を選択して「セット」を押してください。</div>
+    </div>
+</body>
+</html>
