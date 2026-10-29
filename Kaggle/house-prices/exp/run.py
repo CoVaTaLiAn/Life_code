@@ -160,6 +160,12 @@ EXPS = {
     "gbr_rel": ({**FEAT1, "rel": True}, "tree_ohe", gbr(), "f1 + rel, GBR"),
     "xgb_rel": ({**FEAT1, "rel": True}, "tree", xgbm(), "f1 + rel, XGBoost"),
     "krr_tuned": (FEAT1, "lin", kridge(3, 3, 5), "f1, KRR alpha=3 deg3 coef0=5"),
+    "hyb_lasso_gbr300": (FEAT1, "both", hybrid(lasso(), gbr(n_estimators=300), tree_on_lin=True), "Lasso + GBR resid 300"),
+    "hyb_lasso_gbr1200": (FEAT1, "both", hybrid(lasso(), gbr(n_estimators=1200), tree_on_lin=True), "Lasso + GBR resid 1200"),
+    "hyb_lasso_gbr_d3": (FEAT1, "both", hybrid(lasso(), gbr(n_estimators=600, max_depth=3), tree_on_lin=True), "Lasso + GBR resid depth3"),
+    "hyb_lasso_gbr_d5": (FEAT1, "both", hybrid(lasso(), gbr(n_estimators=600, max_depth=5), tree_on_lin=True), "Lasso + GBR resid depth5"),
+    "hyb_rel_gbr": ({**FEAT1, "rel": True}, "both", hybrid(lasso(), gbr(n_estimators=600), tree_on_lin=True), "f1+rel Lasso + GBR resid"),
+    "hyb_svr_gbr": (FEAT1, "both", hybrid(svr(10, 0.02, 0.001), gbr(n_estimators=600), tree_on_lin=True), "SVR + GBR resid"),
     "lasso_f2": ({**FEAT1, "poly": True}, "lin", lasso(), "f1 + squared terms"),
     **{f"lasso_f1_a{a}": (FEAT1, "lin", lasso(a * 1e-4), f"f1, Lasso alpha={a}e-4") for a in (2, 3, 4, 6, 8, 10)},
 }
