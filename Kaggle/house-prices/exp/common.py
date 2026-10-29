@@ -56,6 +56,8 @@ def run_cv(name, fit_predict, X, y, X_test, note="", fit_full=True):
 
 
 def _take(X, idx):
+    if isinstance(X, tuple):
+        return tuple(_take(x, idx) for x in X)
     return X.iloc[idx] if hasattr(X, "iloc") else X[idx]
 
 

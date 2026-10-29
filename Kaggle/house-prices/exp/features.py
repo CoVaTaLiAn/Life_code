@@ -33,7 +33,7 @@ NONE_COLS = ["PoolQC", "MiscFeature", "Alley", "Fence", "FireplaceQu", "GarageTy
 ZERO_COLS = ["GarageArea", "GarageCars", "BsmtFinSF1", "BsmtFinSF2",
              "BsmtUnfSF", "TotalBsmtSF", "BsmtFullBath", "BsmtHalfBath", "MasVnrArea"]
 
-DEFAULT = dict(outliers="two", ordinal=False, extra=False, garage_fix=False, skew_thr=0.75, drop_rare=False, poly=False, nbhd=False)
+DEFAULT = dict(outliers="two", ordinal=False, extra=False, garage_fix=False, skew_thr=0.75, drop_rare=False, poly=False, nbhd=False, rel=False, decade=False)
 
 
 def is_num(s):
@@ -98,6 +98,15 @@ def build(train, test, **kw):
         for c in ["OverallQual", "GrLivArea", "TotalSF", "GarageCars", "TotalBath", "ExterQual", "KitchenQual", "Age"]:
             v = np.log1p(df[c]) if c in ("GrLivArea", "TotalSF") else df[c]
             df[c + "_sq"] = v ** 2
+    if o["rel"]:
+        # how this house compares with others in the same neighborhood (no price used)
+        g = df.groupby("Neighborhood")
+        for c in ["GrLivArea", "TotalSF", "OverallQual", "LotArea", "YearBuilt"]:
+            df[c + "_rel"] = df[c] - g[c].transform("median")
+        df["NbhdQual"] = g.OverallQual.transform("mean")
+        df["NbhdSF"] = g.TotalSF.transform("median")
+    if o["decade"]:
+        df["BuiltDecade"] = (df.YearBuilt // 10 * 10).astype(str)
     if o["nbhd"]:
         # neighborhood "price tier" from train medians (target-derived; 25 groups, mild leak in CV)
         med = pd.Series(y).groupby(df.Neighborhood.iloc[:len(y)].values).median()

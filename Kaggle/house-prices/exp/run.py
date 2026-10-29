@@ -95,6 +95,25 @@ def huber(eps=1.35, alpha=0.0005):
     return sk(lambda: make_pipeline(RobustScaler(), HuberRegressor(epsilon=eps, alpha=alpha, max_iter=5000)))
 
 
+def offset(fp_make, col="GrLivArea"):
+    """Tree predicts log(price) - log(col); add it back. Helps trees with the size trend."""
+    def fp(Xtr, ytr, Xva):
+        return fp_make(Xtr, ytr - np.log1p(Xtr[col].values), Xva) + np.log1p(Xva[col].values)
+    return fp
+
+
+def hybrid(lin_fp, tree_fp, shrink=1.0, tree_on_lin=False):
+    """Linear model first, then tree on its in-fold residuals. X is (Xlin, Xtree)."""
+    def fp(Xtr, ytr, Xva):
+        (Ltr, Ttr), (Lva, Tva) = Xtr, Xva
+        if tree_on_lin:  # tree models that need plain numbers (monotone transforms don't matter to trees)
+            Ttr, Tva = Ltr, Lva
+        base_tr = lin_fp(Ltr, ytr, Ltr)
+        base_va = lin_fp(Ltr, ytr, Lva)
+        return base_va + shrink * tree_fp(Ttr, ytr - base_tr, Tva)
+    return fp
+
+
 # ---- experiments: name -> (feature opts, view, model, note) ----
 FEAT1 = dict(ordinal=True, extra=True, garage_fix=True)
 EXPS = {
@@ -123,6 +142,24 @@ EXPS = {
     "huber_f1": (FEAT1, "lin", huber(), "f1, Huber linear"),
     "svr_f1_tuned": (FEAT1, "lin", svr(10, 0.02, 0.001), "f1, SVR C=10 g=1e-3 eps=.02 (tuned on repeat 0)"),
     "svr_f1_t2b": (FEAT1, "lin", svr(10, 0.02, 0.002), "f1, SVR C=10 g=2e-3"),
+    "lgb_f1_off": (FEAT1, "tree", offset(lgbm()), "f1, LightGBM on log(price/GrLivArea)"),
+    "lgb_f1_offsf": (FEAT1, "tree", offset(lgbm(), "TotalSF"), "f1, LightGBM on log(price/TotalSF)"),
+    "hyb_lasso_lgb": (FEAT1, "both", hybrid(lasso(), lgbm(n_estimators=500, learning_rate=0.01)), "Lasso then LGB on residuals"),
+    **{f"hyb_lasso_lgb_n{n}": (FEAT1, "both", hybrid(lasso(), lgbm(n_estimators=n, learning_rate=0.01)), f"Lasso + LGB resid, {n} trees") for n in (250, 1000, 2000)},
+    "hyb_lasso_lgb_l4": (FEAT1, "both", hybrid(lasso(), lgbm(n_estimators=1000, learning_rate=0.01, num_leaves=4)), "Lasso + LGB resid, 4 leaves"),
+    "hyb_lasso_lgb_l16": (FEAT1, "both", hybrid(lasso(), lgbm(n_estimators=1000, learning_rate=0.01, num_leaves=16, min_child_samples=20)), "Lasso + LGB resid, 16 leaves"),
+    "hyb_svr_lgb": (FEAT1, "both", hybrid(svr(10, 0.02, 0.001), lgbm(n_estimators=500, learning_rate=0.01)), "SVR + LGB resid"),
+    "hyb_lasso2_lgb": (FEAT1, "both", hybrid(lasso(0.001), lgbm(n_estimators=1000, learning_rate=0.01)), "stronger Lasso + LGB resid"),
+    "lasso_rel": ({**FEAT1, "rel": True}, "lin", lasso(), "f1 + neighborhood-relative"),
+    "lasso_dec": ({**FEAT1, "decade": True}, "lin", lasso(), "f1 + built decade dummies"),
+    "svr_rel": ({**FEAT1, "rel": True}, "lin", svr(10, 0.02, 0.001), "f1 + rel, SVR"),
+    "hyb_rel": ({**FEAT1, "rel": True}, "both", hybrid(lasso(), lgbm(n_estimators=1000, learning_rate=0.01)), "f1 + rel, hybrid"),
+    "lgb_rel": ({**FEAT1, "rel": True}, "tree", lgbm(), "f1 + rel, LightGBM"),
+    "hyb_lasso_gbr": (FEAT1, "both", hybrid(lasso(), gbr(n_estimators=600), tree_on_lin=True), "Lasso + GBR resid"),
+    "hyb_lasso_cat": (FEAT1, "both", hybrid(lasso(), catb(iterations=800)), "Lasso + CatBoost resid"),
+    "gbr_rel": ({**FEAT1, "rel": True}, "tree_ohe", gbr(), "f1 + rel, GBR"),
+    "xgb_rel": ({**FEAT1, "rel": True}, "tree", xgbm(), "f1 + rel, XGBoost"),
+    "krr_tuned": (FEAT1, "lin", kridge(3, 3, 5), "f1, KRR alpha=3 deg3 coef0=5"),
     "lasso_f2": ({**FEAT1, "poly": True}, "lin", lasso(), "f1 + squared terms"),
     **{f"lasso_f1_a{a}": (FEAT1, "lin", lasso(a * 1e-4), f"f1, Lasso alpha={a}e-4") for a in (2, 3, 4, 6, 8, 10)},
 }
@@ -135,6 +172,10 @@ def build_view(fopts, view):
         X, Xt = F.to_linear(df, n, o)
     elif view == "tree_ohe":  # trees that need plain numbers: one-hot, no log transform
         X, Xt = F.to_linear(df, n, {**o, "skew_thr": 1e9})
+    elif view == "both":
+        L, Lt = F.to_linear(df, n, o)
+        T, Tt = F.to_tree(df, n)
+        X, Xt = (L, T), (Lt, Tt)
     else:
         X, Xt = F.to_tree(df, n)
     return X, y, Xt
