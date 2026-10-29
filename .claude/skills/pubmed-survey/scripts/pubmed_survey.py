@@ -5,13 +5,22 @@
   search  クエリ一覧で PubMed を検索し、ヒット数を記録。
           ヒット数が閾値(既定50)以下のクエリは論文情報とアブストを取得する。
           複数クエリで重複した論文は最初に見つかったクエリにだけ記録する。
+  chunk   papers.json を N 分割したテキストにする（並列採点用）
+  merge   scores_*.json を scores.json にまとめ、採点漏れ・重複を確認する
   render  papers.json と scores.json(Claude が作成) と summary.md を合わせて
-          report.md を作る。
+          report.md と top.md（優先度上位だけの軽量版）を作る。
+  email   summary.md と上位論文一覧を HTML メール本文 (email.html) にする
 
 使い方:
   python3 pubmed_survey.py search --queries queries.txt --out survey/ --email you@example.com
+  python3 pubmed_survey.py chunk  --out survey/ --n 4
+  python3 pubmed_survey.py merge  --out survey/
   python3 pubmed_survey.py render --out survey/
+  python3 pubmed_survey.py email  --out survey/ --min-score 5
 """
+import glob
+import html
+import re
 import argparse
 import json
 import os
@@ -215,8 +224,115 @@ def cmd_render(args):
     path = os.path.join(d, "report.md")
     with open(path, "w", encoding="utf-8") as f:
         f.write("\n".join(L))
+    # 軽量版: まとめ + 優先度4以上の一覧（アブストなし）
+    i2 = L.index("## 3. 論文詳細（優先度順）")
+    top = [l for l in L[:i2] if not (l.startswith("| ") and l.split("|")[1].strip().isdigit()
+                                       and "](" in l and int(l.split("|")[1]) < args.top_min)]
+    with open(os.path.join(d, "top.md"), "w", encoding="utf-8") as f:
+        f.write("\n".join(top))
     unscored = sum(1 for p in papers if p["pmid"] not in scores)
     print(f"wrote {path}  (papers={len(papers)}, unscored={unscored})")
+
+
+# ---------- chunk / merge ----------
+
+def cmd_chunk(args):
+    papers = _load(os.path.join(args.out, "papers.json"), [])
+    cdir = os.path.join(args.out, "chunks")
+    os.makedirs(cdir, exist_ok=True)
+    size = (len(papers) + args.n - 1) // args.n or 1
+    for k in range(args.n):
+        part = papers[k * size:(k + 1) * size]
+        if not part:
+            break
+        with open(os.path.join(cdir, f"chunk{k}.txt"), "w", encoding="utf-8") as f:
+            for p in part:
+                f.write(f"PMID {p['pmid']} | {p['year']} | {p['journal']} | {', '.join(p['pub_types'])}\n"
+                        f"TITLE: {p['title']}\nABSTRACT: {p['abstract'] or '(none)'}\n\n")
+        print(f"{cdir}/chunk{k}.txt  papers={len(part)}  -> {cdir}/scores{k}.json")
+
+
+def cmd_merge(args):
+    papers = {p["pmid"] for p in _load(os.path.join(args.out, "papers.json"), [])}
+    files = sorted(glob.glob(os.path.join(args.out, "chunks", "scores*.json")))
+    merged = {}
+    for fp in files:
+        for s in _load(fp, []):
+            merged[str(s["pmid"])] = {**s, "pmid": str(s["pmid"])}
+    missing, extra = papers - merged.keys(), merged.keys() - papers
+    with open(os.path.join(args.out, "scores.json"), "w", encoding="utf-8") as f:
+        json.dump(list(merged.values()), f, ensure_ascii=False, indent=1)
+    dist = {k: sum(1 for s in merged.values() if s["score"] == k) for k in range(5, 0, -1)}
+    print(f"files={len(files)} scored={len(merged)} missing={sorted(missing)} extra={sorted(extra)} dist={dist}")
+
+
+# ---------- email ----------
+
+def _inline(t):
+    t = html.escape(t)
+    t = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", t)
+    t = re.sub(r"`(.+?)`", r"<code>\1</code>", t)
+    return re.sub(r"\[(.+?)\]\((https?://[^)]+)\)", r"<a href='\2'>\1</a>", t)
+
+
+def md_to_html(md):
+    out, lst, tbl = [], None, []
+
+    def flush():
+        nonlocal lst, tbl
+        if lst:
+            out.append(f"</{lst}>")
+            lst = None
+        if tbl:
+            rows = [r for r in tbl if not re.fullmatch(r"\|[\s:|-]+\|", r)]
+            cells = lambda r, t: "".join(f"<{t}>{_inline(c.strip())}</{t}>" for c in r.strip("|").split("|"))
+            out.append("<table border='1' cellpadding='4' style='border-collapse:collapse'>"
+                       + f"<tr>{cells(rows[0], 'th')}</tr>"
+                       + "".join(f"<tr>{cells(r, 'td')}</tr>" for r in rows[1:]) + "</table>")
+            tbl = []
+
+    for line in md.splitlines():
+        s = line.strip()
+        if s.startswith("|"):
+            if lst:
+                out.append(f"</{lst}>"); lst = None
+            tbl.append(s); continue
+        m_ul, m_ol, m_h = re.match(r"[-*] (.*)", s), re.match(r"\d+\. (.*)", s), re.match(r"(#{1,4}) (.*)", s)
+        if m_ul or m_ol:
+            kind = "ul" if m_ul else "ol"
+            if tbl or lst != kind:
+                flush(); out.append(f"<{kind}>"); lst = kind
+            out.append(f"<li>{_inline((m_ul or m_ol).group(1))}</li>"); continue
+        flush()
+        if m_h:
+            n = min(len(m_h.group(1)) + 1, 4)
+            out.append(f"<h{n}>{_inline(m_h.group(2))}</h{n}>")
+        elif s:
+            out.append(f"<p>{_inline(s)}</p>")
+    flush()
+    return "\n".join(out)
+
+
+def cmd_email(args):
+    d = args.out
+    papers = {p["pmid"]: p for p in _load(os.path.join(d, "papers.json"), [])}
+    scores = [s for s in _load(os.path.join(d, "scores.json"), []) if s["score"] >= args.min_score]
+    scores.sort(key=lambda s: (-s["score"], -int(papers[str(s["pmid"])]["year"] or 0)))
+    meta = _load(os.path.join(d, "hits.json"), {"meta": {}})["meta"]
+    items = "".join(
+        f"<li>[{s['score']}] {papers[str(s['pmid'])]['year']} "
+        f"<a href='{papers[str(s['pmid'])]['url']}'>{html.escape(papers[str(s['pmid'])]['title'])}</a>"
+        f" — {html.escape(s['reason'])}</li>" for s in scores)
+    body = (f"<div style='font-family:sans-serif;font-size:14px;line-height:1.6'>"
+            f"<p>PubMed 調査 {meta.get('date', '')}：検索式 {meta.get('queries', '?')} 本 → "
+            f"ユニーク論文 {meta.get('unique_papers', '?')} 本</p>"
+            + md_to_html(_load(os.path.join(d, "summary.md"), ""))
+            + f"<h3>優先度 {args.min_score} 以上の論文 ({len(scores)} 本)</h3>"
+            f"<ul style='font-size:13px'>{items}</ul></div>")
+    path = os.path.join(d, "email.html")
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(body)
+    print(f"wrote {path}  ({len(body):,} chars, papers={len(scores)})")
 
 
 API_WAIT = 0.34
@@ -233,8 +349,18 @@ def main():
     s.add_argument("--api-key", default="")
     r = sub.add_parser("render")
     r.add_argument("--out", required=True)
+    r.add_argument("--top-min", type=int, default=4, help="top.md に載せる最低優先度")
+    c = sub.add_parser("chunk")
+    c.add_argument("--out", required=True)
+    c.add_argument("--n", type=int, default=4)
+    m = sub.add_parser("merge")
+    m.add_argument("--out", required=True)
+    e = sub.add_parser("email")
+    e.add_argument("--out", required=True)
+    e.add_argument("--min-score", type=int, default=5)
     args = ap.parse_args()
-    {"search": cmd_search, "render": cmd_render}[args.cmd](args)
+    {"search": cmd_search, "render": cmd_render, "chunk": cmd_chunk,
+     "merge": cmd_merge, "email": cmd_email}[args.cmd](args)
 
 
 if __name__ == "__main__":
