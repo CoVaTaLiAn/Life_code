@@ -114,6 +114,13 @@ def hybrid(lin_fp, tree_fp, shrink=1.0, tree_on_lin=False):
     return fp
 
 
+def seedavg(make, seeds=(1, 2, 3)):
+    """Average the same model trained with different random seeds (less variance)."""
+    def fp(Xtr, ytr, Xva):
+        return np.mean([make(s)(Xtr, ytr, Xva) for s in seeds], axis=0)
+    return fp
+
+
 # ---- experiments: name -> (feature opts, view, model, note) ----
 FEAT1 = dict(ordinal=True, extra=True, garage_fix=True)
 EXPS = {
@@ -166,6 +173,8 @@ EXPS = {
     "hyb_lasso_gbr_d5": (FEAT1, "both", hybrid(lasso(), gbr(n_estimators=600, max_depth=5), tree_on_lin=True), "Lasso + GBR resid depth5"),
     "hyb_rel_gbr": ({**FEAT1, "rel": True}, "both", hybrid(lasso(), gbr(n_estimators=600), tree_on_lin=True), "f1+rel Lasso + GBR resid"),
     "hyb_svr_gbr": (FEAT1, "both", hybrid(svr(10, 0.02, 0.001), gbr(n_estimators=600), tree_on_lin=True), "SVR + GBR resid"),
+    "hyb_lasso_gbr_s3": (FEAT1, "both", seedavg(lambda s: hybrid(lasso(), gbr(n_estimators=600, random_state=s), tree_on_lin=True)), "Lasso + GBR resid, 3 seeds"),
+    "gbr_f1_s3": (FEAT1, "tree_ohe", seedavg(lambda s: gbr(random_state=s)), "GBR, 3 seeds"),
     "lasso_f2": ({**FEAT1, "poly": True}, "lin", lasso(), "f1 + squared terms"),
     **{f"lasso_f1_a{a}": (FEAT1, "lin", lasso(a * 1e-4), f"f1, Lasso alpha={a}e-4") for a in (2, 3, 4, 6, 8, 10)},
 }
