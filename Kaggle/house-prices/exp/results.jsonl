@@ -1,0 +1,27 @@
+{"name": "lasso_v0", "cv": 0.11175, "std": 0.00066, "sec": 3.6, "note": "baseline features, Lasso"}
+{"name": "lasso_ord", "cv": 0.11163, "std": 0.00068, "sec": 3.1, "note": "+ all ordinal maps"}
+{"name": "lasso_extra", "cv": 0.11118, "std": 0.00069, "sec": 2.2, "note": "+ extra features"}
+{"name": "lasso_gfix", "cv": 0.11164, "std": 0.00073, "sec": 2.6, "note": "+ GarageYrBlt fix"}
+{"name": "lasso_rare", "cv": 0.11175, "std": 0.00066, "sec": 3.1, "note": "+ drop rare dummies"}
+{"name": "lasso_f1", "cv": 0.11081, "std": 0.00077, "sec": 1.6, "note": "ordinal+extra+gfix"}
+{"name": "lasso_f1r", "cv": 0.11081, "std": 0.00077, "sec": 1.4, "note": "f1 + drop rare"}
+{"name": "lgb_v0", "cv": 0.11577, "std": 0.00136, "sec": 18.7, "note": "baseline features, LightGBM"}
+{"name": "lgb_f1", "cv": 0.11527, "std": 0.00149, "sec": 18.8, "note": "f1, LightGBM"}
+{"name": "ridge_f1", "cv": 0.11221, "std": 0.00031, "sec": 1.6, "note": "f1, Ridge"}
+{"name": "enet_f1", "cv": 0.11083, "std": 0.00077, "sec": 2.0, "note": "f1, ElasticNet"}
+{"name": "svr_f1", "cv": 0.1109, "std": 0.00045, "sec": 5.6, "note": "f1, SVR rbf"}
+{"name": "krr_f1", "cv": 0.11166, "std": 8e-05, "sec": 3.4, "note": "f1, KernelRidge poly2"}
+{"name": "lasso_f1_t1", "cv": 0.11138, "std": 0.00072, "sec": 4.1, "note": "f1, Lasso, trim 1% train"}
+{"name": "lasso_f1_t2", "cv": 0.1115, "std": 0.0004, "sec": 4.0, "note": "f1, Lasso, trim 2% train"}
+{"name": "lasso_f1_t4", "cv": 0.11183, "std": 0.00046, "sec": 3.5, "note": "f1, Lasso, trim 4% train"}
+{"name": "svr_f1_t2", "cv": 0.11238, "std": 0.00063, "sec": 14.0, "note": "f1, SVR, trim 2%"}
+{"name": "gbr_f1", "cv": 0.11213, "std": 0.00192, "sec": 197.4, "note": "f1, sklearn GBR huber"}
+{"name": "lasso_f2", "cv": 0.11076, "std": 0.00069, "sec": 3.1, "note": "f1 + squared terms"}
+{"name": "lasso_f1_a2", "cv": 0.11203, "std": 0.0009, "sec": 4.3, "note": "f1, Lasso alpha=2e-4"}
+{"name": "lasso_f1_a3", "cv": 0.11137, "std": 0.00091, "sec": 3.5, "note": "f1, Lasso alpha=3e-4"}
+{"name": "lasso_f1_a4", "cv": 0.11095, "std": 0.0008, "sec": 3.1, "note": "f1, Lasso alpha=4e-4"}
+{"name": "lasso_f1_a6", "cv": 0.11086, "std": 0.00079, "sec": 2.0, "note": "f1, Lasso alpha=6e-4"}
+{"name": "lasso_f1_a8", "cv": 0.1114, "std": 0.00072, "sec": 1.5, "note": "f1, Lasso alpha=8e-4"}
+{"name": "lasso_f1_a10", "cv": 0.1124, "std": 0.00063, "sec": 1.7, "note": "f1, Lasso alpha=10e-4"}
+{"name": "svr_f1_tuned", "cv": 0.10967, "std": 0.00055, "sec": 5.3, "note": "f1, SVR C=10 g=1e-3 eps=.02 (tuned on repeat 0)"}
+{"name": "svr_f1_t2b", "cv": 0.11199, "std": 0.00061, "sec": 5.9, "note": "f1, SVR C=10 g=2e-3"}
