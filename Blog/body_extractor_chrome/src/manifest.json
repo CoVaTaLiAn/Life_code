@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "本文だけコピー",
+  "version": "1.0.0",
+  "description": "Webページから広告やメニューを除いた本文だけを取り出し、コピー・保存します。",
+  "permissions": ["activeTab", "scripting"],
+  "action": {
+    "default_title": "本文を取り出す",
+    "default_popup": "popup/popup.html"
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+Shift+R",
+        "mac": "Alt+Shift+R"
+      },
+      "description": "本文を取り出す"
+    }
+  }
+}
