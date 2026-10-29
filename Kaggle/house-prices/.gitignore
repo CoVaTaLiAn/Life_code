@@ -3,3 +3,4 @@ exp/cache/
 data/
 __pycache__/
 *.log
+exp/results.jsonl

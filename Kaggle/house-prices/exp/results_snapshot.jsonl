@@ -26,3 +26,4 @@
 {"name": "svr_f1_tuned", "cv": 0.10967, "std": 0.00055, "sec": 5.3, "note": "f1, SVR C=10 g=1e-3 eps=.02 (tuned on repeat 0)"}
 {"name": "svr_f1_t2b", "cv": 0.11199, "std": 0.00061, "sec": 5.9, "note": "f1, SVR C=10 g=2e-3"}
 {"name": "huber_f1", "cv": 0.12729, "std": 0.00172, "sec": 522.2, "note": "f1, Huber linear"}
+{"name": "xgb_f1", "cv": 0.11292, "std": 0.00204, "sec": 405.4, "note": "f1, XGBoost"}
