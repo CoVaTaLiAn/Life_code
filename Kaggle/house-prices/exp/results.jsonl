@@ -25,3 +25,4 @@
 {"name": "lasso_f1_a10", "cv": 0.1124, "std": 0.00063, "sec": 1.7, "note": "f1, Lasso alpha=10e-4"}
 {"name": "svr_f1_tuned", "cv": 0.10967, "std": 0.00055, "sec": 5.3, "note": "f1, SVR C=10 g=1e-3 eps=.02 (tuned on repeat 0)"}
 {"name": "svr_f1_t2b", "cv": 0.11199, "std": 0.00061, "sec": 5.9, "note": "f1, SVR C=10 g=2e-3"}
+{"name": "huber_f1", "cv": 0.12729, "std": 0.00172, "sec": 522.2, "note": "f1, Huber linear"}
