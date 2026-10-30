@@ -21,7 +21,24 @@ const CONFIG = {
     ad: '広告',
     notice: '通知',
     check: '要確認',
+    reply: '要返信',
+    keep: '残す',
   },
+
+  // ルールで決まらないメールだけAIに判定させる（APIキー未設定ならAIは使わない）
+  ai: {
+    model: 'claude-opus-5-5', // 安くしたいなら 'claude-haiku-5-5'（約1/40の料金）
+    effort: 'low',
+    maxPerRun: 20, // 1回の実行でAIに回す上限（費用の暴走防止）
+    bodyChars: 800, // AIに渡す本文の文字数
+  },
+
+  // AIに伝える判断基準（Obsidian「輝く環境.md」より）
+  profile: [
+    '受信者はデータサイエンティスト志望の転職活動中の人。',
+    '注目すべき求人：データサイエンス・データ分析・ヘルスケアIT・医療・ゲノム領域、年収480万円以上、横浜から通勤90分以内、事業に嘘がない会社。',
+    '避けたい求人：営業職、未経験歓迎の大量採用、根性論の社風、事業内容が怪しいもの。',
+  ].join('\n'),
 
   // 転職サイト・エージェント（このどれかから来たら転職メール）
   jobSenders: [
@@ -79,13 +96,39 @@ function sortInbox() {
 
   const threads = GmailApp.search('in:inbox is:unread has:nouserlabels', 0, CONFIG.maxThreads);
   const log = loadLog_();
+  const apiKey = PropertiesService.getScriptProperties().getProperty('ANTHROPIC_API_KEY');
+  const rows = [];
+  let aiCalls = 0;
 
   threads.forEach(thread => {
     const msg = thread.getMessages().slice(-1)[0];
     const from = msg.getFrom().toLowerCase();
     const subject = msg.getSubject() || '';
-    const text = subject + ' ' + msg.getPlainBody().slice(0, 1500);
-    const kind = classify_(from, subject, text);
+    const body = msg.getPlainBody();
+    const text = subject + ' ' + body.slice(0, 1500);
+    let kind = classify_(from, subject, text);
+    let by = 'ルール';
+    let reason = '';
+
+    if (kind === 'summary') {
+      thread.addLabel(L.notice); // 自分の要約メールは未読のまま「通知」に入れるだけ
+      return;
+    }
+
+    if (kind === 'none') {
+      if (!apiKey || aiCalls >= CONFIG.ai.maxPerRun) {
+        log.counts.other++;
+        return; // 次の実行に回す（ラベルを付けないので再度対象になる）
+      }
+      aiCalls++;
+      const r = classifyWithAI_(apiKey, msg.getFrom(), subject, body.slice(0, CONFIG.ai.bodyChars));
+      kind = r.category;
+      reason = r.reason;
+      by = 'AI';
+    }
+
+    rows.push([new Date(), by, CONFIG.labels[kind] || kind, reason, msg.getFrom(), subject,
+      'https://mail.google.com/mail/u/0/#all/' + thread.getId()]);
 
     switch (kind) {
       case 'pick':
@@ -108,12 +151,103 @@ function sortInbox() {
         thread.addLabel(L.check);
         log.check.push({ s: subject, f: shortFrom_(msg.getFrom()), id: thread.getId() });
         break;
-      default:
-        log.counts.other++; // 判定できないものは触らない
+      case 'reply':
+        thread.addLabel(L.reply);
+        log.reply = log.reply || [];
+        log.reply.push({ s: subject, f: shortFrom_(msg.getFrom()), id: thread.getId() });
+        break;
+      default: // keep：受信箱に未読のまま残す。再判定しないようラベルだけ付ける
+        thread.addLabel(L.keep);
+        log.counts.keep = (log.counts.keep || 0) + 1;
     }
   });
 
+  appendToSheet_(rows);
   saveLog_(log);
+}
+
+// ===== AI判定（ルールに当たらないメールだけ） =====
+
+const AI_CATEGORIES = ['pick', 'jobOther', 'ad', 'notice', 'check', 'reply', 'keep'];
+
+function classifyWithAI_(apiKey, from, subject, body) {
+  const prompt = [
+    CONFIG.profile,
+    '',
+    '次のメールを1つのカテゴリに分類し、理由を30字以内の日本語で書いてください。',
+    'pick=条件に合う求人・スカウト / jobOther=条件に合わない転職関連 / ad=広告・宣伝・メルマガ /',
+    'notice=領収書や自動通知など読むだけでよいもの / check=セキュリティ・ログイン・支払い異常など本人確認が要るもの /',
+    'reply=人から届き返信が必要なもの / keep=それ以外で本人が読むべきもの',
+    '',
+    '差出人: ' + from,
+    '件名: ' + subject,
+    '本文冒頭:',
+    body,
+  ].join('\n');
+
+  const payload = {
+    model: CONFIG.ai.model,
+    max_tokens: 2048,
+    output_config: {
+      effort: CONFIG.ai.effort,
+      format: {
+        type: 'json_schema',
+        schema: {
+          type: 'object',
+          properties: {
+            category: { type: 'string', enum: AI_CATEGORIES },
+            reason: { type: 'string' },
+          },
+          required: ['category', 'reason'],
+          additionalProperties: false,
+        },
+      },
+    },
+    messages: [{ role: 'user', content: prompt }],
+  };
+  const headers = { 'x-api-key': apiKey, 'anthropic-version': '2026-10-21' };
+  if (CONFIG.ai.model !== 'claude-haiku-5-5') {
+    // 安全側で断られたとき、別モデルで自動再試行する（Haiku は非対応）
+    payload.fallbacks = 'default';
+    headers['anthropic-beta'] = 'server-side-fallback-2026-07-01';
+  }
+
+  try {
+    const res = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', {
+      method: 'post',
+      contentType: 'application/json',
+      headers: headers,
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true,
+    });
+    const data = JSON.parse(res.getContentText());
+    if (res.getResponseCode() !== 200) return { category: 'keep', reason: 'AIエラー ' + res.getResponseCode() };
+    if (data.stop_reason === 'refusal') return { category: 'keep', reason: 'AIが判定を拒否' };
+    const textBlock = (data.content || []).find(b => b.type === 'text');
+    const out = JSON.parse(textBlock.text);
+    if (!AI_CATEGORIES.includes(out.category)) return { category: 'keep', reason: '不明なカテゴリ' };
+    return out;
+  } catch (e) {
+    return { category: 'keep', reason: 'AI呼び出し失敗: ' + e.message.slice(0, 40) };
+  }
+}
+
+// ===== 判定結果の記録（スプレッドシート） =====
+
+function appendToSheet_(rows) {
+  if (!rows.length) return;
+  const props = PropertiesService.getScriptProperties();
+  let id = props.getProperty('SHEET_ID');
+  let ss;
+  if (id) {
+    ss = SpreadsheetApp.openById(id);
+  } else {
+    ss = SpreadsheetApp.create('Gmail振り分けログ');
+    ss.getSheets()[0].appendRow(['日時', '判定者', 'カテゴリ', 'AIの理由', '差出人', '件名', 'リンク']);
+    props.setProperty('SHEET_ID', ss.getId());
+  }
+  const sh = ss.getSheets()[0];
+  sh.getRange(sh.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
 }
 
 function classify_(from, subject, text) {
@@ -121,7 +255,7 @@ function classify_(from, subject, text) {
   const fromHas = list => list.some(k => from.includes(k.toLowerCase()));
   const has = (list, s) => list.some(k => s.includes(k));
 
-  if (subject.startsWith('[Gmail要約]')) return 'none';
+  if (subject.startsWith('[Gmail要約]')) return 'summary';
   if (fromHas(CONFIG.jobSenders)) {
     if (has(CONFIG.pickKeywords, text) && !has(CONFIG.dropKeywords, text)) return 'pick';
     return 'jobOther';
@@ -144,6 +278,11 @@ function sendSummary() {
   log.pick.forEach(m => lines.push('- ' + m.s + '（' + m.f + '）\n  ' + link(m.id)));
   if (!log.pick.length) lines.push('- なし');
 
+  const reply = log.reply || [];
+  lines.push('', '【要返信】' + reply.length + '件');
+  reply.forEach(m => lines.push('- ' + m.s + '（' + m.f + '）\n  ' + link(m.id)));
+  if (!reply.length) lines.push('- なし');
+
   lines.push('', '【要確認】' + log.check.length + '件');
   log.check.forEach(m => lines.push('- ' + m.s + '（' + m.f + '）\n  ' + link(m.id)));
   if (!log.check.length) lines.push('- なし');
@@ -152,7 +291,11 @@ function sendSummary() {
     '- 転職/その他：' + c.jobOther + '件（既読・アーカイブ）',
     '- 広告：' + c.ad + '件（既読・アーカイブ）',
     '- 通知：' + c.notice + '件（既読）',
-    '- 未分類：' + c.other + '件（受信箱に残したまま）');
+    '- 残す：' + (c.keep || 0) + '件（受信箱に未読のまま）',
+    '- 未判定：' + c.other + '件（AIキー未設定または上限超え。次回に再判定）');
+
+  const sheetId = PropertiesService.getScriptProperties().getProperty('SHEET_ID');
+  if (sheetId) lines.push('', '判定ログ: https://docs.google.com/spreadsheets/d/' + sheetId);
 
   const to = CONFIG.summaryTo || Session.getActiveUser().getEmail();
   const date = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'M/d');
@@ -173,7 +316,8 @@ function shortFrom_(from) {
 
 function loadLog_() {
   const raw = PropertiesService.getScriptProperties().getProperty('log');
-  return raw ? JSON.parse(raw) : { pick: [], check: [], counts: { jobOther: 0, ad: 0, notice: 0, other: 0 } };
+  return raw ? JSON.parse(raw)
+    : { pick: [], check: [], reply: [], counts: { jobOther: 0, ad: 0, notice: 0, keep: 0, other: 0 } };
 }
 
 function saveLog_(log) {
@@ -181,5 +325,6 @@ function saveLog_(log) {
   const trim = list => list.slice(-20).map(m => ({ ...m, s: m.s.slice(0, 60) }));
   log.pick = trim(log.pick);
   log.check = trim(log.check);
+  log.reply = trim(log.reply || []);
   PropertiesService.getScriptProperties().setProperty('log', JSON.stringify(log));
 }
