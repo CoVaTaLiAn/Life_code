@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# 使い方: ./solo --help
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PYTHONPATH="$DIR/tools${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m solo "$@"

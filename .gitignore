@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+*.tmp
+.DS_Store
+# 受け取った資料（契約書・明細など）は機密のことが多いのでコミットしない
+company/inbox/*
+!company/inbox/.gitkeep
