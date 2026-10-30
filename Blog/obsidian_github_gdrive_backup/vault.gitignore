@@ -1,0 +1,8 @@
+# Obsidian の端末ごとの状態（コンフリクトの元）
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/cache
+.trash/
+.DS_Store
+# 機密を置くフォルダがあればここに追加
+# Private/
