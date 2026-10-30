@@ -1,0 +1,50 @@
+# 目的: 子宮内膜症を miRNA で非侵襲的に検査（唾液・血液・経血・膣粘液）
+# ブロック: E=子宮内膜症, M=miRNA, S=検体, D=診断/バイオマーカー
+# --- 広い (ヒット数記録用) ---
+("endometriosis"[MeSH Terms] OR endometriosis[tiab] OR adenomyosis[tiab] OR endometrioma*[tiab])
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("MicroRNAs"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab] OR miR-*[tiab])
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("MicroRNAs"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (biomarker*[tiab] OR diagnos*[tiab] OR "Biomarkers"[MeSH Terms])
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("MicroRNAs"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND review[pt]
+# --- 唾液 ---
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("Saliva"[MeSH Terms] OR saliva*[tiab])
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("MicroRNAs"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (saliva*[tiab] OR "Saliva"[MeSH Terms])
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND (saliva*[tiab]) AND (signature*[tiab] OR diagnos*[tiab] OR test[tiab])
+# --- 血液 (血清・血漿・細胞外小胞) ---
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("MicroRNAs"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (serum[tiab] OR plasma[tiab] OR blood[tiab] OR circulating[tiab])
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("MicroRNAs"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (serum[tiab] OR plasma[tiab] OR circulating[tiab]) AND (diagnos*[tiab] OR biomarker*[tiab]) AND (sensitivity[tiab] OR specificity[tiab] OR AUC[tiab] OR ROC[tiab])
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("MicroRNAs"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (exosom*[tiab] OR "extracellular vesicle*"[tiab])
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("MicroRNAs"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (serum[tiab] OR plasma[tiab] OR circulating[tiab]) AND (validation[tiab] OR validated[tiab] OR replicat*[tiab])
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("MicroRNAs"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (serum[tiab] OR plasma[tiab] OR circulating[tiab]) AND ("menstrual cycle"[tiab] OR "cycle phase"[tiab] OR hormonal[tiab])
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("MicroRNAs"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (serum[tiab] OR plasma[tiab] OR circulating[tiab]) AND (adolescen*[tiab] OR "minimal"[tiab] OR "early stage"[tiab] OR "stage I"[tiab])
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("MicroRNAs"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (serum[tiab] OR plasma[tiab] OR circulating[tiab]) AND ("meta-analysis"[pt] OR "systematic review"[pt] OR meta-analys*[tiab])
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("MicroRNAs"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (sequencing[tiab] OR "machine learning"[tiab] OR panel[tiab]) AND (serum[tiab] OR plasma[tiab] OR saliva*[tiab])
+# --- 経血 ---
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("menstrual blood"[tiab] OR "menstrual effluent"[tiab] OR "menstrual fluid"[tiab] OR "Menstruation"[MeSH Terms] AND effluent[tiab])
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("menstrual blood"[tiab] OR "menstrual effluent"[tiab] OR "menstrual fluid"[tiab] OR "menstrual tissue"[tiab])
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("menstrual blood"[tiab] OR "menstrual effluent"[tiab] OR "menstrual fluid"[tiab] OR menstrual[tiab]) AND ("MicroRNAs"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab] OR RNA[tiab] OR transcriptom*[tiab])
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("menstrual blood-derived"[tiab] OR "menstrual blood stem"[tiab] OR "menstrual stromal"[tiab] OR "menstrual blood stromal"[tiab])
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("menstrual pad*"[tiab] OR "sanitary pad*"[tiab] OR tampon*[tiab] OR "menstrual cup*"[tiab])
+# --- 膣・子宮頸管粘液 / 子宮内 ---
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("vaginal fluid"[tiab] OR "vaginal secretion*"[tiab] OR "cervicovaginal"[tiab] OR "cervical mucus"[tiab] OR "Cervix Mucus"[MeSH Terms] OR "vaginal swab*"[tiab])
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND (vaginal[tiab] OR cervical[tiab] OR cervicovaginal[tiab]) AND ("MicroRNAs"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab])
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("uterine fluid"[tiab] OR "endometrial fluid"[tiab] OR "uterine aspirate*"[tiab] OR "uterine lavage"[tiab]) AND ("MicroRNAs"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab] OR RNA[tiab] OR exosom*[tiab] OR vesicle*[tiab])
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("Pap smear"[tiab] OR "Papanicolaou"[tiab] OR "cervical cytology"[tiab] OR "cervical swab*"[tiab])
+# --- その他の非侵襲検体 (比較用) ---
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("MicroRNAs"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (urin*[tiab] OR "peritoneal fluid"[tiab] OR "follicular fluid"[tiab])
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("non-invasive"[tiab] OR noninvasive[tiab] OR "liquid biopsy"[tiab]) AND (diagnos*[tiab] OR test[tiab])
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("liquid biopsy"[tiab])
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("non-invasive"[tiab] OR noninvasive[tiab]) AND ("MicroRNAs"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab])
+# --- 2周目: 50件超だったものを年代・条件で分割 ---
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("Saliva"[MeSH Terms] OR saliva*[tiab]) AND 2000:2026[dp]
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("MicroRNAs"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (serum[tiab] OR plasma[tiab] OR circulating[tiab]) AND (diagnos*[tiab] OR biomarker*[tiab]) AND 1990:2017[dp]
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("MicroRNAs"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (serum[tiab] OR plasma[tiab] OR circulating[tiab]) AND (diagnos*[tiab] OR biomarker*[tiab]) AND 2018:2020[dp]
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("MicroRNAs"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (serum[tiab] OR plasma[tiab] OR circulating[tiab]) AND (diagnos*[tiab] OR biomarker*[tiab]) AND 2021:2022[dp]
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("MicroRNAs"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (serum[tiab] OR plasma[tiab] OR circulating[tiab]) AND (diagnos*[tiab] OR biomarker*[tiab]) AND 2023:2024[dp]
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("MicroRNAs"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (serum[tiab] OR plasma[tiab] OR circulating[tiab]) AND (diagnos*[tiab] OR biomarker*[tiab]) AND 2025:2026[dp]
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("MicroRNAs"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (exosom*[tiab] OR "extracellular vesicle*"[tiab]) AND (serum[tiab] OR plasma[tiab] OR blood[tiab] OR circulating[tiab] OR urin*[tiab] OR fluid[tiab])
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("menstrual blood"[tiab] OR "menstrual effluent"[tiab] OR "menstrual fluid"[tiab]) AND (RNA[tiab] OR miRNA*[tiab] OR microRNA*[tiab] OR transcriptom*[tiab] OR biomarker*[tiab] OR diagnos*[tiab] OR proteom*[tiab])
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("menstrual blood"[tiab] OR "menstrual effluent"[tiab] OR "menstrual fluid"[tiab]) AND ("single-cell"[tiab] OR "single cell"[tiab] OR decidualization[tiab] OR "non-invasive"[tiab] OR noninvasive[tiab])
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("vaginal fluid"[tiab] OR "vaginal secretion*"[tiab] OR cervicovaginal[tiab] OR "cervical mucus"[tiab] OR "vaginal swab*"[tiab] OR "cervical swab*"[tiab]) AND (RNA[tiab] OR miRNA*[tiab] OR microRNA*[tiab] OR biomarker*[tiab] OR diagnos*[tiab] OR exosom*[tiab])
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("non-invasive"[tiab] OR noninvasive[tiab] OR "liquid biopsy"[tiab]) AND ("MicroRNAs"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND 1990:2021[dp]
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("non-invasive"[tiab] OR noninvasive[tiab] OR "liquid biopsy"[tiab]) AND ("MicroRNAs"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND 2022:2026[dp]
+("endometriosis"[MeSH Terms] OR endometriosis[tiab]) AND ("MicroRNAs"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (diagnos*[tiab] OR biomarker*[tiab]) AND ("clinical trial"[pt] OR prospective[tiab] OR multicent*[tiab] OR "independent cohort"[tiab])

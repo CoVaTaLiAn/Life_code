@@ -1,0 +1,379 @@
+{
+  "meta": {
+    "date": "2026-10-29",
+    "max": 50,
+    "queries": 41,
+    "unique_papers": 394
+  },
+  "hits": [
+    {
+      "no": 1,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab] OR adenomyosis[tiab] OR endometrioma*[tiab])",
+      "translation": "\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract] OR \"adenomyosis\"[Title/Abstract] OR \"endometrioma*\"[Title/Abstract]",
+      "count": 43862,
+      "fetched": false,
+      "new": 0,
+      "dup": 0
+    },
+    {
+      "no": 2,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"MicroRNAs\"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab] OR miR-*[tiab])",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"MicroRNAs\"[MeSH Terms] OR \"microrna*\"[Title/Abstract] OR \"mirna*\"[Title/Abstract] OR \"mir *\"[Title/Abstract])",
+      "count": 753,
+      "fetched": false,
+      "new": 0,
+      "dup": 0
+    },
+    {
+      "no": 3,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"MicroRNAs\"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (biomarker*[tiab] OR diagnos*[tiab] OR \"Biomarkers\"[MeSH Terms])",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"MicroRNAs\"[MeSH Terms] OR \"microrna*\"[Title/Abstract] OR \"mirna*\"[Title/Abstract]) AND (\"biomarker*\"[Title/Abstract] OR \"diagnos*\"[Title/Abstract] OR \"Biomarkers\"[MeSH Terms])",
+      "count": 349,
+      "fetched": false,
+      "new": 0,
+      "dup": 0
+    },
+    {
+      "no": 4,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"MicroRNAs\"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND review[pt]",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"MicroRNAs\"[MeSH Terms] OR \"microrna*\"[Title/Abstract] OR \"mirna*\"[Title/Abstract]) AND \"review\"[Publication Type]",
+      "count": 200,
+      "fetched": false,
+      "new": 0,
+      "dup": 0
+    },
+    {
+      "no": 5,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"Saliva\"[MeSH Terms] OR saliva*[tiab])",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"Saliva\"[MeSH Terms] OR \"saliva*\"[Title/Abstract])",
+      "count": 61,
+      "fetched": false,
+      "new": 0,
+      "dup": 0
+    },
+    {
+      "no": 6,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"MicroRNAs\"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (saliva*[tiab] OR \"Saliva\"[MeSH Terms])",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"MicroRNAs\"[MeSH Terms] OR \"microrna*\"[Title/Abstract] OR \"mirna*\"[Title/Abstract]) AND (\"saliva*\"[Title/Abstract] OR \"Saliva\"[MeSH Terms])",
+      "count": 28,
+      "fetched": true,
+      "new": 28,
+      "dup": 0
+    },
+    {
+      "no": 7,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (saliva*[tiab]) AND (signature*[tiab] OR diagnos*[tiab] OR test[tiab])",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND \"saliva*\"[Title/Abstract] AND (\"signature*\"[Title/Abstract] OR \"diagnos*\"[Title/Abstract] OR \"test\"[Title/Abstract])",
+      "count": 41,
+      "fetched": true,
+      "new": 14,
+      "dup": 27
+    },
+    {
+      "no": 8,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"MicroRNAs\"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (serum[tiab] OR plasma[tiab] OR blood[tiab] OR circulating[tiab])",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"MicroRNAs\"[MeSH Terms] OR \"microrna*\"[Title/Abstract] OR \"mirna*\"[Title/Abstract]) AND (\"serum\"[Title/Abstract] OR \"plasma\"[Title/Abstract] OR \"blood\"[Title/Abstract] OR \"circulating\"[Title/Abstract])",
+      "count": 176,
+      "fetched": false,
+      "new": 0,
+      "dup": 0
+    },
+    {
+      "no": 9,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"MicroRNAs\"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (serum[tiab] OR plasma[tiab] OR circulating[tiab]) AND (diagnos*[tiab] OR biomarker*[tiab]) AND (sensitivity[tiab] OR specificity[tiab] OR AUC[tiab] OR ROC[tiab])",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"MicroRNAs\"[MeSH Terms] OR \"microrna*\"[Title/Abstract] OR \"mirna*\"[Title/Abstract]) AND (\"serum\"[Title/Abstract] OR \"plasma\"[Title/Abstract] OR \"circulating\"[Title/Abstract]) AND (\"diagnos*\"[Title/Abstract] OR \"biomarker*\"[Title/Abstract]) AND (\"sensitivity\"[Title/Abstract] OR \"specificity\"[Title/Abstract] OR \"AUC\"[Title/Abstract] OR \"ROC\"[Title/Abstract])",
+      "count": 53,
+      "fetched": false,
+      "new": 0,
+      "dup": 0
+    },
+    {
+      "no": 10,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"MicroRNAs\"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (exosom*[tiab] OR \"extracellular vesicle*\"[tiab])",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"MicroRNAs\"[MeSH Terms] OR \"microrna*\"[Title/Abstract] OR \"mirna*\"[Title/Abstract]) AND (\"exosom*\"[Title/Abstract] OR \"extracellular vesicle*\"[Title/Abstract])",
+      "count": 83,
+      "fetched": false,
+      "new": 0,
+      "dup": 0
+    },
+    {
+      "no": 11,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"MicroRNAs\"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (serum[tiab] OR plasma[tiab] OR circulating[tiab]) AND (validation[tiab] OR validated[tiab] OR replicat*[tiab])",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"MicroRNAs\"[MeSH Terms] OR \"microrna*\"[Title/Abstract] OR \"mirna*\"[Title/Abstract]) AND (\"serum\"[Title/Abstract] OR \"plasma\"[Title/Abstract] OR \"circulating\"[Title/Abstract]) AND (\"validation\"[Title/Abstract] OR \"validated\"[Title/Abstract] OR \"replicat*\"[Title/Abstract])",
+      "count": 41,
+      "fetched": true,
+      "new": 35,
+      "dup": 6
+    },
+    {
+      "no": 12,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"MicroRNAs\"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (serum[tiab] OR plasma[tiab] OR circulating[tiab]) AND (\"menstrual cycle\"[tiab] OR \"cycle phase\"[tiab] OR hormonal[tiab])",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"MicroRNAs\"[MeSH Terms] OR \"microrna*\"[Title/Abstract] OR \"mirna*\"[Title/Abstract]) AND (\"serum\"[Title/Abstract] OR \"plasma\"[Title/Abstract] OR \"circulating\"[Title/Abstract]) AND (\"menstrual cycle\"[Title/Abstract] OR \"cycle phase\"[Title/Abstract] OR \"hormonal\"[Title/Abstract])",
+      "count": 20,
+      "fetched": true,
+      "new": 11,
+      "dup": 9
+    },
+    {
+      "no": 13,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"MicroRNAs\"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (serum[tiab] OR plasma[tiab] OR circulating[tiab]) AND (adolescen*[tiab] OR \"minimal\"[tiab] OR \"early stage\"[tiab] OR \"stage I\"[tiab])",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"MicroRNAs\"[MeSH Terms] OR \"microrna*\"[Title/Abstract] OR \"mirna*\"[Title/Abstract]) AND (\"serum\"[Title/Abstract] OR \"plasma\"[Title/Abstract] OR \"circulating\"[Title/Abstract]) AND (\"adolescen*\"[Title/Abstract] OR \"minimal\"[Title/Abstract] OR \"early stage\"[Title/Abstract] OR \"stage I\"[Title/Abstract])",
+      "count": 8,
+      "fetched": true,
+      "new": 4,
+      "dup": 4
+    },
+    {
+      "no": 14,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"MicroRNAs\"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (serum[tiab] OR plasma[tiab] OR circulating[tiab]) AND (\"meta-analysis\"[pt] OR \"systematic review\"[pt] OR meta-analys*[tiab])",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"MicroRNAs\"[MeSH Terms] OR \"microrna*\"[Title/Abstract] OR \"mirna*\"[Title/Abstract]) AND (\"serum\"[Title/Abstract] OR \"plasma\"[Title/Abstract] OR \"circulating\"[Title/Abstract]) AND (\"meta-analysis\"[Publication Type] OR \"systematic review\"[Publication Type] OR \"meta analys*\"[Title/Abstract])",
+      "count": 11,
+      "fetched": true,
+      "new": 5,
+      "dup": 6
+    },
+    {
+      "no": 15,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"MicroRNAs\"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (sequencing[tiab] OR \"machine learning\"[tiab] OR panel[tiab]) AND (serum[tiab] OR plasma[tiab] OR saliva*[tiab])",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"MicroRNAs\"[MeSH Terms] OR \"microrna*\"[Title/Abstract] OR \"mirna*\"[Title/Abstract]) AND (\"sequencing\"[Title/Abstract] OR \"machine learning\"[Title/Abstract] OR \"panel\"[Title/Abstract]) AND (\"serum\"[Title/Abstract] OR \"plasma\"[Title/Abstract] OR \"saliva*\"[Title/Abstract])",
+      "count": 38,
+      "fetched": true,
+      "new": 12,
+      "dup": 26
+    },
+    {
+      "no": 16,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"menstrual blood\"[tiab] OR \"menstrual effluent\"[tiab] OR \"menstrual fluid\"[tiab] OR \"Menstruation\"[MeSH Terms] AND effluent[tiab])",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND ((\"menstrual blood\"[Title/Abstract] OR \"menstrual effluent\"[Title/Abstract] OR \"menstrual fluid\"[Title/Abstract] OR \"Menstruation\"[MeSH Terms]) AND \"effluent\"[Title/Abstract])",
+      "count": 36,
+      "fetched": true,
+      "new": 36,
+      "dup": 0
+    },
+    {
+      "no": 17,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"menstrual blood\"[tiab] OR \"menstrual effluent\"[tiab] OR \"menstrual fluid\"[tiab] OR \"menstrual tissue\"[tiab])",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"menstrual blood\"[Title/Abstract] OR \"menstrual effluent\"[Title/Abstract] OR \"menstrual fluid\"[Title/Abstract] OR \"menstrual tissue\"[Title/Abstract])",
+      "count": 237,
+      "fetched": false,
+      "new": 0,
+      "dup": 0
+    },
+    {
+      "no": 18,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"menstrual blood\"[tiab] OR \"menstrual effluent\"[tiab] OR \"menstrual fluid\"[tiab] OR menstrual[tiab]) AND (\"MicroRNAs\"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab] OR RNA[tiab] OR transcriptom*[tiab])",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"menstrual blood\"[Title/Abstract] OR \"menstrual effluent\"[Title/Abstract] OR \"menstrual fluid\"[Title/Abstract] OR \"menstrual\"[Title/Abstract]) AND (\"MicroRNAs\"[MeSH Terms] OR \"microrna*\"[Title/Abstract] OR \"mirna*\"[Title/Abstract] OR \"RNA\"[Title/Abstract] OR \"transcriptom*\"[Title/Abstract])",
+      "count": 178,
+      "fetched": false,
+      "new": 0,
+      "dup": 0
+    },
+    {
+      "no": 19,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"menstrual blood-derived\"[tiab] OR \"menstrual blood stem\"[tiab] OR \"menstrual stromal\"[tiab] OR \"menstrual blood stromal\"[tiab])",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"menstrual blood-derived\"[Title/Abstract] OR \"menstrual blood stem\"[Title/Abstract] OR \"menstrual stromal\"[Title/Abstract] OR \"menstrual blood stromal\"[Title/Abstract])",
+      "count": 25,
+      "fetched": true,
+      "new": 25,
+      "dup": 0
+    },
+    {
+      "no": 20,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"menstrual pad*\"[tiab] OR \"sanitary pad*\"[tiab] OR tampon*[tiab] OR \"menstrual cup*\"[tiab])",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"menstrual pad*\"[Title/Abstract] OR \"sanitary pad*\"[Title/Abstract] OR \"tampon*\"[Title/Abstract] OR \"menstrual cup*\"[Title/Abstract])",
+      "count": 31,
+      "fetched": true,
+      "new": 28,
+      "dup": 3
+    },
+    {
+      "no": 21,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"vaginal fluid\"[tiab] OR \"vaginal secretion*\"[tiab] OR \"cervicovaginal\"[tiab] OR \"cervical mucus\"[tiab] OR \"Cervix Mucus\"[MeSH Terms] OR \"vaginal swab*\"[tiab])",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"vaginal fluid\"[Title/Abstract] OR \"vaginal secretion*\"[Title/Abstract] OR \"cervicovaginal\"[Title/Abstract] OR \"cervical mucus\"[Title/Abstract] OR \"Cervix Mucus\"[MeSH Terms] OR \"vaginal swab*\"[Title/Abstract])",
+      "count": 141,
+      "fetched": false,
+      "new": 0,
+      "dup": 0
+    },
+    {
+      "no": 22,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (vaginal[tiab] OR cervical[tiab] OR cervicovaginal[tiab]) AND (\"MicroRNAs\"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab])",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"vaginal\"[Title/Abstract] OR \"cervical\"[Title/Abstract] OR \"cervicovaginal\"[Title/Abstract]) AND (\"MicroRNAs\"[MeSH Terms] OR \"microrna*\"[Title/Abstract] OR \"mirna*\"[Title/Abstract])",
+      "count": 16,
+      "fetched": true,
+      "new": 13,
+      "dup": 3
+    },
+    {
+      "no": 23,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"uterine fluid\"[tiab] OR \"endometrial fluid\"[tiab] OR \"uterine aspirate*\"[tiab] OR \"uterine lavage\"[tiab]) AND (\"MicroRNAs\"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab] OR RNA[tiab] OR exosom*[tiab] OR vesicle*[tiab])",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"uterine fluid\"[Title/Abstract] OR \"endometrial fluid\"[Title/Abstract] OR \"uterine aspirate*\"[Title/Abstract] OR \"uterine lavage\"[Title/Abstract]) AND (\"MicroRNAs\"[MeSH Terms] OR \"microrna*\"[Title/Abstract] OR \"mirna*\"[Title/Abstract] OR \"RNA\"[Title/Abstract] OR \"exosom*\"[Title/Abstract] OR \"vesicle*\"[Title/Abstract])",
+      "count": 6,
+      "fetched": true,
+      "new": 5,
+      "dup": 1
+    },
+    {
+      "no": 24,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"Pap smear\"[tiab] OR \"Papanicolaou\"[tiab] OR \"cervical cytology\"[tiab] OR \"cervical swab*\"[tiab])",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"Pap smear\"[Title/Abstract] OR \"Papanicolaou\"[Title/Abstract] OR \"cervical cytology\"[Title/Abstract] OR \"cervical swab*\"[Title/Abstract])",
+      "count": 38,
+      "fetched": true,
+      "new": 37,
+      "dup": 1
+    },
+    {
+      "no": 25,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"MicroRNAs\"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (urin*[tiab] OR \"peritoneal fluid\"[tiab] OR \"follicular fluid\"[tiab])",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"MicroRNAs\"[MeSH Terms] OR \"microrna*\"[Title/Abstract] OR \"mirna*\"[Title/Abstract]) AND (\"urin*\"[Title/Abstract] OR \"peritoneal fluid\"[Title/Abstract] OR \"follicular fluid\"[Title/Abstract])",
+      "count": 45,
+      "fetched": true,
+      "new": 34,
+      "dup": 11
+    },
+    {
+      "no": 26,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"non-invasive\"[tiab] OR noninvasive[tiab] OR \"liquid biopsy\"[tiab]) AND (diagnos*[tiab] OR test[tiab])",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"non-invasive\"[Title/Abstract] OR \"noninvasive\"[Title/Abstract] OR \"liquid biopsy\"[Title/Abstract]) AND (\"diagnos*\"[Title/Abstract] OR \"test\"[Title/Abstract])",
+      "count": 761,
+      "fetched": false,
+      "new": 0,
+      "dup": 0
+    },
+    {
+      "no": 27,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"liquid biopsy\"[tiab])",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND \"liquid biopsy\"[Title/Abstract]",
+      "count": 19,
+      "fetched": true,
+      "new": 14,
+      "dup": 5
+    },
+    {
+      "no": 28,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"non-invasive\"[tiab] OR noninvasive[tiab]) AND (\"MicroRNAs\"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab])",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"non-invasive\"[Title/Abstract] OR \"noninvasive\"[Title/Abstract]) AND (\"MicroRNAs\"[MeSH Terms] OR \"microrna*\"[Title/Abstract] OR \"mirna*\"[Title/Abstract])",
+      "count": 107,
+      "fetched": false,
+      "new": 0,
+      "dup": 0
+    },
+    {
+      "no": 29,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"Saliva\"[MeSH Terms] OR saliva*[tiab]) AND 2000:2026[dp]",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"Saliva\"[MeSH Terms] OR \"saliva*\"[Title/Abstract]) AND 2000/01/01:2026/12/31[Date - Publication]",
+      "count": 55,
+      "fetched": false,
+      "new": 0,
+      "dup": 0
+    },
+    {
+      "no": 30,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"MicroRNAs\"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (serum[tiab] OR plasma[tiab] OR circulating[tiab]) AND (diagnos*[tiab] OR biomarker*[tiab]) AND 1990:2017[dp]",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"MicroRNAs\"[MeSH Terms] OR \"microrna*\"[Title/Abstract] OR \"mirna*\"[Title/Abstract]) AND (\"serum\"[Title/Abstract] OR \"plasma\"[Title/Abstract] OR \"circulating\"[Title/Abstract]) AND (\"diagnos*\"[Title/Abstract] OR \"biomarker*\"[Title/Abstract]) AND 1990/01/01:2017/12/31[Date - Publication]",
+      "count": 20,
+      "fetched": true,
+      "new": 7,
+      "dup": 13
+    },
+    {
+      "no": 31,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"MicroRNAs\"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (serum[tiab] OR plasma[tiab] OR circulating[tiab]) AND (diagnos*[tiab] OR biomarker*[tiab]) AND 2018:2020[dp]",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"MicroRNAs\"[MeSH Terms] OR \"microrna*\"[Title/Abstract] OR \"mirna*\"[Title/Abstract]) AND (\"serum\"[Title/Abstract] OR \"plasma\"[Title/Abstract] OR \"circulating\"[Title/Abstract]) AND (\"diagnos*\"[Title/Abstract] OR \"biomarker*\"[Title/Abstract]) AND 2018/01/01:2020/12/31[Date - Publication]",
+      "count": 26,
+      "fetched": true,
+      "new": 9,
+      "dup": 17
+    },
+    {
+      "no": 32,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"MicroRNAs\"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (serum[tiab] OR plasma[tiab] OR circulating[tiab]) AND (diagnos*[tiab] OR biomarker*[tiab]) AND 2021:2022[dp]",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"MicroRNAs\"[MeSH Terms] OR \"microrna*\"[Title/Abstract] OR \"mirna*\"[Title/Abstract]) AND (\"serum\"[Title/Abstract] OR \"plasma\"[Title/Abstract] OR \"circulating\"[Title/Abstract]) AND (\"diagnos*\"[Title/Abstract] OR \"biomarker*\"[Title/Abstract]) AND 2021/01/01:2022/12/31[Date - Publication]",
+      "count": 22,
+      "fetched": true,
+      "new": 9,
+      "dup": 13
+    },
+    {
+      "no": 33,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"MicroRNAs\"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (serum[tiab] OR plasma[tiab] OR circulating[tiab]) AND (diagnos*[tiab] OR biomarker*[tiab]) AND 2023:2024[dp]",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"MicroRNAs\"[MeSH Terms] OR \"microrna*\"[Title/Abstract] OR \"mirna*\"[Title/Abstract]) AND (\"serum\"[Title/Abstract] OR \"plasma\"[Title/Abstract] OR \"circulating\"[Title/Abstract]) AND (\"diagnos*\"[Title/Abstract] OR \"biomarker*\"[Title/Abstract]) AND 2023/01/01:2024/12/31[Date - Publication]",
+      "count": 21,
+      "fetched": true,
+      "new": 9,
+      "dup": 12
+    },
+    {
+      "no": 34,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"MicroRNAs\"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (serum[tiab] OR plasma[tiab] OR circulating[tiab]) AND (diagnos*[tiab] OR biomarker*[tiab]) AND 2025:2026[dp]",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"MicroRNAs\"[MeSH Terms] OR \"microrna*\"[Title/Abstract] OR \"mirna*\"[Title/Abstract]) AND (\"serum\"[Title/Abstract] OR \"plasma\"[Title/Abstract] OR \"circulating\"[Title/Abstract]) AND (\"diagnos*\"[Title/Abstract] OR \"biomarker*\"[Title/Abstract]) AND 2025/01/01:2026/12/31[Date - Publication]",
+      "count": 39,
+      "fetched": true,
+      "new": 9,
+      "dup": 30
+    },
+    {
+      "no": 35,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"MicroRNAs\"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (exosom*[tiab] OR \"extracellular vesicle*\"[tiab]) AND (serum[tiab] OR plasma[tiab] OR blood[tiab] OR circulating[tiab] OR urin*[tiab] OR fluid[tiab])",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"MicroRNAs\"[MeSH Terms] OR \"microrna*\"[Title/Abstract] OR \"mirna*\"[Title/Abstract]) AND (\"exosom*\"[Title/Abstract] OR \"extracellular vesicle*\"[Title/Abstract]) AND (\"serum\"[Title/Abstract] OR \"plasma\"[Title/Abstract] OR \"blood\"[Title/Abstract] OR \"circulating\"[Title/Abstract] OR \"urin*\"[Title/Abstract] OR \"fluid\"[Title/Abstract])",
+      "count": 40,
+      "fetched": true,
+      "new": 9,
+      "dup": 31
+    },
+    {
+      "no": 36,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"menstrual blood\"[tiab] OR \"menstrual effluent\"[tiab] OR \"menstrual fluid\"[tiab]) AND (RNA[tiab] OR miRNA*[tiab] OR microRNA*[tiab] OR transcriptom*[tiab] OR biomarker*[tiab] OR diagnos*[tiab] OR proteom*[tiab])",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"menstrual blood\"[Title/Abstract] OR \"menstrual effluent\"[Title/Abstract] OR \"menstrual fluid\"[Title/Abstract]) AND (\"RNA\"[Title/Abstract] OR \"mirna*\"[Title/Abstract] OR \"microrna*\"[Title/Abstract] OR \"transcriptom*\"[Title/Abstract] OR \"biomarker*\"[Title/Abstract] OR \"diagnos*\"[Title/Abstract] OR \"proteom*\"[Title/Abstract])",
+      "count": 105,
+      "fetched": false,
+      "new": 0,
+      "dup": 0
+    },
+    {
+      "no": 37,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"menstrual blood\"[tiab] OR \"menstrual effluent\"[tiab] OR \"menstrual fluid\"[tiab]) AND (\"single-cell\"[tiab] OR \"single cell\"[tiab] OR decidualization[tiab] OR \"non-invasive\"[tiab] OR noninvasive[tiab])",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"menstrual blood\"[Title/Abstract] OR \"menstrual effluent\"[Title/Abstract] OR \"menstrual fluid\"[Title/Abstract]) AND (\"single-cell\"[Title/Abstract] OR \"single-cell\"[Title/Abstract] OR \"decidualization\"[Title/Abstract] OR \"non-invasive\"[Title/Abstract] OR \"noninvasive\"[Title/Abstract])",
+      "count": 47,
+      "fetched": true,
+      "new": 24,
+      "dup": 23
+    },
+    {
+      "no": 38,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"vaginal fluid\"[tiab] OR \"vaginal secretion*\"[tiab] OR cervicovaginal[tiab] OR \"cervical mucus\"[tiab] OR \"vaginal swab*\"[tiab] OR \"cervical swab*\"[tiab]) AND (RNA[tiab] OR miRNA*[tiab] OR microRNA*[tiab] OR biomarker*[tiab] OR diagnos*[tiab] OR exosom*[tiab])",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"vaginal fluid\"[Title/Abstract] OR \"vaginal secretion*\"[Title/Abstract] OR \"cervicovaginal\"[Title/Abstract] OR \"cervical mucus\"[Title/Abstract] OR \"vaginal swab*\"[Title/Abstract] OR \"cervical swab*\"[Title/Abstract]) AND (\"RNA\"[Title/Abstract] OR \"mirna*\"[Title/Abstract] OR \"microrna*\"[Title/Abstract] OR \"biomarker*\"[Title/Abstract] OR \"diagnos*\"[Title/Abstract] OR \"exosom*\"[Title/Abstract])",
+      "count": 60,
+      "fetched": false,
+      "new": 0,
+      "dup": 0
+    },
+    {
+      "no": 39,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"non-invasive\"[tiab] OR noninvasive[tiab] OR \"liquid biopsy\"[tiab]) AND (\"MicroRNAs\"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND 1990:2021[dp]",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"non-invasive\"[Title/Abstract] OR \"noninvasive\"[Title/Abstract] OR \"liquid biopsy\"[Title/Abstract]) AND (\"MicroRNAs\"[MeSH Terms] OR \"microrna*\"[Title/Abstract] OR \"mirna*\"[Title/Abstract]) AND 1990/01/01:2021/12/31[Date - Publication]",
+      "count": 47,
+      "fetched": true,
+      "new": 11,
+      "dup": 36
+    },
+    {
+      "no": 40,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"non-invasive\"[tiab] OR noninvasive[tiab] OR \"liquid biopsy\"[tiab]) AND (\"MicroRNAs\"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND 2022:2026[dp]",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"non-invasive\"[Title/Abstract] OR \"noninvasive\"[Title/Abstract] OR \"liquid biopsy\"[Title/Abstract]) AND (\"MicroRNAs\"[MeSH Terms] OR \"microrna*\"[Title/Abstract] OR \"mirna*\"[Title/Abstract]) AND 2022/01/01:2026/12/31[Date - Publication]",
+      "count": 63,
+      "fetched": false,
+      "new": 0,
+      "dup": 0
+    },
+    {
+      "no": 41,
+      "query": "(\"endometriosis\"[MeSH Terms] OR endometriosis[tiab]) AND (\"MicroRNAs\"[MeSH Terms] OR microRNA*[tiab] OR miRNA*[tiab]) AND (diagnos*[tiab] OR biomarker*[tiab]) AND (\"clinical trial\"[pt] OR prospective[tiab] OR multicent*[tiab] OR \"independent cohort\"[tiab])",
+      "translation": "(\"endometriosis\"[MeSH Terms] OR \"endometriosis\"[Title/Abstract]) AND (\"MicroRNAs\"[MeSH Terms] OR \"microrna*\"[Title/Abstract] OR \"mirna*\"[Title/Abstract]) AND (\"diagnos*\"[Title/Abstract] OR \"biomarker*\"[Title/Abstract]) AND (\"clinical trial\"[Publication Type] OR \"prospective\"[Title/Abstract] OR \"multicent*\"[Title/Abstract] OR \"independent cohort\"[Title/Abstract])",
+      "count": 34,
+      "fetched": true,
+      "new": 7,
+      "dup": 27
+    }
+  ]
+}
