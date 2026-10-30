@@ -23,6 +23,22 @@ if [ ! -d "$GIT_DIR_PATH" ]; then
   echo "git リポジトリ作成: $GIT_DIR_PATH"
 fi
 
+# GitHub に既存の履歴があれば引き継ぐ（Vault のファイルには触らない）
+if g fetch -q origin "$GIT_BRANCH" 2>/dev/null && ! g rev-parse -q --verify HEAD >/dev/null; then
+  g update-ref "refs/heads/$GIT_BRANCH" "origin/$GIT_BRANCH"
+  g reset -q
+  g branch -q --set-upstream-to="origin/$GIT_BRANCH" "$GIT_BRANCH"
+  echo "GitHub の既存履歴を引き継ぎました"
+  if [ "${SKIP_CONFIRM:-0}" != 1 ]; then
+    echo "=== Obsidian と GitHub の差分（A=Obsidianにだけある / D=GitHubにだけある→削除される / M=Obsidianの内容で上書き）==="
+    g add -A
+    g -c core.quotepath=false diff --cached --name-status HEAD
+    g reset -q
+    read -r -p "Obsidian の内容で GitHub を更新します。よろしいですか？ [y/N] " ans
+    [ "$ans" = y ] || { echo "中止しました"; exit 1; }
+  fi
+fi
+
 # .gitignore（Vault 直下。Obsidian の端末ごとの状態ファイルを除外）
 if [ ! -f "$VAULT/.gitignore" ]; then
   cp "$HERE/vault.gitignore" "$VAULT/.gitignore"
@@ -30,7 +46,8 @@ if [ ! -f "$VAULT/.gitignore" ]; then
 fi
 
 g add -A
-g diff --cached --quiet || g commit -q -m "initial vault import"
+g ls-files -ci --exclude-standard -z | xargs -0 -r git --git-dir="$GIT_DIR_PATH" --work-tree="$VAULT" rm -q --cached --
+g diff --cached --quiet || g commit -q -m "Sync with Obsidian vault (Obsidian is source of truth)"
 g push -u origin "$GIT_BRANCH"
 
 # スクリプトと launchd 登録
