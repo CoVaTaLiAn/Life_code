@@ -10,8 +10,11 @@ Date = dt.date
 
 
 def parse(s: str) -> Date:
-    """'2026-11-01' や '2026/11/1' を日付にする。"""
-    s = s.strip().replace("/", "-")
+    """'2026-11-01'、'2026/11/1'、'2026年11月1日'、'20261101' を日付にする。"""
+    s = (s.strip().split() or [""])[0]  # "2026/11/05 10:30" のような時刻つきは日付だけ使う
+    s = s.replace("/", "-").replace(".", "-").replace("年", "-").replace("月", "-").replace("日", "")
+    if len(s) == 8 and s.isdigit():
+        s = f"{s[:4]}-{s[4:6]}-{s[6:]}"
     y, m, d = (int(x) for x in s.split("-"))
     return dt.date(y, m, d)
 

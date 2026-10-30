@@ -28,6 +28,13 @@ class ExpenseTest(unittest.TestCase):
         added, skipped = expense.import_csv(self.s, p, "日付", "店", "金額", encoding="cp932")
         self.assertEqual((len(added), skipped), (0, 2))
 
+    def test_import_skips_preamble_rows(self):
+        p = self.s.root / "inbox" / "bank.csv"
+        p.write_text("口座番号,1234567\n期間,2026年11月\n取引日,摘要,出金,入金\n"
+                     "2026年11月5日,ｶ)ｻﾝﾌﾟﾙ,5500,\n2026年11月6日,振込入金,,100000\n", encoding="cp932")
+        added, _ = expense.import_csv(self.s, p, "取引日", "摘要", "出金", encoding="cp932", skip_rows=2)
+        self.assertEqual([(r["日付"], r["税込金額"]) for r in added], [("2026-11-05", "5500")])
+
     def test_import_reports_missing_columns(self):
         p = self.s.root / "inbox" / "bad.csv"
         p.write_text("a,b\n1,2\n", encoding="utf-8")

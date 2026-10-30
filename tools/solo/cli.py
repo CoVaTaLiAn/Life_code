@@ -83,7 +83,7 @@ def cmd_expense_add(a, s: Store):
 
 def cmd_expense_import(a, s: Store):
     added, skipped = expense.import_csv(s, Path(a.file), a.date_col, a.payee_col, a.amount_col, a.method or "",
-                                        a.encoding, a.desc_col, a.dry_run)
+                                        a.encoding, a.desc_col, a.dry_run, a.skip_rows)
     for r in added:
         print(f"{r['日付']}  {r['支払先']}  {fmt(yen(r['税込金額']))}円  → {r['勘定科目']}")
     unknown = sum(1 for r in added if r["勘定科目"] == expense.UNKNOWN)
@@ -233,6 +233,7 @@ def parser() -> argparse.ArgumentParser:
     x.add_argument("--desc-col", help="内容の列名")
     x.add_argument("--method", help="支払方法として記録する名前")
     x.add_argument("--encoding", default="utf-8-sig", help="文字コード（銀行のCSVは cp932 が多い）")
+    x.add_argument("--skip-rows", type=int, default=0, help="列名の行より前にある説明行の数")
     x.add_argument("--dry-run", action="store_true")
     x.set_defaults(fn=cmd_expense_import)
 

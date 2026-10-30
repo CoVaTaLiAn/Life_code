@@ -59,12 +59,14 @@ def _key(r: dict) -> tuple:
 
 def import_csv(store: Store, path: Path, date_col: str, payee_col: str, amount_col: str,
                method: str = "", encoding: str = "utf-8-sig", desc_col: str | None = None,
-               dry_run: bool = False) -> tuple[list[dict], int]:
+               dry_run: bool = False, skip_rows: int = 0) -> tuple[list[dict], int]:
     """カード・銀行の明細CSVを取り込む。同じ日付・支払先・金額の行はとばす。
 
     戻り値：(追加した行, 重複でとばした件数)
     """
     with path.open(encoding=encoding, newline="") as f:
+        for _ in range(skip_rows):  # 口座番号などの説明行が先頭にあるCSV向け
+            f.readline()
         src = list(csv.DictReader(f))
     if src and any(c not in src[0] for c in (date_col, payee_col, amount_col)):
         raise KeyError(f"列名が見つかりません。CSVの列：{list(src[0].keys())}")

@@ -36,6 +36,9 @@ class HolidayTest(unittest.TestCase):
 
     def test_parse_formats(self):
         self.assertEqual(dates.parse("2026/1/5"), D(2026, 1, 5))
+        self.assertEqual(dates.parse("2026年1月5日"), D(2026, 1, 5))
+        self.assertEqual(dates.parse("20260105"), D(2026, 1, 5))
+        self.assertEqual(dates.parse("2026.01.05"), D(2026, 1, 5))
         with self.assertRaises(ValueError):
             dates.parse("")
 
