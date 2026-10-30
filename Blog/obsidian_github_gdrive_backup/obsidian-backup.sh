@@ -46,6 +46,19 @@ fi
 
 status=0
 
+# --diff: GitHub（LifeLog）との差分を表示するだけで何も変更しない
+if [ "${1:-}" = "--diff" ]; then
+  g() { git --git-dir="$GIT_DIR_PATH" --work-tree="$VAULT" "$@"; }
+  g fetch -q origin "$GIT_BRANCH"
+  tmpidx=$(mktemp); trap 'rm -f "$tmpidx"; rmdir "$LOCK"' EXIT
+  export GIT_INDEX_FILE="$tmpidx"
+  g read-tree "origin/$GIT_BRANCH"
+  g add -A
+  echo "=== Obsidian と GitHub(origin/$GIT_BRANCH) の差分（A=Obsidianにだけある / D=GitHubにだけある / M=内容が違う）==="
+  g -c core.quotepath=false diff --cached --name-status "origin/$GIT_BRANCH"
+  exit 0
+fi
+
 # ---------- 1) GitHub ----------
 if [ "$ENABLE_GITHUB" = 1 ]; then
   # .git を iCloud 内に置くと同期で壊れやすいので、Vault の外に置く
@@ -55,12 +68,19 @@ if [ "$ENABLE_GITHUB" = 1 ]; then
     status=1
   else
     g add -A
+    # .gitignore 対象なのに追跡されているファイル（.DS_Store 等）を GitHub から外す
+    g ls-files -ci --exclude-standard -z | xargs -0 -r git --git-dir="$GIT_DIR_PATH" --work-tree="$VAULT" rm -q --cached --
     if g diff --cached --quiet; then
       log "GitHub: 変更なし"
     else
       changed=$(g diff --cached --name-only | wc -l | tr -d ' ')
       g commit -q -m "vault backup: $(date '+%Y-%m-%d %H:%M') (${changed} files)"
       log "GitHub: commit (${changed} files)"
+    fi
+    if ! g push -q origin "$GIT_BRANCH" 2>/dev/null; then
+      # 他所で GitHub が更新されていた場合: 履歴は残しつつ内容は Obsidian を正とする
+      g fetch -q origin "$GIT_BRANCH" &&
+        g merge -q -s ours --no-edit -m "merge origin (keep Obsidian content)" "origin/$GIT_BRANCH" || true
     fi
     if g push -q origin "$GIT_BRANCH" 2>&1; then
       log "GitHub: push 完了"
