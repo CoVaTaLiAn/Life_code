@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Unit tests
+        run: python -m unittest discover -s tests -v
+      - name: Check demo ledgers
+        run: ./solo --root examples/demo check
+      - name: Check company ledgers
+        run: ./solo check
+      - name: Smoke test commands
+        run: |
+          ./solo --root examples/demo --today 2026-10-30 report weekly > /dev/null
+          ./solo --root examples/demo --today 2026-10-30 report monthly 2026-09 > /dev/null
+          ./solo --root examples/demo --today 2026-10-30 cashflow > /dev/null
+          ./solo --root examples/demo --today 2026-10-30 deadlines > /dev/null
+          ./solo --root examples/demo breakeven --price 300000 > /dev/null
+          ./solo --root examples/demo --today 2026-10-30 dashboard --out /tmp/dashboard.html
