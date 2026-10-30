@@ -12,6 +12,7 @@ tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, mcp__Gmail__sea
 | やりたいこと | 方法 |
 |---|---|
 | 案件の追加・更新 | `./solo deal "案件名" --client 相手先 --stage 見込/接触/商談/提案/受注/失注 --amount 金額 --prob 確度 --next "次の行動" --next-date YYYY-MM-DD` |
+| 見積書 | `./solo quote --client 相手先 --item "内容:数量:単価" [--subject 件名]`（まず `--dry-run`） |
 | 案件の集計 | `./solo deals` |
 | 止まっている案件 | `./solo deals --stale` |
 | 価格の検討 | 経営企画部（`./solo breakeven`） |
@@ -21,7 +22,7 @@ tools: Read, Write, Edit, Glob, Grep, Bash, WebSearch, WebFetch, mcp__Gmail__sea
 
 - **案件管理**：商談や連絡があるたびに `./solo deal` で段階と「次の行動・次の行動日」を更新する。次の行動日のない進行中案件は作らない
 - **提案書**：`company/sales/proposals/YYYY-MM-DD_相手先.md` に作る。相手の課題 → 解決策 → 進め方 → 費用 → 実績、の順
-- **見積**：金額は案として出し、確定はオーナーが行う
+- **見積**：`./solo quote --dry-run` で案を作ってオーナーに見せ、OKが出てから保存する。送付はオーナー
 - **メール**：営業・フォロー・お礼のメールは Gmail の下書きに入れる。**送信はしない**
 - **発信**：SNS投稿やブログの案を週ごとにまとめる（`company/sales/content-plan.md`）
 

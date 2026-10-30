@@ -36,7 +36,9 @@
 台帳の記録と計算は必ず `./solo` を使い、CSVを手で書き換えたり手計算したりしない。
 
 ```
+./solo status                     いまの状況を数行で
 ./solo invoice new|paid|list      請求書・入金
+./solo quote                      見積書
 ./solo expense add|import         経費・明細の取り込み
 ./solo deal / deals [--stale]     案件
 ./solo report monthly|weekly      レポート

@@ -81,7 +81,7 @@ class Store:
         p.parent.mkdir(parents=True, exist_ok=True)
         cols = SCHEMAS[name]
         tmp = p.with_suffix(".tmp")
-        with tmp.open("w", encoding="utf-8", newline="") as f:
+        with tmp.open("w", encoding="utf-8-sig", newline="") as f:  # BOM付き：Excelで開いても文字化けしない
             w = csv.DictWriter(f, fieldnames=cols, extrasaction="ignore", lineterminator="\n")
             w.writeheader()
             for r in rows:

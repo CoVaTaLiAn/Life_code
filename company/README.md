@@ -7,7 +7,7 @@
 | `policies.md` | AIが自分でやってよいこと / オーナーの確認が必要なこと |
 | `config/account_rules.csv` | 経費の勘定科目を自動で決めるキーワード |
 | `finance/` | 売上台帳 `sales.csv`、経費台帳 `expenses.csv`、固定費 `recurring.csv`、請求書 `invoices/` |
-| `sales/` | 案件 `pipeline.csv`、提案書 `proposals/` |
+| `sales/` | 案件 `pipeline.csv`、見積書 `quotes/`、提案書 `proposals/` |
 | `strategy/` | KPI `kpi.csv`、事業計画 |
 | `admin/` | 期限 `deadlines-calendar.md`、契約 `contracts.csv`、契約チェックリスト、アカウント管理表 |
 | `projects/` | 案件ごとの作業計画・制作物 |

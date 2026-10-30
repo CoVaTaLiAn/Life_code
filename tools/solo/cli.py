@@ -31,6 +31,33 @@ def cmd_invoice_new(a, s: Store):
     print(("（試し：保存していません）" if a.dry_run else "保存しました：") + " / ".join(str(p) for p in paths))
 
 
+def cmd_quote(a, s: Store):
+    q = invoice.build_quote(s, a.client, a.item, dates.parse(a.date) if a.date else _today(a), a.subject,
+                            a.valid_days)
+    paths = invoice.save_quote(s, q, dry_run=a.dry_run)
+    print(invoice.to_markdown(s, q))
+    print(("（試し：保存していません）" if a.dry_run else "保存しました：") + " / ".join(str(p) for p in paths))
+
+
+def cmd_status(a, s: Store):
+    """スマホで読める一言サマリー。"""
+    t = _today(a)
+    cur = report.pl(s, t.replace(day=1), t)
+    ar = invoice.receivables(s, t)
+    over = [r for r in ar if r["超過日数"] > 0]
+    stale = pipeline.overdue(s, t)
+    soon = deadlines.generate(s, t, t + dt.timedelta(days=14))
+    cf = cashflow.forecast(s, 3, t)
+    fixed = cashflow.monthly_fixed(s)
+    print(f"{t:%m/%d} 今月 売上{fmt(cur['売上'])} / 利益{fmt(cur['利益'])}")
+    print(f"未入金 {len(ar)}件 {fmt(sum(yen(r['税込金額']) for r in ar))}円" + (f"（⚠期限超過 {len(over)}件）" if over else ""))
+    print(f"3か月後の手元資金 {fmt(cf[-1].end_balance)}円" + (f"（固定費{cf[-1].end_balance / fixed:.1f}か月分）" if fixed else ""))
+    if stale:
+        print(f"止まっている案件 {len(stale)}件：" + "、".join(r["案件名"] for r in stale[:3]))
+    if soon:
+        print(f"次の期限 {soon[0].date:%m/%d} {soon[0].title}")
+
+
 def cmd_invoice_paid(a, s: Store):
     r = invoice.mark_paid(s, a.number, dates.parse(a.date) if a.date else _today(a),
                           yen(a.amount) if a.amount else None)
@@ -68,7 +95,7 @@ def cmd_deal(a, s: Store):
               "受注確度(%)": a.prob, "次の行動": a.next, "次の行動日": a.next_date, "備考": a.note}
     if a.stage and a.stage not in pipeline.STAGES:
         sys.exit(f"段階は {pipeline.STAGES} のどれかです")
-    r = pipeline.upsert(s, a.name, **fields)
+    r = pipeline.upsert(s, a.name, today=_today(a), **fields)
     print(f"保存しました：{r['案件名']}（{r.get('相手先', '')}）段階:{r['段階']} 次:{r.get('次の行動', '')} {r.get('次の行動日', '')}")
 
 
@@ -174,6 +201,18 @@ def parser() -> argparse.ArgumentParser:
     x = inv.add_parser("list", help="請求の一覧")
     x.add_argument("--unpaid", action="store_true", help="未入金だけ")
     x.set_defaults(fn=cmd_invoice_list)
+
+    x = sub.add_parser("quote", help="見積書を作る（sales/quotes/ に保存。台帳には入れない）")
+    x.add_argument("--client", required=True)
+    x.add_argument("--item", action="append", default=[], required=True, help="'内容:数量:単価[:税率]'")
+    x.add_argument("--subject", default="")
+    x.add_argument("--date", help="発行日（既定：今日）")
+    x.add_argument("--valid-days", type=int, default=30, help="有効期限（日数）")
+    x.add_argument("--dry-run", action="store_true")
+    x.set_defaults(fn=cmd_quote)
+
+    x = sub.add_parser("status", help="いまの状況を数行で")
+    x.set_defaults(fn=cmd_status)
 
     ex = sub.add_parser("expense", help="経費").add_subparsers(dest="sub", required=True)
     x = ex.add_parser("add", help="経費を1件記帳する（勘定科目は自動判定）")

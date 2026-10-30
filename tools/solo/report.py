@@ -96,11 +96,9 @@ def update_kpi(store: Store, year: int, month: int, today: dt.date | None = None
               and r.get("段階") in ("商談", "提案"))
     won = sum(1 for r in deals if r.get("段階") == "受注" and r.get("最終更新")
               and start <= dates.parse(r["最終更新"]) <= end)
-    bal = cashflow.forecast(store, 1, today or end)
-    match = [m for m in bal if m.ym == f"{year:04d}-{month:02d}"]
     row = {"月": f"{year:04d}-{month:02d}", "売上": str(p["売上"]), "経費": str(p["経費"]),
            "利益": str(p["利益"]), "新規商談数": str(new), "受注数": str(won),
-           "手元資金": str(match[0].end_balance) if match else "", "備考": "自動集計"}
+           "手元資金": str(cashflow.balance_at(store, end)), "備考": "自動集計（手元資金は実績ベース）"}
     rows = [r for r in store.read("kpi") if r["月"] != row["月"]] + [row]
     rows.sort(key=lambda r: r["月"])
     store.write("kpi", rows)

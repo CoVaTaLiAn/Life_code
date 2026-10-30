@@ -58,6 +58,19 @@ def monthly_fixed(store: Store) -> int:
     return total
 
 
+def balance_at(store: Store, day: dt.date) -> int:
+    """基準日の残高に、基準日の翌日〜day の実績（入金済みの売上、記帳した経費）を足し引きした残高。"""
+    as_of = dates.parse(store.cfg("cash.as_of", day.isoformat()))
+    bal = yen(store.cfg("cash.balance", 0))
+    for r in store.read("sales"):
+        if r.get("入金日") and as_of < dates.parse(r["入金日"]) <= day:
+            bal += yen(r["税込金額"])
+    for r in store.read("expenses"):
+        if as_of < dates.parse(r["日付"]) <= day:
+            bal -= yen(r["税込金額"])
+    return bal
+
+
 def forecast(store: Store, months: int = 3, today: dt.date | None = None) -> list[Month]:
     today = today or dt.date.today()
     as_of = dates.parse(store.cfg("cash.as_of", today.isoformat()))

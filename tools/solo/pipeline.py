@@ -37,18 +37,19 @@ def overdue(store: Store, today: dt.date | None = None) -> list[dict]:
     return sorted(out, key=lambda r: r.get("次の行動日") or "")
 
 
-def upsert(store: Store, name: str, **fields) -> dict:
+def upsert(store: Store, name: str, today: dt.date | None = None, **fields) -> dict:
+    today = today or dt.date.today()
+    if fields.get("段階") is not None and fields["段階"] not in STAGES:
+        raise ValueError(f"段階は {STAGES} のどれかです")
     rows = store.read("pipeline")
     for r in rows:
         if r["案件名"] == name:
             r.update({k: str(v) for k, v in fields.items() if v is not None})
-            r["最終更新"] = dt.date.today().isoformat()
+            r["最終更新"] = today.isoformat()
             store.write("pipeline", rows)
             return r
     st = fields.get("段階") or "見込"
-    if st not in STAGES:
-        raise ValueError(f"段階は {STAGES} のどれかです")
-    r = {"案件名": name, "段階": st, "最終更新": dt.date.today().isoformat()}
+    r = {"案件名": name, "段階": st, "最終更新": today.isoformat()}
     r.update({k: str(v) for k, v in fields.items() if v is not None})
     rows.append(r)
     store.write("pipeline", rows)

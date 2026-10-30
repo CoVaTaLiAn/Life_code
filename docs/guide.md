@@ -36,6 +36,22 @@
 - 支払期限は `config.toml` の `due_rule`（翌月末 / N日後）
 - `company/finance/invoices/` に `.md` と `.html` ができる。HTML をブラウザで開いて「印刷 → PDFに保存」で PDF になる
 
+## 見積書
+
+```bash
+./solo quote --client "デルタ工業" --subject "社内研修" --item "研修講師（半日）:2:120000" --valid-days 30
+```
+
+`company/sales/quotes/` に `Q-年月-連番` の `.md` と `.html` ができる（台帳には入らない）。受注したら同じ `--item` で請求書を作る。
+
+## いまの状況を数行で
+
+```bash
+./solo status
+```
+
+今月の売上・利益、未入金、3か月後の手元資金、止まっている案件、次の期限を数行で出す。
+
 ## 経費
 
 ```bash
