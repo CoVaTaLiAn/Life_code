@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>マッスルモンスター - 筋トレ記録</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #07070b;
@@ -36,11 +39,12 @@
     padding: 18px 16px 6px;
     display: flex; justify-content: space-between; align-items: baseline;
   }
+  .pixel { font-family: "DotGothic16", monospace; font-weight: 400; }
   .logo {
-    font-weight: 800; font-size: 17px; letter-spacing: .18em;
+    font-family: "DotGothic16", monospace; font-weight: 400; font-size: 19px; letter-spacing: .14em;
     color: var(--cyan); text-shadow: 0 0 8px rgba(0, 240, 255, .7), 0 0 22px rgba(0, 240, 255, .35);
   }
-  .logo b { color: var(--pink); text-shadow: 0 0 8px rgba(255, 43, 214, .7), 0 0 22px rgba(255, 43, 214, .35); font-weight: 800; }
+  .logo b { color: var(--pink); text-shadow: 0 0 8px rgba(255, 43, 214, .7), 0 0 22px rgba(255, 43, 214, .35); font-weight: 400; }
   header small { color: var(--sub); font-size: 12px; letter-spacing: .08em; font-variant-numeric: tabular-nums; }
   main { max-width: 560px; margin: 0 auto; padding: 0 12px; }
   .card {
@@ -66,7 +70,7 @@
   .char-picker .chip { padding: 4px 12px; font-size: 12px; }
   .pet-name { font-size: 20px; font-weight: 700; margin: 4px 0 0; letter-spacing: .04em; }
   .pet-stage { color: var(--cyan); font-size: 12px; letter-spacing: .1em; margin-top: 2px; }
-  #petSvg { width: 260px; height: 205px; overflow: visible; position: relative; }
+  #petCanvas { width: 256px; height: 236px; position: relative; image-rendering: pixelated; image-rendering: crisp-edges; display: block; margin: 0 auto; }
   .bubble {
     display: inline-block; margin-top: 10px;
     border: 1px solid rgba(255, 43, 214, .55); color: #ffd6f6;
@@ -88,7 +92,7 @@
   }
   .row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin: 6px 0; }
   .row > span:first-child { color: var(--sub); }
-  .lv { font-size: 28px; font-weight: 800; letter-spacing: .02em; color: #fff; }
+  .lv { font-family: "DotGothic16", monospace; font-size: 30px; font-weight: 400; letter-spacing: .02em; color: #fff; }
   .lv small { font-size: 12px; color: var(--sub); font-weight: 600; letter-spacing: .2em; margin-right: 6px; }
   .num { font-variant-numeric: tabular-nums; }
   .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
@@ -245,10 +249,10 @@
   <section id="tab-home">
     <div class="card pet-wrap">
       <div class="chips char-picker" id="charPicker"></div>
-      <div id="petBox"><svg id="petSvg" viewBox="-30 -5 260 205"></svg></div>
-      <div class="pet-name"><span id="petName"></span> <button class="mini" id="renameBtn">名前変更</button></div>
-      <div class="pet-stage" id="petStage"></div>
-      <div class="bubble" id="petTalk"></div>
+      <div id="petBox"><canvas id="petCanvas" width="64" height="59"></canvas></div>
+      <div class="pet-name"><span id="petName" class="pixel"></span> <button class="mini" id="renameBtn">名前変更</button></div>
+      <div class="pet-stage pixel" id="petStage"></div>
+      <div class="bubble pixel" id="petTalk"></div>
     </div>
 
     <div class="card">
@@ -436,12 +440,6 @@ const CHARS = {
     egg: ['トレーニングを記録して、たまごを育てよう！', '…ぷくぷく', 'たまごの中でうごいた！', 'もうすぐ生まれそう！'],
     talk: { great: ['エラがぴくぴくしてる！', '水分補給もわすれずに！'], ok: ['水の中でまってるね'], sad: ['エラがしおれちゃう…'] },
   },
-  ghost: {
-    label: 'おばけ', defName: 'おばけちゃん',
-    stages: ['ひとだま', 'ちびおばけ', 'わんぱくおばけ', 'マッチョおばけ', 'ゴリマッチョおばけ', 'レジェンドおばけ'],
-    egg: ['トレーニングを記録して、ひとだまを育てよう！', '…ゆらゆら', 'ひとだまが大きくなってきた！', 'もうすぐ姿をあらわしそう！'],
-    talk: { great: ['うらめしや…じゃなくて、うらやましいその筋肉！', 'すけすけボディが引きしまってきた！'], ok: ['ふわふわ待ってるね'], sad: ['さみしくて消えちゃいそう…'], tired: ['すーっ…（消えかけ）'] },
-  },
 };
 const charOf = () => CHARS[data.char] ? data.char : 'wolf';
 const petName = () => data.names[charOf()] || CHARS[charOf()].defName;
@@ -456,7 +454,7 @@ function load() {
       // 旧形式からの移行
       if (!d.names) d.names = {};
       delete d.petName;
-      if (!CHARS[d.char]) d.char = 'wolf'; // パンダは廃止したのでウルフに
+      if (!CHARS[d.char]) d.char = 'wolf'; // 廃止したキャラ（パンダ・おばけ）はウルフに
       return d;
     }
   } catch (e) {}
@@ -604,12 +602,6 @@ const PET_DEFS = `
       <feGaussianBlur in="rim" stdDeviation="3" result="glow"/>
       <feMerge><feMergeNode in="glow"/><feMergeNode in="rim"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
-    <!-- 手描き風に線をゆらす -->
-    <filter id="sketch" x="-10%" y="-10%" width="120%" height="120%">
-      <feTurbulence type="fractalNoise" baseFrequency=".035" numOctaves="2" seed="7" result="n"/>
-      <feDisplacementMap in="SourceGraphic" in2="n" scale="2.6" xChannelSelector="R" yChannelSelector="G"/>
-    </filter>
-    <filter id="ghostGlow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="7"/></filter>
     <radialGradient id="wolfFur" cx="36%" cy="28%" r="80%">
       <stop offset="0%" stop-color="#dfe4ee"/><stop offset="45%" stop-color="#9aa3b8"/><stop offset="100%" stop-color="#454c60"/>
     </radialGradient>
@@ -645,9 +637,6 @@ const PET_DEFS = `
     <radialGradient id="muscleP" cx="45%" cy="35%" r="70%">
       <stop offset="0%" stop-color="#ffffff" stop-opacity=".85"/><stop offset="70%" stop-color="#ffd3e0" stop-opacity=".45"/><stop offset="100%" stop-color="#e07a9a" stop-opacity=".7"/>
     </radialGradient>
-    <radialGradient id="flame" cx="50%" cy="65%" r="60%">
-      <stop offset="0%" stop-color="#ffffff"/><stop offset="45%" stop-color="#b8fbff"/><stop offset="100%" stop-color="${NEON}" stop-opacity=".55"/>
-    </radialGradient>
     <radialGradient id="egg" cx="38%" cy="30%" r="80%">
       <stop offset="0%" stop-color="#ffffff"/><stop offset="60%" stop-color="#e6e6ee"/><stop offset="100%" stop-color="#9c9cae"/>
     </radialGradient>
@@ -661,7 +650,6 @@ function eye(cx, cy, r, grad = 'eyeG') {
 }
 
 function drawPet(st, mood) {
-  const svg = document.getElementById('petSvg');
   const s = st.stat;
   // 部位ごとのXPから見た目を決める（0〜1）
   const g = v => Math.min(1, Math.sqrt(v / 1500));
@@ -681,10 +669,53 @@ function drawPet(st, mood) {
     A: 6 + k * 0.6 + arm * 6,                    // 腕の太さ
     L: 9 + k * 0.6 + leg * 5,                    // 脚の太さ
   };
-  const draw = { wolf: drawWolf, franken: drawFranken, axolotl: drawAxolotl, ghost: drawGhost }[charOf()];
-  svg.innerHTML = PET_DEFS + draw(st, mood, P);
+  const draw = { wolf: drawWolf, franken: drawFranken, axolotl: drawAxolotl }[charOf()];
+  pixelate(PET_DEFS + draw(st, mood, P));
   const box = document.getElementById('petBox');
   box.className = mood.face === 'sad' || mood.face === 'tired' ? 'sad' : 'bob';
+}
+
+// ---- ドット絵化 ----
+// ベクターで描いたキャラを 64×59 ドットに縮小して描き、色数を減らしてから4倍に拡大表示する
+const PX_W = 64, PX_H = 59, VIEW = '-4 8 208 192';
+let pixelJob = 0;
+function pixelate(inner) {
+  const job = ++pixelJob;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${PX_W}" height="${PX_H}" viewBox="${VIEW}">${inner}</svg>`;
+  const img = new Image();
+  img.onload = () => {
+    if (job !== pixelJob) return; // もっと新しい描画が始まっていたら捨てる
+    const cv = document.getElementById('petCanvas');
+    const ctx = cv.getContext('2d', { willReadFrequently: true });
+    ctx.clearRect(0, 0, PX_W, PX_H);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(img, 0, 0, PX_W, PX_H);
+    let im;
+    try { im = ctx.getImageData(0, 0, PX_W, PX_H); } catch (e) { return; } // 読めない環境では縮小表示のみ
+    const d = im.data;
+    const q = v => Math.min(255, Math.round(v / 36) * 36);   // 1チャンネル8段階に減色
+    for (let y = 0; y < PX_H; y++) for (let x = 0; x < PX_W; x++) {
+      const i = (y * PX_W + x) * 4, a = d[i + 3] / 255;
+      if (a === 0) continue;
+      // 半透明（光やオーラ）は消して、輪郭をくっきりさせる
+      if (a < 0.55) { d[i + 3] = 0; continue; }
+      const k = 1 / a;
+      d[i] = q(d[i] * k); d[i + 1] = q(d[i + 1] * k); d[i + 2] = q(d[i + 2] * k); d[i + 3] = 255;
+    }
+    // 外周に1ドットの黒いふち
+    const out = new Uint8ClampedArray(d);
+    for (let y = 0; y < PX_H; y++) for (let x = 0; x < PX_W; x++) {
+      const i = (y * PX_W + x) * 4;
+      if (d[i + 3]) continue;
+      const n = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => {
+        const xx = x + dx, yy = y + dy;
+        return xx >= 0 && yy >= 0 && xx < PX_W && yy < PX_H && d[(yy * PX_W + xx) * 4 + 3];
+      });
+      if (n) { out[i] = 6; out[i + 1] = 6; out[i + 2] = 12; out[i + 3] = 255; }
+    }
+    ctx.putImageData(new ImageData(out, PX_W, PX_H), 0, 0);
+  };
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
 }
 
 // ---- 共通パーツ ----
@@ -1036,99 +1067,6 @@ function drawAxolotl(st, mood, P) {
     </g>`;
 }
 
-// ===== おばけ：手描き風のゆるい線画 =====
-function drawGhost(st, mood, P) {
-  const { k, upper, arm, core, stamina, scale } = P;
-  const ink = '#2b2b33', paper = '#fbfbff';
-  // 元気がないと、うすく消えかける
-  const fade = mood.face === 'tired' ? 0.55 : mood.face === 'sad' ? 0.78 : 1;
-
-  if (k === 0) {
-    // ひとだま：成長するほど大きく
-    const fs = 0.75 + Math.min(eggProgress(st), 2) * 0.15;
-    return `
-      <ellipse cx="100" cy="183" rx="50" ry="8" fill="url(#floor)"/>
-      <g transform="translate(100 150) scale(${fs}) translate(-100 -150)">
-        <path d="M100 62 C112 88 132 104 128 132 C125 154 110 164 100 164 C88 164 72 154 72 134 C72 112 92 104 100 62 Z" fill="url(#flame)" filter="url(#ghostGlow)" opacity=".8"/>
-        <path d="M100 62 C112 88 132 104 128 132 C125 154 110 164 100 164 C88 164 72 154 72 134 C72 112 92 104 100 62 Z" fill="url(#flame)"/>
-        <g filter="url(#sketch)">
-          <path d="M100 62 C112 88 132 104 128 132 C125 154 110 164 100 164 C88 164 72 154 72 134 C72 112 92 104 100 62 Z" fill="none" stroke="${ink}" stroke-width="2" opacity=".55"/>
-          <path d="M88 138 q4 3 8 0 M104 138 q4 3 8 0" stroke="${ink}" stroke-width="2" fill="none" stroke-linecap="round"/>
-        </g>
-      </g>`;
-  }
-
-  const bw = 30 + k * 1.5 + upper * 10;          // からだの幅
-  const A = 4.5 + k * 0.5 + arm * 5;             // 腕の太さ
-  const top = 50, base = 156;
-  let bottom = '';
-  const n = 4, w = (bw * 2) / n;
-  for (let i = 0; i < n; i++) {
-    const x0 = 100 + bw - i * w;
-    bottom += ` Q${x0 - w / 2} ${base + 16 + (i % 2) * 3} ${x0 - w} ${base}`;
-  }
-  const body = `M${100 - bw} 112 C${100 - bw} 74 ${100 - bw * 0.62} ${top} 100 ${top} C${100 + bw * 0.62} ${top} ${100 + bw} 74 ${100 + bw} 112 L${100 + bw} ${base}${bottom} Z`;
-
-  // 腕：線で縁取ったチューブ＋力こぶ
-  const armPath = d => `M${100 + d * (bw - 6)} 126 L${100 + d * (bw + 17)} 128 L${100 + d * (bw + 16)} 104`;
-  const arms = [-1, 1].map(d => `
-    <path d="${armPath(d)}" stroke="${ink}" stroke-width="${A * 2 + 3.6}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="${armPath(d)}" stroke="${paper}" stroke-width="${A * 2}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-    ${arm > 0.15 ? `<path d="M${100 + d * (bw + 1)} ${126 - A * 0.6} q${d * 7} ${-(4 + arm * 9)} ${d * 14} ${-1}" stroke="${ink}" stroke-width="1.8" fill="${paper}" stroke-linecap="round"/>` : ''}
-    <circle cx="${100 + d * (bw + 16)}" cy="101" r="${A * 0.85 + 1.5}" fill="${paper}" stroke="${ink}" stroke-width="1.8"/>`).join('');
-  // 力こぶの「シュッ」線
-  const flexLines = arm > 0.4 ? [-1, 1].map(d =>
-    `<path d="M${100 + d * (bw + 30)} 96 l${d * 6} -3 M${100 + d * (bw + 31)} 106 l${d * 7} 0 M${100 + d * (bw + 29)} 116 l${d * 6} 3" stroke="${NEON}" stroke-width="1.6" stroke-linecap="round" filter="url(#glow)"/>`).join('') : '';
-
-  const pecs = upper > 0.2 ? `<path d="M${100 - bw * 0.55} 112 q${bw * 0.27} 6 ${bw * 0.55} 0 q${bw * 0.28} 6 ${bw * 0.55} 0" stroke="${ink}" stroke-width="1.5" fill="none" opacity="${Math.min(1, upper + 0.2)}" stroke-linecap="round"/>` : '';
-  const abs = core > 0.2 ? `<g stroke="${ink}" stroke-width="1.4" fill="none" stroke-linecap="round" opacity="${Math.min(1, core + 0.2)}">
-      <path d="M100 119 v24"/><path d="M92 125 h5 M103 125 h5"/><path d="M92 133 h5 M103 133 h5"/><path d="M93 141 h4 M103 141 h4"/></g>` : '';
-  const blush = [-1, 1].map(d => { const x = 100 + d * 24;
-    return `<path d="M${x - 6} 101 l3 -4 M${x - 2} 101 l3 -4 M${x + 2} 101 l3 -4" stroke="#ff7aa8" stroke-width="1.4" stroke-linecap="round"/>`; }).join('');
-  const faces = {
-    happy:  `<path d="M84 90 q3.5 -5 7 0 M109 90 q3.5 -5 7 0" stroke="${ink}" stroke-width="2" fill="none" stroke-linecap="round"/>
-             <path d="M95 96 q5 7 10 0 z" fill="${ink}" stroke="${ink}" stroke-width="1.2" stroke-linejoin="round"/>`,
-    normal: `<ellipse cx="87.5" cy="89" rx="2.3" ry="3" fill="${ink}"/><ellipse cx="112.5" cy="89" rx="2.3" ry="3" fill="${ink}"/>
-             <path d="M96 97 q2 2.5 4 0 q2 2.5 4 0" stroke="${ink}" stroke-width="1.6" fill="none" stroke-linecap="round"/>`,
-    sad:    `<ellipse cx="87.5" cy="90" rx="2.2" ry="2.8" fill="${ink}"/><ellipse cx="112.5" cy="90" rx="2.2" ry="2.8" fill="${ink}"/>
-             <path d="M82 83 l8 2 M118 83 l-8 2" stroke="${ink}" stroke-width="1.5" stroke-linecap="round"/>
-             <path d="M95 99 q2.5 -3 5 0 q2.5 3 5 0" stroke="${ink}" stroke-width="1.5" fill="none" stroke-linecap="round"/>${tearDrop(117, 93)}`,
-    tired:  `<path d="M84 90 h7 M109 90 h7" stroke="${ink}" stroke-width="2" stroke-linecap="round"/>
-             <ellipse cx="100" cy="98" rx="2.2" ry="2.6" fill="none" stroke="${ink}" stroke-width="1.5"/>${zzz(134, 60)}`,
-  };
-
-  let acc = '';
-  if (k >= 2) acc += neonHeadband(100 - bw * 0.86, 72, 100, 52, 100 + bw * 0.86, 72);
-  if (k >= 4) acc += neonCrown(100, 50);
-  const wrist = k >= 3 ? [-1, 1].map(d => neonWrist(100 + d * (bw + 16.5), 106, A * 1.8)).join('') : '';
-  const sweat = stamina > 0.2 && mood.face === 'happy' ? `<path d="M${100 + bw - 2} 70 q4 8 0 12 q-4 -4 0 -12" fill="${NEON}" filter="url(#glow)"/>` : '';
-  // レジェンドはひとだまをお供にする
-  const wisps = k >= 5 ? [[32, 76, 0.32], [168, 64, 0.26]].map(([x, y, r]) =>
-    `<g transform="translate(${x} ${y}) scale(${r}) translate(-100 -113)">
-       <path d="M100 62 C112 88 132 104 128 132 C125 154 110 164 100 164 C88 164 72 154 72 134 C72 112 92 104 100 62 Z" fill="url(#flame)" filter="url(#ghostGlow)"/>
-       <path d="M100 62 C112 88 132 104 128 132 C125 154 110 164 100 164 C88 164 72 154 72 134 C72 112 92 104 100 62 Z" fill="url(#flame)"/></g>`).join('') : '';
-
-  return `
-    ${auraOf(P)}
-    <ellipse cx="100" cy="192" rx="${40 + bw * 0.5}" ry="7" fill="url(#floor)"/>
-    <g transform="translate(100 188) scale(${scale}) translate(-100 -188)" opacity="${fade}">
-      <ellipse cx="100" cy="190" rx="${bw * 0.7}" ry="4" fill="#000" opacity=".45" filter="url(#soft)"/>
-      ${wisps}
-      <path d="${body}" fill="${NEON}" opacity=".28" filter="url(#ghostGlow)"/>
-      <g filter="url(#sketch)">
-        ${arms}
-        <path d="${body}" fill="${paper}" stroke="${ink}" stroke-width="2.2" stroke-linejoin="round"/>
-        ${pecs}${abs}
-        ${faces[mood.face]}
-        ${blush}
-      </g>
-      ${flexLines}
-      ${wrist}
-      ${acc}
-      ${sweat}
-    </g>`;
-}
-
 // ===== 画面描画 =====
 let lastLv = null, lastStage = null;
 function render() {
@@ -1173,8 +1111,8 @@ function render() {
   if (leveled) {
     const evolved = st.stageIdx > lastStage;
     toast(evolved ? `EVOLVED — ${stage.name} になった` : `LEVEL UP — Lv ${st.lv}`);
-    const box = document.getElementById('petSvg');
-    box.classList.remove('levelup'); void box.getBBox(); box.classList.add('levelup');
+    const box = document.getElementById('petCanvas');
+    box.classList.remove('levelup'); void box.offsetWidth; box.classList.add('levelup');
   }
   lastLv = st.lv; lastStage = st.stageIdx;
   return leveled;
@@ -1237,7 +1175,7 @@ function renderHistory(st) {
 const fmt = n => Math.round(n).toLocaleString();
 // 目盛りのきりのいい最大値
 function niceMax(v) {
-  if (v <= 0) return 10;
+  if (!(v > 0) || !isFinite(v)) return 10;
   const p = Math.pow(10, Math.floor(Math.log10(v)));
   return [1, 2, 2.5, 5, 10].map(m => m * p).find(m => m >= v);
 }
@@ -1347,7 +1285,9 @@ function renderData(st) {
   sel.classList.toggle('hidden', !exList.length);
   let exHtml = empty;
   if (cur) {
-    const rs = recs.filter(r => r.exercise === cur);
+    // 同じ名前が別の部位（例：有酸素と筋トレ）で使われていたら、最後に記録した部位にそろえる
+    const lastPart = recs.filter(r => r.exercise === cur).at(-1).part;
+    const rs = recs.filter(r => r.exercise === cur && r.part === lastPart);
     const days = [...new Set(rs.map(r => r.date))].sort();
     if (rs[0].part === 'cardio') {
       exHtml = lineChart(days.map(md), [{ name: '時間', color: NEON, fill: true,
