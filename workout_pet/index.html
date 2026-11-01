@@ -170,6 +170,29 @@
   .cal div.l2 { background: rgba(0, 240, 255, .55); }
   .cal div.l3 { background: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
 
+  /* データ */
+  .chart { width: 100%; height: auto; display: block; overflow: visible; }
+  .chart text { font-size: 9px; fill: var(--sub); font-family: inherit; }
+  .seg { display: flex; gap: 6px; }
+  .filters { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+  .filters input { grid-column: 1 / -1; }
+  .filters select, .filters input { padding: 8px 10px; font-size: 13px; }
+  .table-wrap { overflow-x: auto; margin: 0 -16px; padding: 0 16px; }
+  table.db { width: 100%; border-collapse: collapse; font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  table.db th {
+    text-align: left; color: var(--sub); font-weight: 600; font-size: 11px; letter-spacing: .06em;
+    padding: 8px 8px 8px 0; border-bottom: 1px solid var(--line); cursor: pointer; user-select: none;
+  }
+  table.db th.sorted { color: var(--cyan); }
+  table.db td { padding: 8px 8px 8px 0; border-bottom: 1px solid var(--line); }
+  table.db td.n, table.db th.n { text-align: right; }
+  .db-meta { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--sub); margin: 4px 0 8px; }
+  .share-row { display: flex; align-items: center; gap: 10px; margin: 7px 0; font-size: 13px; }
+  .share-row .name { width: 52px; color: var(--sub); }
+  .share-row .bar { flex: 1; height: 8px; }
+  .share-row .bar > div { background: var(--c); box-shadow: 0 0 8px var(--c); }
+  .share-row .pct { width: 74px; text-align: right; font-variant-numeric: tabular-nums; }
+
   /* タブ */
   nav {
     position: fixed; bottom: 0; left: 0; right: 0;
@@ -298,6 +321,43 @@
   </section>
 
   <!-- 履歴 -->
+  <section id="tab-data" class="hidden">
+    <div class="card">
+      <div class="card-head"><h2>XPの推移</h2>
+        <div class="seg" id="xpRange">
+          <button class="chip on" style="--c:var(--cyan)" data-range="30">30日</button>
+          <button class="chip" style="--c:var(--cyan)" data-range="12w">12週</button>
+          <button class="chip" style="--c:var(--cyan)" data-range="all">累計</button>
+        </div>
+      </div>
+      <div id="xpChart"></div>
+    </div>
+    <div class="card">
+      <h2>部位別の割合（XP）</h2>
+      <div id="partShare"></div>
+    </div>
+    <div class="card">
+      <h2>週ごとの総挙上量（kg）</h2>
+      <div id="volumeChart"></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h2>種目別の伸び</h2></div>
+      <select id="exSelect" style="margin:6px 0 10px"></select>
+      <div id="exChart"></div>
+    </div>
+    <div class="card">
+      <h2>データベース</h2>
+      <div class="filters">
+        <select id="dbPart"><option value="">すべての部位</option></select>
+        <select id="dbEx"><option value="">すべての種目</option></select>
+        <input id="dbSearch" placeholder="種目名で検索">
+      </div>
+      <div class="db-meta"><span id="dbCount"></span><button class="mini" id="csvBtn">CSVをコピー</button></div>
+      <div class="table-wrap"><table class="db" id="dbTable"></table></div>
+      <button class="btn sub hidden" id="dbMore">もっと見る</button>
+    </div>
+  </section>
+
   <section id="tab-history" class="hidden">
     <div class="card">
       <h2>直近12週間</h2>
@@ -321,6 +381,7 @@
 <nav>
   <button data-tab="home" class="on">HOME</button>
   <button data-tab="log">LOG</button>
+  <button data-tab="data">DATA</button>
   <button data-tab="history">HISTORY</button>
 </nav>
 
@@ -1105,6 +1166,7 @@ function render() {
   renderToday(st);
   renderDraft();
   renderHistory(st);
+  renderData(st);
 
   // レベルアップ・進化の演出
   const leveled = lastLv !== null && st.lv > lastLv;
@@ -1169,6 +1231,176 @@ function renderHistory(st) {
     html += `<div ${cls} title="${ymd(d)} ${x}XP"></div>`;
   }
   document.getElementById('cal').innerHTML = html;
+}
+
+// ===== データ（グラフ・データベース） =====
+const fmt = n => Math.round(n).toLocaleString();
+// 目盛りのきりのいい最大値
+function niceMax(v) {
+  if (v <= 0) return 10;
+  const p = Math.pow(10, Math.floor(Math.log10(v)));
+  return [1, 2, 2.5, 5, 10].map(m => m * p).find(m => m >= v);
+}
+// 棒グラフ
+function barChart(labels, values, { color = NEON, unit = '' } = {}) {
+  const W = 320, H = 150, L = 34, B = 18, T = 8;
+  const max = niceMax(Math.max(...values, 0));
+  const bw = (W - L) / values.length;
+  const y = v => T + (H - T - B) * (1 - v / max);
+  const every = Math.ceil(values.length / 6);
+  let g = '';
+  for (let i = 0; i <= 2; i++) {
+    const v = max * i / 2;
+    g += `<line x1="${L}" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="#23232f"/><text x="${L - 5}" y="${y(v) + 3}" text-anchor="end">${fmt(v)}</text>`;
+  }
+  const bars = values.map((v, i) => v > 0
+    ? `<rect x="${L + i * bw + bw * 0.18}" y="${y(v)}" width="${bw * 0.64}" height="${H - B - y(v)}" rx="${Math.min(3, bw * 0.2)}" fill="${color}" opacity=".9"><title>${labels[i]}: ${fmt(v)}${unit}</title></rect>` : '').join('');
+  const xl = labels.map((l, i) => i % every === 0 || i === labels.length - 1
+    ? `<text x="${L + i * bw + bw / 2}" y="${H - 4}" text-anchor="middle">${l}</text>` : '').join('');
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}"><defs><filter id="cg"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    ${g}<g filter="url(#cg)">${bars}</g>${xl}</svg>`;
+}
+// 折れ線グラフ（複数系列）
+function lineChart(labels, series, { unit = '' } = {}) {
+  const W = 320, H = 150, L = 34, B = 18, T = 8, R = 6;
+  const all = series.flatMap(s => s.values).filter(v => v != null);
+  const max = niceMax(Math.max(...all, 0));
+  const n = labels.length;
+  const x = i => n === 1 ? (L + W - R) / 2 : L + (W - L - R) * i / (n - 1);
+  const y = v => T + (H - T - B) * (1 - v / max);
+  const every = Math.ceil(n / 6);
+  let g = '';
+  for (let i = 0; i <= 2; i++) {
+    const v = max * i / 2;
+    g += `<line x1="${L}" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="#23232f"/><text x="${L - 5}" y="${y(v) + 3}" text-anchor="end">${fmt(v)}</text>`;
+  }
+  const lines = series.map(s => {
+    const pts = s.values.map((v, i) => v == null ? null : [x(i), y(v), v, labels[i]]).filter(Boolean);
+    const d = pts.map((p, i) => `${i ? 'L' : 'M'}${p[0]} ${p[1]}`).join(' ');
+    const area = pts.length > 1 && s.fill ? `<path d="${d} L${pts[pts.length - 1][0]} ${H - B} L${pts[0][0]} ${H - B} Z" fill="${s.color}" opacity=".12"/>` : '';
+    const dots = pts.length <= 40 ? pts.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="2.4" fill="${s.color}"><title>${p[3]}: ${fmt(p[2])}${unit}</title></circle>`).join('') : '';
+    return `${area}<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" filter="url(#lg)"/>${dots}`;
+  }).join('');
+  const xl = labels.map((l, i) => i % every === 0 || i === n - 1
+    ? `<text x="${x(i)}" y="${H - 4}" text-anchor="middle">${l}</text>` : '').join('');
+  const legend = series.length > 1 ? `<div style="display:flex;gap:14px;font-size:11px;color:var(--sub);margin-top:6px">${series.map(s =>
+    `<span><span style="display:inline-block;width:10px;height:3px;background:${s.color};box-shadow:0 0 6px ${s.color};vertical-align:middle;margin-right:5px"></span>${s.name}</span>`).join('')}</div>` : '';
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}"><defs><filter id="lg"><feGaussianBlur stdDeviation="1.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+    ${g}${lines}${xl}</svg>${legend}`;
+}
+const md = d => `${Number(d.slice(5, 7))}/${Number(d.slice(8))}`;
+const addDays = (d, n) => { const t = new Date(d + 'T00:00'); t.setDate(t.getDate() + n); return ymd(t); };
+const weekStart = d => { const t = new Date(d + 'T00:00'); t.setDate(t.getDate() - t.getDay()); return ymd(t); };
+const volOf = r => r.part === 'cardio' ? 0 : (Number(r.weight) || 0) * r.reps * r.sets;
+
+let xpRange = '30';
+const db = { sort: 'date', dir: -1, limit: 50 };
+
+function renderData(st) {
+  const recs = st.recs;
+  const empty = '<div class="empty">記録するとグラフが表示されます</div>';
+  const t = today();
+
+  // XPの推移
+  const byDayXp = {};
+  recs.forEach(r => byDayXp[r.date] = (byDayXp[r.date] || 0) + r._xp);
+  let xpHtml = empty;
+  if (recs.length) {
+    if (xpRange === '30') {
+      const days = Array.from({ length: 30 }, (_, i) => addDays(t, i - 29));
+      xpHtml = barChart(days.map(md), days.map(d => byDayXp[d] || 0), { unit: ' XP' });
+    } else if (xpRange === '12w') {
+      const w0 = weekStart(t);
+      const weeks = Array.from({ length: 12 }, (_, i) => addDays(w0, (i - 11) * 7));
+      const vals = weeks.map(w => recs.filter(r => weekStart(r.date) === w).reduce((a, r) => a + r._xp, 0));
+      xpHtml = barChart(weeks.map(md), vals, { color: PINK, unit: ' XP' });
+    } else {
+      let sum = 0;
+      const days = Object.keys(byDayXp).sort();
+      xpHtml = lineChart(days.map(md), [{ name: '累計XP', color: LIME, fill: true, values: days.map(d => sum += byDayXp[d]) }], { unit: ' XP' });
+    }
+  }
+  document.getElementById('xpChart').innerHTML = xpHtml;
+  document.querySelectorAll('#xpRange .chip').forEach(b => b.classList.toggle('on', b.dataset.range === xpRange));
+
+  // 部位別の割合
+  const total = Object.values(st.stat).reduce((a, b) => a + b, 0);
+  document.getElementById('partShare').innerHTML = total ? Object.entries(PARTS)
+    .sort((a, b) => st.stat[b[0]] - st.stat[a[0]])
+    .map(([k, p]) => `<div class="share-row" style="--c:${p.color}"><span class="name">${p.name}</span>
+      <div class="bar"><div style="width:${st.stat[k] / total * 100}%"></div></div>
+      <span class="pct">${(st.stat[k] / total * 100).toFixed(1)}%</span></div>`).join('') : empty;
+
+  // 週ごとの総挙上量
+  const w0 = weekStart(t);
+  const weeks = Array.from({ length: 12 }, (_, i) => addDays(w0, (i - 11) * 7));
+  const vols = weeks.map(w => recs.filter(r => weekStart(r.date) === w).reduce((a, r) => a + volOf(r), 0));
+  document.getElementById('volumeChart').innerHTML = vols.some(v => v) ? barChart(weeks.map(md), vols, { color: '#39ff88', unit: ' kg' }) : empty;
+
+  // 種目別の伸び
+  const sel = document.getElementById('exSelect');
+  const exList = [...new Set(recs.map(r => r.exercise))];
+  const counts = Object.fromEntries(exList.map(e => [e, recs.filter(r => r.exercise === e).length]));
+  exList.sort((a, b) => counts[b] - counts[a]);
+  const cur = exList.includes(sel.value) ? sel.value : exList[0];
+  sel.innerHTML = exList.map(e => `<option ${e === cur ? 'selected' : ''}>${esc(e)}</option>`).join('');
+  sel.classList.toggle('hidden', !exList.length);
+  let exHtml = empty;
+  if (cur) {
+    const rs = recs.filter(r => r.exercise === cur);
+    const days = [...new Set(rs.map(r => r.date))].sort();
+    if (rs[0].part === 'cardio') {
+      exHtml = lineChart(days.map(md), [{ name: '時間', color: NEON, fill: true,
+        values: days.map(d => rs.filter(r => r.date === d).reduce((a, r) => a + r.minutes, 0)) }], { unit: ' 分' });
+    } else if (rs.every(r => !Number(r.weight))) {
+      exHtml = lineChart(days.map(md), [{ name: '総回数', color: NEON, fill: true,
+        values: days.map(d => rs.filter(r => r.date === d).reduce((a, r) => a + r.reps * r.sets, 0)) }], { unit: ' 回' });
+    } else {
+      // 推定1RM（Epley式：重量 ×（1 + 回数 / 30））
+      exHtml = lineChart(days.map(md), [
+        { name: '最大重量', color: NEON, values: days.map(d => Math.max(...rs.filter(r => r.date === d).map(r => Number(r.weight) || 0))) },
+        { name: '推定1RM', color: PINK, values: days.map(d => Math.max(...rs.filter(r => r.date === d).map(r => (Number(r.weight) || 0) * (1 + r.reps / 30)))) },
+      ], { unit: ' kg' });
+    }
+  }
+  document.getElementById('exChart').innerHTML = exHtml;
+
+  renderDb(recs);
+}
+
+function dbRows(recs) {
+  const part = document.getElementById('dbPart').value;
+  const ex = document.getElementById('dbEx').value;
+  const q = document.getElementById('dbSearch').value.trim().toLowerCase();
+  const rows = recs.filter(r => (!part || r.part === part) && (!ex || r.exercise === ex) && (!q || r.exercise.toLowerCase().includes(q)));
+  const key = {
+    date: r => r.date + String(r.id).padStart(15, '0'), part: r => PARTS[r.part].name, exercise: r => r.exercise,
+    weight: r => Number(r.weight) || 0, reps: r => r.reps || 0, sets: r => r.sets || 0,
+    minutes: r => r.minutes || 0, volume: volOf, xp: r => r._xp,
+  }[db.sort];
+  return rows.sort((a, b) => { const x = key(a), y = key(b); return (x > y ? 1 : x < y ? -1 : 0) * db.dir; });
+}
+function renderDb(recs) {
+  // 絞り込みの選択肢
+  const partSel = document.getElementById('dbPart'), exSel = document.getElementById('dbEx');
+  const pv = partSel.value, ev = exSel.value;
+  partSel.innerHTML = '<option value="">すべての部位</option>' + Object.entries(PARTS).map(([k, p]) => `<option value="${k}" ${k === pv ? 'selected' : ''}>${p.name}</option>`).join('');
+  const exs = [...new Set(recs.filter(r => !pv || r.part === pv).map(r => r.exercise))].sort();
+  exSel.innerHTML = '<option value="">すべての種目</option>' + exs.map(e => `<option ${e === ev ? 'selected' : ''}>${esc(e)}</option>`).join('');
+
+  const rows = dbRows(recs);
+  const cols = [['date', '日付'], ['part', '部位'], ['exercise', '種目'], ['weight', '重量', 1], ['reps', '回数', 1], ['sets', 'セット', 1], ['minutes', '分', 1], ['volume', '挙上量', 1], ['xp', 'XP', 1]];
+  const head = '<tr>' + cols.map(([k, l, n]) => `<th data-sort="${k}" class="${n ? 'n' : ''} ${db.sort === k ? 'sorted' : ''}">${l}${db.sort === k ? (db.dir > 0 ? ' ▲' : ' ▼') : ''}</th>`).join('') + '</tr>';
+  const dash = '<span style="color:var(--line)">-</span>';
+  const body = rows.slice(0, db.limit).map(r => {
+    const c = r.part === 'cardio', p = PARTS[r.part];
+    return `<tr><td>${r.date.slice(2).replace(/-/g, '/')}</td><td><span class="tag" style="--c:${p.color}">${p.name}</span></td><td>${esc(r.exercise)}</td>
+      <td class="n">${c ? dash : (Number(r.weight) || '自重')}</td><td class="n">${c ? dash : r.reps}</td><td class="n">${c ? dash : r.sets}</td>
+      <td class="n">${c ? r.minutes : dash}</td><td class="n">${c ? dash : fmt(volOf(r))}</td><td class="n" style="color:var(--lime)">${r._xp}</td></tr>`;
+  }).join('');
+  document.getElementById('dbTable').innerHTML = rows.length ? head + body : `<tr><td class="empty">該当する記録がありません</td></tr>`;
+  document.getElementById('dbCount').textContent = `${rows.length}件${rows.length > db.limit ? `（${db.limit}件表示）` : ''}`;
+  document.getElementById('dbMore').classList.toggle('hidden', rows.length <= db.limit);
 }
 
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1342,11 +1574,34 @@ document.getElementById('resetBtn').addEventListener('click', async () => {
   save(); lastLv = null; render(); toast('リセットしました');
 });
 
+// ===== データタブの操作 =====
+document.getElementById('xpRange').addEventListener('click', e => {
+  const r = e.target.dataset.range; if (!r) return;
+  xpRange = r; renderData(computeState());
+});
+document.getElementById('exSelect').addEventListener('change', () => renderData(computeState()));
+['dbPart', 'dbEx'].forEach(id => document.getElementById(id).addEventListener('change', () => { db.limit = 50; renderDb(computeState().recs); }));
+document.getElementById('dbSearch').addEventListener('input', () => { db.limit = 50; renderDb(computeState().recs); });
+document.getElementById('dbTable').addEventListener('click', e => {
+  const k = e.target.closest('th')?.dataset.sort; if (!k) return;
+  db.dir = db.sort === k ? -db.dir : (k === 'date' || k === 'xp' || k === 'volume' || k === 'weight' ? -1 : 1);
+  db.sort = k; renderDb(computeState().recs);
+});
+document.getElementById('dbMore').addEventListener('click', () => { db.limit += 100; renderDb(computeState().recs); });
+document.getElementById('csvBtn').addEventListener('click', async () => {
+  const rows = dbRows(computeState().recs);
+  const q = v => /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : v;
+  const csv = ['日付,部位,種目,重量(kg),回数,セット,時間(分),挙上量(kg),XP',
+    ...rows.map(r => [r.date, PARTS[r.part].name, r.exercise, r.weight ?? '', r.reps ?? '', r.sets ?? '', r.minutes ?? '', volOf(r) || '', r._xp].map(q).join(','))].join('\n');
+  try { await navigator.clipboard.writeText(csv); toast(`${rows.length}件をCSVでコピーしました`); }
+  catch { toast('コピーできませんでした'); }
+});
+
 // ===== タブ =====
 document.querySelector('nav').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   document.querySelectorAll('nav button').forEach(x => x.classList.toggle('on', x === b));
-  ['home', 'log', 'history'].forEach(t =>
+  ['home', 'log', 'data', 'history'].forEach(t =>
     document.getElementById('tab-' + t).classList.toggle('hidden', t !== b.dataset.tab));
   window.scrollTo(0, 0);
 });
