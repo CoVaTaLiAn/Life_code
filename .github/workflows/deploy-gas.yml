@@ -15,11 +15,11 @@ jobs:
       run:
         working-directory: gas/gmail-sorter
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: "20"
+          node-version: "22"
 
       - name: Install clasp
         run: npm install -g @google/clasp@3.1.3
@@ -30,8 +30,11 @@ jobs:
           CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
           GAS_SCRIPT_ID: ${{ vars.GAS_SCRIPT_ID }}
         run: |
-          if [ -z "$CLASPRC_JSON" ] || [ -z "$GAS_SCRIPT_ID" ]; then
-            echo "::notice::CLASPRC_JSON (secret) と GAS_SCRIPT_ID (variable) が未設定のため、GASへの反映をスキップしました（手順: gas/SETUP_PC.md）"
+          missing=""
+          [ -z "$CLASPRC_JSON" ] && missing="$missing Secret:CLASPRC_JSON"
+          [ -z "$GAS_SCRIPT_ID" ] && missing="$missing Variable:GAS_SCRIPT_ID"
+          if [ -n "$missing" ]; then
+            echo "::warning::GASへの反映をスキップしました。未設定:${missing}（Settings → Secrets and variables → Actions に登録。手順: gas/SETUP_PC.md）"
             echo "ready=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
