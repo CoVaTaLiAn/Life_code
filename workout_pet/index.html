@@ -3,131 +3,188 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>マッスルペット - 筋トレ記録</title>
+<title>マッスルパンダ - 筋トレ記録</title>
 <style>
   :root {
-    --bg: #fff8f0;
-    --card: #ffffff;
-    --text: #3a2e2a;
-    --sub: #8a7a72;
-    --accent: #ff7a45;
-    --accent2: #ffb347;
-    --line: #f0e2d6;
-    --good: #3cb371;
-    --bad: #e05656;
+    --bg: #07070b;
+    --card: #101018;
+    --card2: #16161f;
+    --text: #e9e9f2;
+    --sub: #7d7d92;
+    --line: #23232f;
+    --cyan: #00f0ff;
+    --pink: #ff2bd6;
+    --lime: #b6ff3b;
+    --accent: var(--cyan);
+    --bad: #ff4d6d;
   }
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
-    background: var(--bg);
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    background:
+      radial-gradient(ellipse at 20% -10%, rgba(0, 240, 255, .10), transparent 50%),
+      radial-gradient(ellipse at 100% 10%, rgba(255, 43, 214, .08), transparent 45%),
+      var(--bg);
+    background-attachment: fixed;
     color: var(--text);
-    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+    padding-bottom: calc(68px + env(safe-area-inset-bottom));
+    -webkit-font-smoothing: antialiased;
   }
   header {
-    padding: 14px 16px 6px;
-    font-weight: 700;
-    font-size: 18px;
-    display: flex; justify-content: space-between; align-items: center;
+    max-width: 560px; margin: 0 auto;
+    padding: 18px 16px 6px;
+    display: flex; justify-content: space-between; align-items: baseline;
   }
-  header small { color: var(--sub); font-weight: 400; font-size: 12px; }
+  .logo {
+    font-weight: 800; font-size: 17px; letter-spacing: .18em;
+    color: var(--cyan); text-shadow: 0 0 8px rgba(0, 240, 255, .7), 0 0 22px rgba(0, 240, 255, .35);
+  }
+  .logo b { color: var(--pink); text-shadow: 0 0 8px rgba(255, 43, 214, .7), 0 0 22px rgba(255, 43, 214, .35); font-weight: 800; }
+  header small { color: var(--sub); font-size: 12px; letter-spacing: .08em; font-variant-numeric: tabular-nums; }
   main { max-width: 560px; margin: 0 auto; padding: 0 12px; }
   .card {
-    background: var(--card);
-    border-radius: 16px;
+    background: linear-gradient(180deg, var(--card2), var(--card));
+    border: 1px solid var(--line);
+    border-radius: 14px;
     padding: 16px;
     margin: 10px 0;
-    box-shadow: 0 2px 8px rgba(120, 80, 40, .08);
   }
-  .card h2 { font-size: 15px; margin: 0 0 10px; }
+  .card h2 {
+    font-size: 11px; margin: 0 0 12px; letter-spacing: .2em; text-transform: uppercase;
+    color: var(--sub); font-weight: 600;
+  }
   .hidden { display: none !important; }
 
   /* キャラ */
-  .pet-wrap { text-align: center; }
-  .pet-name { font-size: 20px; font-weight: 700; margin: 4px 0 0; }
-  .pet-name button { font-size: 12px; margin-left: 4px; }
-  .pet-stage { color: var(--sub); font-size: 13px; }
-  #petSvg { width: 260px; height: 205px; overflow: visible; }
-  .bubble {
-    display: inline-block;
-    background: #fff3e6; border: 2px solid var(--accent2);
-    border-radius: 14px; padding: 6px 12px; font-size: 14px; margin-top: 4px;
+  .pet-wrap { text-align: center; position: relative; overflow: hidden; }
+  .pet-wrap::before {
+    content: ""; position: absolute; left: 50%; bottom: 96px; width: 280px; height: 60px; transform: translateX(-50%);
+    background: radial-gradient(ellipse, rgba(0, 240, 255, .18), transparent 70%);
   }
-  .bob { animation: bob 2.2s ease-in-out infinite; transform-origin: center bottom; }
-  .sad { animation: sad 4s ease-in-out infinite; transform-origin: center bottom; }
+  .pet-name { font-size: 20px; font-weight: 700; margin: 4px 0 0; letter-spacing: .04em; }
+  .pet-stage { color: var(--cyan); font-size: 12px; letter-spacing: .1em; margin-top: 2px; }
+  #petSvg { width: 260px; height: 205px; overflow: visible; position: relative; }
+  .bubble {
+    display: inline-block; margin-top: 10px;
+    border: 1px solid rgba(255, 43, 214, .55); color: #ffd6f6;
+    border-radius: 999px; padding: 6px 16px; font-size: 13px;
+    box-shadow: 0 0 12px rgba(255, 43, 214, .25), inset 0 0 10px rgba(255, 43, 214, .08);
+  }
+  .bob { animation: bob 2.2s ease-in-out infinite; }
+  .sad { animation: sad 4s ease-in-out infinite; }
   @keyframes bob { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-6px) } }
   @keyframes sad { 0%,100% { transform: translateY(0) } 50% { transform: translateY(2px) } }
   .levelup { animation: pop .8s ease; }
-  @keyframes pop { 0% { transform: scale(1) } 40% { transform: scale(1.18) } 100% { transform: scale(1) } }
+  @keyframes pop { 0% { transform: scale(1) } 40% { transform: scale(1.15) } 100% { transform: scale(1) } }
 
-  .bar { height: 12px; background: var(--line); border-radius: 6px; overflow: hidden; }
-  .bar > div { height: 100%; background: linear-gradient(90deg, var(--accent2), var(--accent)); transition: width .6s; }
-  .row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin: 4px 0; }
-  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; }
-  .stat .row { margin: 0 0 3px; }
-  .stat .bar { height: 8px; }
-  .stat .bar > div { background: var(--c); }
+  .bar { height: 8px; background: #1d1d28; border-radius: 4px; overflow: hidden; }
+  .bar > div {
+    height: 100%; border-radius: 4px; transition: width .6s;
+    background: linear-gradient(90deg, var(--cyan), var(--pink));
+    box-shadow: 0 0 10px rgba(0, 240, 255, .6);
+  }
+  .row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin: 6px 0; }
+  .row > span:first-child { color: var(--sub); }
+  .lv { font-size: 28px; font-weight: 800; letter-spacing: .02em; color: #fff; }
+  .lv small { font-size: 12px; color: var(--sub); font-weight: 600; letter-spacing: .2em; margin-right: 6px; }
+  .num { font-variant-numeric: tabular-nums; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+  .stat .row { margin: 0 0 5px; }
+  .stat .row b { color: #fff; font-variant-numeric: tabular-nums; }
+  .stat .bar { height: 4px; }
+  .stat .bar > div { background: var(--c); box-shadow: 0 0 8px var(--c); }
   .summary { display: grid; grid-template-columns: repeat(3, 1fr); text-align: center; gap: 6px; }
-  .summary b { display: block; font-size: 20px; }
-  .summary span { font-size: 11px; color: var(--sub); }
+  .summary b { display: block; font-size: 22px; font-weight: 800; color: #fff; font-variant-numeric: tabular-nums; }
+  .summary span { font-size: 10px; color: var(--sub); letter-spacing: .1em; }
 
   /* フォーム */
-  label { display: block; font-size: 12px; color: var(--sub); margin: 8px 0 3px; }
+  label { display: block; font-size: 11px; color: var(--sub); margin: 12px 0 5px; letter-spacing: .1em; }
   input, select, button { font: inherit; }
   input, select {
-    width: 100%; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: #fffdfb;
+    width: 100%; padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px;
+    background: #0b0b11; color: var(--text); outline: none; color-scheme: dark;
   }
+  input:focus, select:focus { border-color: var(--cyan); box-shadow: 0 0 0 1px var(--cyan), 0 0 14px rgba(0, 240, 255, .25); }
   .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .btn {
-    display: block; width: 100%; margin-top: 14px; padding: 13px;
-    border: none; border-radius: 12px; background: var(--accent); color: #fff; font-weight: 700; font-size: 16px;
+    display: block; width: 100%; margin-top: 16px; padding: 14px;
+    border: 1px solid var(--cyan); border-radius: 12px; cursor: pointer;
+    background: rgba(0, 240, 255, .08); color: var(--cyan);
+    font-weight: 700; font-size: 15px; letter-spacing: .12em;
+    text-shadow: 0 0 8px rgba(0, 240, 255, .7);
+    box-shadow: 0 0 16px rgba(0, 240, 255, .25), inset 0 0 14px rgba(0, 240, 255, .12);
+    transition: background .2s;
   }
-  .btn.sub { background: #f3e7dc; color: var(--text); font-weight: 400; font-size: 14px; }
-  .mini { border: 1px solid var(--line); background: #fff; border-radius: 8px; padding: 3px 8px; font-size: 12px; cursor: pointer; }
+  .btn:active { background: rgba(0, 240, 255, .2); }
+  .btn.sub {
+    border-color: var(--line); background: transparent; color: var(--text);
+    font-weight: 500; font-size: 13px; letter-spacing: .05em; text-shadow: none; box-shadow: none; margin-top: 10px;
+  }
+  .btn.danger { color: var(--bad); border-color: rgba(255, 77, 109, .4); }
+  .mini {
+    border: 1px solid var(--line); background: transparent; color: var(--sub);
+    border-radius: 8px; padding: 3px 9px; font-size: 11px; cursor: pointer;
+  }
+  .mini:hover { color: var(--text); border-color: var(--sub); }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; }
   .chip {
-    border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 6px 12px; font-size: 13px; cursor: pointer;
+    border: 1px solid var(--line); background: transparent; color: var(--sub);
+    border-radius: 999px; padding: 6px 14px; font-size: 13px; cursor: pointer;
   }
-  .chip.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .chip.on { color: var(--c); border-color: var(--c); box-shadow: 0 0 10px var(--c), inset 0 0 8px rgba(255,255,255,.04); text-shadow: 0 0 6px var(--c); }
+  .xp-preview { color: var(--lime); text-shadow: 0 0 8px rgba(182, 255, 59, .6); font-variant-numeric: tabular-nums; }
 
   /* 履歴 */
-  .day { margin: 14px 0 4px; font-weight: 700; font-size: 13px; color: var(--sub); }
+  .day { margin: 16px 0 4px; font-weight: 600; font-size: 11px; color: var(--sub); letter-spacing: .12em; }
   .entry {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px;
+    display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    padding: 11px 0; border-bottom: 1px solid var(--line); font-size: 14px;
   }
-  .entry .meta { color: var(--sub); font-size: 12px; }
-  .entry .xp { color: var(--accent); font-weight: 700; font-size: 13px; margin-right: 8px; }
-  .tag { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 6px; color: #fff; margin-right: 4px; }
-  .empty { text-align: center; color: var(--sub); padding: 24px 0; font-size: 14px; }
-  .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
-  .cal div { aspect-ratio: 1; border-radius: 4px; background: var(--line); }
-  .cal div.l1 { background: #ffd2a8; } .cal div.l2 { background: #ffa66b; } .cal div.l3 { background: #ff7a45; }
+  .entry .meta { color: var(--sub); font-size: 12px; margin-top: 2px; }
+  .entry .xp { color: var(--lime); font-weight: 700; font-size: 12px; margin-right: 8px; font-variant-numeric: tabular-nums; }
+  .tag {
+    display: inline-block; font-size: 10px; padding: 1px 7px; border-radius: 4px; margin-right: 6px;
+    color: var(--c); border: 1px solid var(--c); letter-spacing: .05em;
+  }
+  .empty { text-align: center; color: var(--sub); padding: 24px 0; font-size: 13px; }
+  .cal { display: grid; grid-template-columns: repeat(12, 1fr); grid-template-rows: repeat(7, auto); grid-auto-flow: column; gap: 4px; }
+  .cal div { aspect-ratio: 1; border-radius: 3px; background: #191922; }
+  .cal div.l1 { background: rgba(0, 240, 255, .25); }
+  .cal div.l2 { background: rgba(0, 240, 255, .55); }
+  .cal div.l3 { background: var(--cyan); box-shadow: 0 0 6px var(--cyan); }
 
   /* タブ */
   nav {
     position: fixed; bottom: 0; left: 0; right: 0;
-    display: flex; background: #fff; border-top: 1px solid var(--line);
+    display: flex; background: rgba(7, 7, 11, .85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-top: 1px solid var(--line);
     padding-bottom: env(safe-area-inset-bottom);
   }
   nav button {
-    flex: 1; border: none; background: none; padding: 10px 0 8px; font-size: 11px; color: var(--sub); cursor: pointer;
+    flex: 1; border: none; background: none; padding: 16px 0 14px; cursor: pointer;
+    font-size: 11px; letter-spacing: .22em; color: var(--sub); font-weight: 600; position: relative;
   }
-  nav button span { display: block; font-size: 22px; }
-  nav button.on { color: var(--accent); font-weight: 700; }
+  nav button.on { color: var(--cyan); text-shadow: 0 0 8px rgba(0, 240, 255, .7); }
+  nav button.on::after {
+    content: ""; position: absolute; top: 0; left: 30%; right: 30%; height: 2px;
+    background: var(--cyan); box-shadow: 0 0 10px var(--cyan);
+  }
 
   /* トースト */
   #toast {
-    position: fixed; left: 50%; top: 20px; transform: translateX(-50%);
-    background: var(--text); color: #fff; padding: 10px 18px; border-radius: 12px; font-size: 14px;
+    position: fixed; left: 50%; top: 18px; transform: translateX(-50%);
+    background: rgba(10, 10, 16, .92); color: var(--lime);
+    border: 1px solid var(--lime); box-shadow: 0 0 18px rgba(182, 255, 59, .35);
+    padding: 10px 20px; border-radius: 999px; font-size: 13px; font-weight: 600; letter-spacing: .06em;
     opacity: 0; pointer-events: none; transition: opacity .3s; z-index: 10; text-align: center; max-width: 90%;
   }
-  #toast.show { opacity: .95; }
+  #toast.show { opacity: 1; }
 </style>
 </head>
 <body>
 <header>
-  <div>💪 マッスルペット</div>
+  <div class="logo">MUSCLE<b>PANDA</b></div>
   <small id="todayLabel"></small>
 </header>
 
@@ -142,9 +199,9 @@
     </div>
 
     <div class="card">
-      <div class="row"><b id="levelLabel">Lv 1</b><span id="xpLabel"></span></div>
+      <div class="row"><span class="lv" id="levelLabel"></span><span id="xpLabel" class="num" style="color:var(--sub)"></span></div>
       <div class="bar"><div id="xpBar" style="width:0"></div></div>
-      <div class="row" style="margin-top:8px"><span>きげん</span><span id="moodLabel"></span></div>
+      <div class="row" style="margin-top:12px"><span>きげん</span><span id="moodLabel"></span></div>
       <div class="row"><span>連続トレーニング</span><span id="streakLabel"></span></div>
     </div>
 
@@ -184,8 +241,8 @@
       <div id="cardioFields" class="hidden">
         <label>時間(分)</label><input type="number" id="fMinutes" inputmode="numeric" min="1" placeholder="30">
       </div>
-      <div class="row" style="margin-top:10px"><span>獲得予定XP</span><b id="xpPreview" style="color:var(--accent)">0 XP</b></div>
-      <button class="btn" id="saveBtn">記録してキャラを育てる！</button>
+      <div class="row" style="margin-top:10px"><span>獲得予定XP</span><b id="xpPreview" class="xp-preview">0 XP</b></div>
+      <button class="btn" id="saveBtn">記録してパンダを育てる</button>
     </div>
     <div class="card">
       <h2>今日の記録</h2>
@@ -208,15 +265,15 @@
       <button class="btn sub" id="exportBtn">バックアップを保存（JSON）</button>
       <button class="btn sub" id="importBtn">バックアップから復元</button>
       <input type="file" id="importFile" accept="application/json" class="hidden">
-      <button class="btn sub" id="resetBtn" style="color:var(--bad)">すべてのデータを削除</button>
+      <button class="btn sub danger" id="resetBtn">すべてのデータを削除</button>
     </div>
   </section>
 </main>
 
 <nav>
-  <button data-tab="home" class="on"><span>🐣</span>キャラ</button>
-  <button data-tab="log"><span>✏️</span>記録</button>
-  <button data-tab="history"><span>📅</span>履歴</button>
+  <button data-tab="home" class="on">PANDA</button>
+  <button data-tab="log">LOG</button>
+  <button data-tab="history">HISTORY</button>
 </nav>
 
 <div id="toast"></div>
@@ -224,31 +281,35 @@
 <script>
 // ===== 定義 =====
 const PARTS = {
-  chest:    { name: '胸',     stat: 'パワー',   color: '#ff6b6b', ex: ['ベンチプレス', 'ダンベルプレス', 'インクラインプレス', 'ダンベルフライ', '腕立て伏せ', 'ディップス'] },
-  back:     { name: '背中',   stat: 'タフさ',   color: '#4d96ff', ex: ['デッドリフト', '懸垂', 'ラットプルダウン', 'ベントオーバーロウ', 'シーテッドロウ'] },
-  legs:     { name: '脚',     stat: 'ふんばり', color: '#6bcb77', ex: ['スクワット', 'レッグプレス', 'ランジ', 'ブルガリアンスクワット', 'レッグカール', 'カーフレイズ'] },
-  shoulder: { name: '肩',     stat: 'かまえ',   color: '#ffa94d', ex: ['ショルダープレス', 'サイドレイズ', 'フロントレイズ', 'リアレイズ', 'アップライトロウ'] },
-  arms:     { name: '腕',     stat: 'うでっぷし', color: '#c77dff', ex: ['バーベルカール', 'ダンベルカール', 'ハンマーカール', 'トライセプスエクステンション', 'ナローベンチ'] },
-  core:     { name: '腹',     stat: 'たいかん', color: '#ffd43b', ex: ['クランチ', 'プランク(秒→回数)', 'レッグレイズ', 'アブローラー', 'ロシアンツイスト'] },
-  cardio:   { name: '有酸素', stat: 'スタミナ', color: '#20c997', ex: ['ランニング', 'ウォーキング', 'バイク', '水泳', 'なわとび', 'HIIT'] },
+  chest:    { name: '胸',     stat: 'パワー',   color: '#ff2bd6', ex: ['ベンチプレス', 'ダンベルプレス', 'インクラインプレス', 'ダンベルフライ', '腕立て伏せ', 'ディップス'] },
+  back:     { name: '背中',   stat: 'タフさ',   color: '#3d7bff', ex: ['デッドリフト', '懸垂', 'ラットプルダウン', 'ベントオーバーロウ', 'シーテッドロウ'] },
+  legs:     { name: '脚',     stat: 'ふんばり', color: '#39ff88', ex: ['スクワット', 'レッグプレス', 'ランジ', 'ブルガリアンスクワット', 'レッグカール', 'カーフレイズ'] },
+  shoulder: { name: '肩',     stat: 'かまえ',   color: '#ff9f1c', ex: ['ショルダープレス', 'サイドレイズ', 'フロントレイズ', 'リアレイズ', 'アップライトロウ'] },
+  arms:     { name: '腕',     stat: 'うでっぷし', color: '#b14dff', ex: ['バーベルカール', 'ダンベルカール', 'ハンマーカール', 'トライセプスエクステンション', 'ナローベンチ'] },
+  core:     { name: '腹',     stat: 'たいかん', color: '#f5ff3b', ex: ['クランチ', 'プランク(秒→回数)', 'レッグレイズ', 'アブローラー', 'ロシアンツイスト'] },
+  cardio:   { name: '有酸素', stat: 'スタミナ', color: '#00f0ff', ex: ['ランニング', 'ウォーキング', 'バイク', '水泳', 'なわとび', 'HIIT'] },
 };
 const STAGES = [
-  { lv: 1,  name: 'たまご',         color: '#fff4dc' },
-  { lv: 3,  name: 'ベビーマッチョ', color: '#ffe0b8' },
-  { lv: 6,  name: 'キッズマッチョ', color: '#ffc98f' },
-  { lv: 11, name: 'マッチョ',       color: '#ffad6b' },
-  { lv: 20, name: 'スーパーマッチョ', color: '#ff8f5a' },
-  { lv: 35, name: 'レジェンドマッチョ', color: '#ffcf40' },
+  { lv: 1,  name: 'パンダのたまご' },
+  { lv: 3,  name: 'こパンダ' },
+  { lv: 6,  name: 'わんぱくパンダ' },
+  { lv: 11, name: 'マッチョパンダ' },
+  { lv: 20, name: 'ゴリマッチョパンダ' },
+  { lv: 35, name: 'レジェンドパンダ' },
 ];
+const DEFAULT_NAME = 'パンダくん';
 const STORE_KEY = 'musclePet.v1';
 
 // ===== 保存 =====
 function load() {
   try {
     const d = JSON.parse(localStorage.getItem(STORE_KEY));
-    if (d && Array.isArray(d.records)) return d;
+    if (d && Array.isArray(d.records)) {
+      if (d.petName === 'マッスルくん') d.petName = DEFAULT_NAME; // 旧デフォルト名をパンダ用に置き換え
+      return d;
+    }
   } catch (e) {}
-  return { petName: 'マッスルくん', records: [] };
+  return { petName: DEFAULT_NAME, records: [] };
 }
 function save() { localStorage.setItem(STORE_KEY, JSON.stringify(data)); }
 let data = load();
@@ -311,21 +372,79 @@ function talkOf(st, mood) {
     return ['…ピキッ', 'たまごが少し動いた！', 'もうすぐ生まれそう！'][Math.min(st.lv - 1 + (st.rest > st.need / 2 ? 1 : 0), 2)];
   }
   const msgs = {
-    great: ['今日もナイスバルク！', 'まだまだいけるよ！', '筋肉がよろこんでる！', 'プロテイン飲んだ？'],
-    ok: ['そろそろトレーニングしない？', '休養も大事だよね', '次はどこ鍛える？'],
-    sad: ['さみしいな…', '筋肉がしぼんじゃう…', 'いっしょに動こうよ…'],
+    great: ['今日もナイスバルク！', 'まだまだいけるよ！', '筋肉がよろこんでる！', 'プロテイン飲んだ？', 'トレーニング後のササはうまい！'],
+    ok: ['そろそろトレーニングしない？', '休養も大事だよね', '次はどこ鍛える？', 'ササ食べてまってるね'],
+    sad: ['さみしいな…', '筋肉がしぼんじゃう…', 'いっしょに動こうよ…', 'ササものどを通らない…'],
     tired: ['zzz…', 'からだが重い…', '一緒にまた始めよう…'],
   };
   const list = msgs[mood.key] || msgs.great;
   return list[(st.total + new Date().getDate()) % list.length];
 }
 
-// ===== キャラ描画（SVG） =====
+// ===== キャラ描画（SVG：パンダ） =====
+// 陰影グラデーション＋毛並みフィルタで立体感を出し、シルエットにネオンの縁取りを付ける
+const NEON = '#00f0ff', PINK = '#ff2bd6', LIME = '#b6ff3b';
+const PANDA_DEFS = `
+  <defs>
+    <!-- 毛並み：輪郭を細かく揺らして毛のふわっと感を出し、外側にネオンの縁取り -->
+    <filter id="fur" x="-25%" y="-25%" width="150%" height="150%">
+      <feTurbulence type="fractalNoise" baseFrequency="1.6" numOctaves="2" seed="3" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="2.2" xChannelSelector="R" yChannelSelector="G" result="f"/>
+      <feMorphology in="f" operator="dilate" radius=".8" result="d"/>
+      <feFlood flood-color="${NEON}" flood-opacity=".75"/><feComposite in2="d" operator="in" result="rim"/>
+      <feGaussianBlur in="rim" stdDeviation="3" result="glow"/>
+      <feMerge><feMergeNode in="glow"/><feMergeNode in="rim"/><feMergeNode in="f"/></feMerge>
+    </filter>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="soft"><feGaussianBlur stdDeviation="2.5"/></filter>
+    <!-- 白い毛：左上から光が当たる -->
+    <radialGradient id="furW" cx="38%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#ffffff"/><stop offset="55%" stop-color="#ebebf2"/><stop offset="100%" stop-color="#a9a9b8"/>
+    </radialGradient>
+    <!-- 黒い毛 -->
+    <radialGradient id="furK" cx="35%" cy="28%" r="80%">
+      <stop offset="0%" stop-color="#4a4a5c"/><stop offset="45%" stop-color="#1b1b24"/><stop offset="100%" stop-color="#050507"/>
+    </radialGradient>
+    <!-- 左はピンク、右はシアンの環境光 -->
+    <linearGradient id="rimLight" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="${PINK}" stop-opacity=".18"/><stop offset=".2" stop-color="${PINK}" stop-opacity="0"/>
+      <stop offset=".78" stop-color="${NEON}" stop-opacity="0"/><stop offset="1" stop-color="${NEON}" stop-opacity=".35"/>
+    </linearGradient>
+    <!-- 筋肉のふくらみ -->
+    <radialGradient id="muscle" cx="45%" cy="35%" r="70%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity=".9"/><stop offset="70%" stop-color="#d6d6e0" stop-opacity=".5"/><stop offset="100%" stop-color="#8e8ea0" stop-opacity=".7"/>
+    </radialGradient>
+    <radialGradient id="muzzle" cx="50%" cy="35%" r="70%">
+      <stop offset="0%" stop-color="#ffffff"/><stop offset="75%" stop-color="#f0f0f5"/><stop offset="100%" stop-color="#c4c4d0"/>
+    </radialGradient>
+    <radialGradient id="eyeG" cx="45%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#6b4630"/><stop offset="55%" stop-color="#24140c"/><stop offset="100%" stop-color="#000"/>
+    </radialGradient>
+    <radialGradient id="aura">
+      <stop offset="55%" stop-color="${PINK}" stop-opacity="0"/>
+      <stop offset="85%" stop-color="${PINK}" stop-opacity=".16"/>
+      <stop offset="100%" stop-color="${NEON}" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="floor"><stop offset="0%" stop-color="${NEON}" stop-opacity=".45"/><stop offset="100%" stop-color="${NEON}" stop-opacity="0"/></radialGradient>
+    <radialGradient id="egg" cx="38%" cy="30%" r="80%">
+      <stop offset="0%" stop-color="#ffffff"/><stop offset="60%" stop-color="#e6e6ee"/><stop offset="100%" stop-color="#9c9cae"/>
+    </radialGradient>
+  </defs>`;
+
+// ツヤのある瞳
+function eye(cx, cy, r) {
+  return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#eyeG)" stroke="rgba(255,255,255,.18)" stroke-width=".8"/>
+    <circle cx="${cx + r * 0.35}" cy="${cy - r * 0.38}" r="${r * 0.36}" fill="#fff"/>
+    <circle cx="${cx - r * 0.32}" cy="${cy + r * 0.36}" r="${r * 0.16}" fill="#bff9ff" opacity=".85"/>`;
+}
+
 function drawPet(st, mood) {
   const svg = document.getElementById('petSvg');
-  const stage = STAGES[st.stageIdx];
   const s = st.stat;
-  // 部位ごとのXPから見た目の太さを決める（0〜1）
+  // 部位ごとのXPから見た目を決める（0〜1）
   const g = v => Math.min(1, Math.sqrt(v / 1500));
   const upper = g(s.chest + s.shoulder + s.back / 2);
   const arm = g(s.arms * 2 + s.chest / 2);
@@ -335,82 +454,153 @@ function drawPet(st, mood) {
 
   let body = '';
   if (st.stageIdx === 0) {
-    // たまご：XPが貯まるほどヒビが入る
+    // たまご：パンダ柄。XPが貯まるほどヒビが入る
     const p = st.rest / st.need + (st.lv - 1);
-    const crack = p > 0.3 ? `<path d="M70 95 l10 10 l8 -10 l10 12 l8 -9 l10 10 l10 -9" stroke="#b08060" stroke-width="3" fill="none"/>` : '';
-    const crack2 = p > 1.0 ? `<path d="M80 130 l8 -8 l8 8 l9 -7 l9 9" stroke="#b08060" stroke-width="3" fill="none"/>` : '';
-    body = `
-      <ellipse cx="100" cy="178" rx="45" ry="8" fill="rgba(0,0,0,.08)"/>
-      <ellipse cx="100" cy="112" rx="52" ry="66" fill="${stage.color}" stroke="#d9b48a" stroke-width="3"/>
-      <circle cx="80" cy="85" r="7" fill="#ffd9a0"/><circle cx="122" cy="120" r="9" fill="#ffd9a0"/><circle cx="92" cy="150" r="5" fill="#ffd9a0"/>
+    const crackStyle = `stroke="#3a3a48" stroke-width="2.4" fill="none" stroke-linejoin="round" stroke-linecap="round"`;
+    const crack = p > 0.3 ? `<path d="M66 102 l9 9 l8 -9 l10 11 l9 -8 l10 9 l11 -8" ${crackStyle}/>` : '';
+    const crack2 = p > 1.0 ? `<path d="M80 140 l8 -7 l8 7 l9 -6 l9 8" ${crackStyle}/>` : '';
+    body = `${PANDA_DEFS}
+      <ellipse cx="100" cy="183" rx="62" ry="9" fill="url(#floor)"/>
+      <g filter="url(#fur)">
+        <circle cx="73" cy="58" r="13" fill="url(#furK)"/><circle cx="127" cy="58" r="13" fill="url(#furK)"/>
+        <ellipse cx="100" cy="114" rx="52" ry="65" fill="url(#egg)"/>
+        <ellipse cx="100" cy="114" rx="52" ry="65" fill="url(#rimLight)"/>
+        <ellipse cx="80" cy="150" rx="12" ry="9" fill="url(#furK)" transform="rotate(-15 80 150)"/>
+        <ellipse cx="128" cy="136" rx="9" ry="7" fill="url(#furK)"/>
+        <ellipse cx="111" cy="166" rx="7" ry="5" fill="url(#furK)"/>
+      </g>
+      <ellipse cx="82" cy="80" rx="14" ry="20" fill="#fff" opacity=".7" filter="url(#soft)" transform="rotate(20 82 80)"/>
       ${crack}${crack2}`;
   } else {
-    const k = st.stageIdx;            // 1〜5
-    const scale = 0.74 + k * 0.05;    // 成長で大きくなる
-    const bw = 46 + upper * 18;       // 胴の横幅
-    const bh = 50 + core * 6;
-    const armW = 7 + arm * 12;
-    const legW = 9 + leg * 12;
-    const c = stage.color;
-    const dark = '#c9753f';
-    const eyeY = 78;
-    const faces = {
-      happy:  `<path d="M78 ${eyeY} q6 -8 12 0" stroke="#3a2e2a" stroke-width="4" fill="none" stroke-linecap="round"/>
-               <path d="M110 ${eyeY} q6 -8 12 0" stroke="#3a2e2a" stroke-width="4" fill="none" stroke-linecap="round"/>
-               <path d="M88 96 q12 12 24 0" stroke="#3a2e2a" stroke-width="4" fill="#ff8080" stroke-linecap="round"/>`,
-      normal: `<circle cx="84" cy="${eyeY}" r="5" fill="#3a2e2a"/><circle cx="116" cy="${eyeY}" r="5" fill="#3a2e2a"/>
-               <path d="M92 98 h16" stroke="#3a2e2a" stroke-width="4" stroke-linecap="round"/>`,
-      sad:    `<circle cx="84" cy="${eyeY + 2}" r="5" fill="#3a2e2a"/><circle cx="116" cy="${eyeY + 2}" r="5" fill="#3a2e2a"/>
-               <path d="M76 ${eyeY - 9} l12 4 M124 ${eyeY - 9} l-12 4" stroke="#3a2e2a" stroke-width="3" stroke-linecap="round"/>
-               <path d="M90 102 q10 -9 20 0" stroke="#3a2e2a" stroke-width="4" fill="none" stroke-linecap="round"/>
-               <path d="M122 86 q4 8 0 12 q-4 -4 0 -12" fill="#7cc3ff"/>`,
-      tired:  `<path d="M78 ${eyeY} h12 M110 ${eyeY} h12" stroke="#3a2e2a" stroke-width="4" stroke-linecap="round"/>
-               <ellipse cx="100" cy="100" rx="6" ry="4" fill="#3a2e2a"/>
-               <text x="132" y="62" font-size="16" fill="#8a7a72">z</text><text x="142" y="48" font-size="12" fill="#8a7a72">z</text>`,
-    };
-    // 腹筋（体幹XPが一定以上で割れる）
-    const abs = core > 0.35 ? `
-      <g stroke="${dark}" stroke-width="2.5" opacity="${Math.min(1, core)}" fill="none" stroke-linecap="round">
-        <path d="M100 116 v30"/><path d="M90 124 h20"/><path d="M90 136 h20"/>
-      </g>` : '';
-    // 胸筋
-    const pecs = upper > 0.3 ? `<path d="M${100 - bw * 0.55} 112 q${bw * 0.27} 8 ${bw * 0.55} 0 q${bw * 0.28} 8 ${bw * 0.55} 0" stroke="${dark}" stroke-width="2.5" fill="none" opacity="${upper}"/>` : '';
-    // ステージごとのアクセサリ
-    let acc = '';
-    if (k >= 2) acc += `<rect x="62" y="56" width="76" height="9" rx="4" fill="#e74c3c"/><path d="M136 60 l14 -6 l-3 10 z" fill="#e74c3c"/>`; // ハチマキ
-    if (k >= 4) acc += `<path d="M78 40 l8 -18 l14 12 l14 -12 l8 18 z" fill="#ffd700" stroke="#d4a017" stroke-width="2"/>`; // 王冠
-    const aura = k >= 4 ? `<ellipse cx="100" cy="110" rx="${92 + stamina * 6}" ry="${84 + stamina * 6}" fill="url(#aura)"/>` : '';
-    // 有酸素XPで汗のきらめき
-    const sweat = stamina > 0.2 && mood.face === 'happy' ? `<path d="M140 70 q5 9 0 14 q-5 -5 0 -14" fill="#7cc3ff"/>` : '';
-    const wristband = k >= 3 ? [-1, 1].map(d =>
-      `<rect x="${100 + d * (bw + 20) - armW - 1}" y="88" width="${armW * 2 + 2}" height="6" rx="2" fill="#4d96ff"/>`).join('') : '';
+    const k = st.stageIdx;                       // 1〜5
+    const scale = 0.76 + k * 0.05;               // 成長で大きくなる
+    const hs = 1.06 - k * 0.035;                 // 子どもほど頭が大きい
+    const S = 23 + k * 1.5 + upper * 12;         // 肩幅（胸・肩・背中）
+    const Wt = 17 + k * 0.8 + core * 1.5;        // ウエスト（シュッと細め）
+    const Hp = 21 + k * 0.8 + leg * 3;           // 腰
+    const A = 6 + k * 0.6 + arm * 6;             // 腕の太さ
+    const L = 9 + k * 0.6 + leg * 5;             // 脚の太さ
 
-    body = `
-      <defs>
-        <radialGradient id="aura"><stop offset="60%" stop-color="#ffe066" stop-opacity="0"/><stop offset="100%" stop-color="#ffe066" stop-opacity=".55"/></radialGradient>
-      </defs>
+    const torso = `M${100 - S} 124 C${100 - S} 112 ${100 - S * 0.5} 104 100 104 C${100 + S * 0.5} 104 ${100 + S} 112 ${100 + S} 124
+      C${100 + S} 138 ${100 + Wt} 144 ${100 + Wt} 152 C${100 + Wt} 160 ${100 + Hp} 161 ${100 + Hp} 168
+      Q100 177 ${100 - Hp} 168 C${100 - Hp} 161 ${100 - Wt} 160 ${100 - Wt} 152 C${100 - Wt} 144 ${100 - S} 138 ${100 - S} 124 Z`;
+
+    // 胸筋・腹筋（鍛えるほどくっきり）
+    const pecs = [-1, 1].map(d =>
+      `<ellipse cx="${100 + d * S * 0.42}" cy="136" rx="${S * 0.44}" ry="${7 + upper * 3}" fill="url(#muscle)" opacity="${0.25 + upper * 0.75}"/>
+       <path d="M${100 + d * S * 0.82} 138 Q${100 + d * S * 0.42} ${145 + upper * 2} 100 140" stroke="#8e8ea0" stroke-width="1.2" fill="none" opacity="${upper * 0.8}"/>`).join('');
+    let abs = '';
+    if (core > 0.15) {
+      for (let row = 0; row < 3; row++) for (const d of [-1, 1]) {
+        abs += `<rect x="${100 + (d < 0 ? -10.5 : 1.5)}" y="${145 + row * 8.2}" width="9" height="7" rx="3.2"
+          fill="url(#muscle)" opacity="${Math.min(1, core * 1.2)}"/>`;
+      }
+      abs += `<path d="M100 144 v25" stroke="#9a9aac" stroke-width="1" opacity="${core}"/>`;
+    }
+
+    // 腕（力こぶポーズ）：楕円を重ねて立体的に
+    const arms = [-1, 1].map(d => {
+      const x = v => 100 + d * v;
+      return `
+        <ellipse cx="${x(S + 8)}" cy="125" rx="17" ry="${A}" fill="url(#furK)" transform="rotate(${d * 8} ${x(S + 8)} 125)"/>
+        <ellipse cx="${x(S + 21)}" cy="111" rx="${A * 0.78}" ry="16" fill="url(#furK)" transform="rotate(${d * -5} ${x(S + 21)} 111)"/>
+        <ellipse cx="${x(S + 9)}" cy="${119 - arm * 2}" rx="${9 + arm * 5}" ry="${A * 0.75 + arm * 3}" fill="url(#furK)"/>
+        <ellipse cx="${x(S + 20)}" cy="93" rx="${A * 0.72 + 2}" ry="${A * 0.66 + 2}" fill="url(#furK)"/>
+        <circle cx="${x(S - 3)}" cy="118" r="${A + 3}" fill="url(#furK)"/>`;
+    }).join('');
+    // 力こぶのツヤ
+    const armShine = [-1, 1].map(d =>
+      `<ellipse cx="${100 + d * (S + 7)}" cy="${115 - arm * 3}" rx="${4 + arm * 3}" ry="${1.6 + arm}" fill="#9a9ab8" opacity="${0.3 + arm * 0.5}" filter="url(#soft)"/>
+       <path d="M${100 + d * (S + 14 + arm * 3)} ${124 - arm * 2} q${d * 4} -6 ${d * 2} -12" stroke="#000" stroke-width="2" fill="none" opacity=".6" filter="url(#soft)"/>
+       <ellipse cx="${100 + d * (S + 18)}" cy="90" rx="2.6" ry="1.4" fill="#9a9ab8" opacity=".5" filter="url(#soft)"/>`).join('');
+
+    const legs = [-1, 1].map(d => `
+      <ellipse cx="${100 + d * 15}" cy="168" rx="${L}" ry="17" fill="url(#furK)"/>
+      <ellipse cx="${100 + d * 16}" cy="182" rx="${L + 3}" ry="6.5" fill="url(#furK)"/>`).join('');
+
+    // 顔
+    const E = 5.6;
+    const faces = {
+      happy:  `<path d="M78.5 77 q5.5 -6.5 11 0 M110.5 77 q5.5 -6.5 11 0" stroke="#e8e8f0" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+               <path d="M94 95 q6 9 12 0 z" fill="#3a1420"/><ellipse cx="100" cy="99" rx="3.5" ry="2" fill="#ff7aa8"/>`,
+      normal: `${eye(84, 76, E)}${eye(116, 76, E)}
+               <path d="M94.5 95.5 q2.8 3 5.5 -0.5 q2.7 3.5 5.5 0.5" stroke="#1a1a22" stroke-width="1.6" fill="none" stroke-linecap="round"/>`,
+      sad:    `${eye(84, 78, E * 0.9)}${eye(116, 78, E * 0.9)}
+               <path d="M95 98 q5 -4 10 0" stroke="#1a1a22" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+               <path d="M121 86 q3.5 7 0 10.5 q-3.5 -3.5 0 -10.5" fill="${NEON}" filter="url(#glow)"/>`,
+      tired:  `${eye(84, 77, E * 0.85)}${eye(116, 77, E * 0.85)}
+               <path d="M78.5 77 A5.5 5.5 0 0 1 89.5 77 Z M110.5 77 A5.5 5.5 0 0 1 121.5 77 Z" fill="#14141b"/>
+               <path d="M78.5 77 h11 M110.5 77 h11" stroke="#6a6a80" stroke-width="1.2"/>
+               <ellipse cx="100" cy="97" rx="2.6" ry="2" fill="#1a1a22"/>
+               <text x="136" y="54" font-size="14" fill="${NEON}" filter="url(#glow)" font-weight="700">z</text>
+               <text x="147" y="42" font-size="10" fill="${NEON}" filter="url(#glow)" font-weight="700">z</text>`,
+    };
+
+    // アクセサリ
+    let acc = '';
+    if (k >= 2) acc += `<g filter="url(#glow)"><path d="M62 60 Q100 42 138 60" stroke="${PINK}" stroke-width="6" fill="none" stroke-linecap="round"/>
+                        <path d="M137 59 l14 -7 l-2 11 z M137 59 l13 6 l-8 6 z" fill="${PINK}"/></g>`;   // ハチマキ
+    if (k >= 4) acc += `<g filter="url(#glow)"><path d="M86 34 l5 -15 l9 8 l9 -8 l5 15 z" fill="rgba(182,255,59,.15)" stroke="${LIME}" stroke-width="2" stroke-linejoin="round"/>
+                        <circle cx="100" cy="25" r="2.4" fill="${PINK}"/></g>`;                              // 王冠
+    const sweat = stamina > 0.2 && mood.face === 'happy' ? `<path d="M140 76 q4 8 0 12 q-4 -4 0 -12" fill="${NEON}" filter="url(#glow)"/>` : '';
+    const wristband = k >= 3 ? [-1, 1].map(d =>
+      `<rect x="${100 + d * (S + 20.5) - A * 0.85}" y="101" width="${A * 1.7}" height="4" rx="2" fill="${LIME}" filter="url(#glow)"/>`).join('') : '';
+    const aura = k >= 4 ? `<ellipse cx="100" cy="112" rx="${96 + stamina * 6}" ry="${88 + stamina * 6}" fill="url(#aura)"/>` : '';
+    // レジェンドは笹を背負う
+    const bamboo = k >= 5 ? `
+      <g transform="rotate(-25 100 130)" filter="url(#glow)">
+        <rect x="96" y="40" width="8" height="120" rx="3" fill="rgba(57,255,136,.12)" stroke="#39ff88" stroke-width="2"/>
+        <path d="M96 70 h8 M96 100 h8 M96 130 h8" stroke="#39ff88" stroke-width="2"/>
+        <path d="M104 52 q20 -10 28 -2 q-14 8 -28 2 z M96 60 q-20 -12 -28 -4 q14 8 28 4 z" fill="rgba(57,255,136,.12)" stroke="#39ff88" stroke-width="1.5"/>
+      </g>` : '';
+
+    const headT = `translate(100 81) scale(${hs}) translate(-100 -76)`;
+    body = `${PANDA_DEFS}
       ${aura}
-      <ellipse cx="100" cy="186" rx="${50 + leg * 10}" ry="8" fill="rgba(0,0,0,.1)"/>
-      <g transform="translate(100 186) scale(${scale}) translate(-100 -186)">
-        <!-- 脚 -->
-        <rect x="${100 - 22 - legW / 2}" y="150" width="${legW}" height="34" rx="${legW / 2}" fill="${c}" stroke="${dark}" stroke-width="2.5"/>
-        <rect x="${100 + 22 - legW / 2}" y="150" width="${legW}" height="34" rx="${legW / 2}" fill="${c}" stroke="${dark}" stroke-width="2.5"/>
-        <!-- 腕（力こぶポーズ）：太い線を縁取り色→本体色の順に重ねて描く -->
-        ${[-1, 1].map(d => {
-          const sx = 100 + d * (bw - 8), ex = 100 + d * (bw + 22), fx = 100 + d * (bw + 20);
-          const path = `M${sx} 112 L${ex} 114 L${fx} 80`;
-          return `<path d="${path}" stroke="${dark}" stroke-width="${armW * 2 + 5}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="${path}" stroke="${c}" stroke-width="${armW * 2}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-                  <ellipse cx="${100 + d * (bw + 10)}" cy="${106 - arm * 3}" rx="${armW * 0.9}" ry="${armW * 0.75}" fill="${c}" stroke="${dark}" stroke-width="2.5"/>`;
-        }).join('')}
+      <ellipse cx="100" cy="190" rx="${60 + leg * 10}" ry="9" fill="url(#floor)"/>
+      <g transform="translate(100 188) scale(${scale}) translate(-100 -188)">
+        <ellipse cx="100" cy="186" rx="${34 + S * 0.4}" ry="5" fill="#000" opacity=".55" filter="url(#soft)"/>
+        ${bamboo}
+        <!-- 体（毛並み＋縁取り） -->
+        <g filter="url(#fur)">
+          ${legs}
+          ${arms}
+          <defs><clipPath id="torsoClip"><path d="${torso}"/></clipPath></defs>
+          <path d="${torso}" fill="url(#furW)"/>
+          <path d="${torso}" fill="url(#rimLight)"/>
+          <g clip-path="url(#torsoClip)">
+            <path d="M${100 - S - 4} 100 L${100 + S + 4} 100 L${100 + S + 4} 124 Q100 ${136 - upper * 3} ${100 - S - 4} 124 Z" fill="url(#furK)"/>
+          </g>
+        </g>
+        <g clip-path="url(#torsoClip)">${pecs}${abs}</g>
+        ${armShine}
         ${wristband}
-        <!-- 胴体（頭と一体のまるいボディ） -->
-        <ellipse cx="100" cy="112" rx="${bw}" ry="${bh + 22}" fill="${c}" stroke="${dark}" stroke-width="3"/>
-        <ellipse cx="100" cy="130" rx="${bw * 0.6}" ry="${bh * 0.5}" fill="#fff" opacity=".35"/>
-        ${pecs}${abs}
-        <circle cx="72" cy="92" r="7" fill="#ff9a9a" opacity=".6"/><circle cx="128" cy="92" r="7" fill="#ff9a9a" opacity=".6"/>
-        ${faces[mood.face]}
-        ${acc}${sweat}
+        <!-- 頭 -->
+        <g transform="${headT}">
+          <g filter="url(#fur)">
+            <circle cx="70" cy="46" r="13.5" fill="url(#furK)"/><circle cx="130" cy="46" r="13.5" fill="url(#furK)"/>
+            <ellipse cx="100" cy="76" rx="40" ry="34" fill="url(#furW)"/>
+            <ellipse cx="78" cy="88" rx="19" ry="15" fill="url(#furW)"/>
+            <ellipse cx="122" cy="88" rx="19" ry="15" fill="url(#furW)"/>
+            <ellipse cx="100" cy="80" rx="42" ry="30" fill="url(#rimLight)"/>
+          </g>
+          <circle cx="70" cy="46" r="6" fill="#2c2c3a"/><circle cx="130" cy="46" r="6" fill="#2c2c3a"/>
+          <!-- 目のまわりの黒い模様（たれ目型） -->
+          <path d="M77 66 C86 62 93 70 91 80 C89 89 80 92 75 87 C70 82 70 70 77 66 Z" fill="url(#furK)"/>
+          <path d="M123 66 C114 62 107 70 109 80 C111 89 120 92 125 87 C130 82 130 70 123 66 Z" fill="url(#furK)"/>
+          <!-- マズル -->
+          <ellipse cx="100" cy="91" rx="14.5" ry="10.5" fill="url(#muzzle)"/>
+          <path d="M93.5 84.5 Q100 80.5 106.5 84.5 Q104.5 91 100 91 Q95.5 91 93.5 84.5 Z" fill="#111118"/>
+          <ellipse cx="98.2" cy="84.2" rx="2.4" ry="1.1" fill="#fff" opacity=".55"/>
+          <path d="M100 91 v3.2" stroke="#1a1a22" stroke-width="1.4"/>
+          <!-- おでこのツヤ・ほっぺ -->
+          <ellipse cx="88" cy="56" rx="13" ry="7" fill="#fff" opacity=".85" filter="url(#soft)"/>
+          <ellipse cx="72" cy="94" rx="6.5" ry="3.5" fill="#ff8fb8" opacity=".45" filter="url(#soft)"/>
+          <ellipse cx="128" cy="94" rx="6.5" ry="3.5" fill="#ff8fb8" opacity=".45" filter="url(#soft)"/>
+          ${faces[mood.face]}
+          ${acc}
+        </g>
+        ${sweat}
       </g>`;
   }
   svg.innerHTML = body;
@@ -430,17 +620,17 @@ function render() {
   document.getElementById('petStage').textContent = `${stage.name}（Lv ${st.lv}）` +
     (STAGES[st.stageIdx + 1] ? ` ・ Lv ${STAGES[st.stageIdx + 1].lv}で進化` : ' ・ 最終形態！');
   document.getElementById('petTalk').textContent = talkOf(st, mood);
-  document.getElementById('levelLabel').textContent = `Lv ${st.lv}`;
+  document.getElementById('levelLabel').innerHTML = `<small>LV</small>${st.lv}`;
   document.getElementById('xpLabel').textContent = `${st.rest} / ${st.need} XP（累計 ${st.total}）`;
   document.getElementById('xpBar').style.width = `${(st.rest / st.need) * 100}%`;
   document.getElementById('moodLabel').textContent = mood.label + (st.idle > 1 ? `（${st.idle}日休み）` : '');
   document.getElementById('streakLabel').textContent = st.streak
-    ? `${st.streak}日 🔥 ボーナス+${Math.min(st.streak - 1, 5) * 10}%` : '-';
+    ? `${st.streak}日 / ボーナス +${Math.min(st.streak - 1, 5) * 10}%` : '-';
 
   const maxStat = Math.max(100, ...Object.values(st.stat));
   document.getElementById('stats').innerHTML = Object.entries(PARTS).map(([k, p]) => `
     <div class="stat" style="--c:${p.color}">
-      <div class="row"><span>${p.stat}<small style="color:var(--sub)">（${p.name}）</small></span><b>${st.stat[k]}</b></div>
+      <div class="row"><span>${p.stat}<small style="color:var(--sub);margin-left:4px">${p.name}</small></span><b>${st.stat[k]}</b></div>
       <div class="bar"><div style="width:${(st.stat[k] / maxStat) * 100}%"></div></div>
     </div>`).join('');
 
@@ -456,7 +646,7 @@ function render() {
   const leveled = lastLv !== null && st.lv > lastLv;
   if (leveled) {
     const evolved = st.stageIdx > lastStage;
-    toast(evolved ? `✨ 進化した！ ${stage.name} になった！` : `🎉 レベルアップ！ Lv ${st.lv}`);
+    toast(evolved ? `EVOLVED — ${stage.name} になった` : `LEVEL UP — Lv ${st.lv}`);
     const box = document.getElementById('petSvg');
     box.classList.remove('levelup'); void box.getBBox(); box.classList.add('levelup');
   }
@@ -469,7 +659,7 @@ function entryHtml(r) {
   const detail = r.part === 'cardio' ? `${r.minutes}分`
     : `${Number(r.weight) ? r.weight + 'kg' : '自重'} × ${r.reps}回 × ${r.sets}セット`;
   return `<div class="entry">
-    <div><span class="tag" style="background:${p.color}">${p.name}</span>${esc(r.exercise)}
+    <div><span class="tag" style="--c:${p.color}">${p.name}</span>${esc(r.exercise)}
       <div class="meta">${detail}</div></div>
     <div><span class="xp">+${r._xp}XP</span><button class="mini" data-del="${r.id}">削除</button></div>
   </div>`;
@@ -515,7 +705,7 @@ function toast(msg) {
 let currentPart = 'chest';
 function renderChips() {
   document.getElementById('partChips').innerHTML = Object.entries(PARTS).map(([k, p]) =>
-    `<button class="chip ${k === currentPart ? 'on' : ''}" data-part="${k}">${p.name}</button>`).join('');
+    `<button class="chip ${k === currentPart ? 'on' : ''}" style="--c:${p.color}" data-part="${k}">${p.name}</button>`).join('');
   document.getElementById('fExercise').innerHTML =
     PARTS[currentPart].ex.map(e => `<option>${e}</option>`).join('') + '<option value="__custom">その他（自由入力）</option>';
   const cardio = currentPart === 'cardio';
@@ -572,7 +762,7 @@ document.getElementById('saveBtn').addEventListener('click', () => {
   data.records.push(r);
   save();
   const gained = computeState().total - before;
-  if (!render()) toast(`💪 +${gained} XP ゲット！`);
+  if (!render()) toast(`+${gained} XP`);
   document.getElementById('fReps').value = '';
 });
 
@@ -605,7 +795,7 @@ document.getElementById('importFile').addEventListener('change', async e => {
     const d = JSON.parse(await f.text());
     if (!Array.isArray(d.records)) throw new Error();
     if (!confirm(`${d.records.length}件の記録で上書きします。よろしいですか？`)) return;
-    data = { petName: d.petName || 'マッスルくん', records: d.records };
+    data = { petName: d.petName || DEFAULT_NAME, records: d.records };
     save(); lastLv = null; render(); toast('復元しました');
   } catch { toast('ファイルを読み込めませんでした'); }
   e.target.value = '';
