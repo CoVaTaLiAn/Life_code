@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>マッスルパンダ - 筋トレ記録</title>
+<title>マッスルモンスター - 筋トレ記録</title>
 <style>
   :root {
     --bg: #07070b;
@@ -62,6 +62,8 @@
     content: ""; position: absolute; left: 50%; bottom: 96px; width: 280px; height: 60px; transform: translateX(-50%);
     background: radial-gradient(ellipse, rgba(0, 240, 255, .18), transparent 70%);
   }
+  .char-picker { justify-content: center; position: relative; z-index: 1; }
+  .char-picker .chip { padding: 4px 12px; font-size: 12px; }
   .pet-name { font-size: 20px; font-weight: 700; margin: 4px 0 0; letter-spacing: .04em; }
   .pet-stage { color: var(--cyan); font-size: 12px; letter-spacing: .1em; margin-top: 2px; }
   #petSvg { width: 260px; height: 205px; overflow: visible; position: relative; }
@@ -211,7 +213,7 @@
 </head>
 <body>
 <header>
-  <div class="logo">MUSCLE<b>PANDA</b></div>
+  <div class="logo">MUSCLE<b>MONSTER</b></div>
   <small id="todayLabel"></small>
 </header>
 
@@ -219,6 +221,7 @@
   <!-- ホーム -->
   <section id="tab-home">
     <div class="card pet-wrap">
+      <div class="chips char-picker" id="charPicker"></div>
       <div id="petBox"><svg id="petSvg" viewBox="-30 -5 260 205"></svg></div>
       <div class="pet-name"><span id="petName"></span> <button class="mini" id="renameBtn">名前変更</button></div>
       <div class="pet-stage" id="petStage"></div>
@@ -316,7 +319,7 @@
 </main>
 
 <nav>
-  <button data-tab="home" class="on">PANDA</button>
+  <button data-tab="home" class="on">HOME</button>
   <button data-tab="log">LOG</button>
   <button data-tab="history">HISTORY</button>
 </nav>
@@ -345,15 +348,42 @@ const PARTS = {
   core:     { name: '腹',     stat: 'たいかん', color: '#f5ff3b', ex: ['クランチ', 'プランク(秒→回数)', 'レッグレイズ', 'アブローラー', 'ロシアンツイスト'] },
   cardio:   { name: '有酸素', stat: 'スタミナ', color: '#00f0ff', ex: ['ランニング', 'ウォーキング', 'バイク', '水泳', 'なわとび', 'HIIT'] },
 };
-const STAGES = [
-  { lv: 1,  name: 'パンダのたまご' },
-  { lv: 3,  name: 'こパンダ' },
-  { lv: 6,  name: 'わんぱくパンダ' },
-  { lv: 11, name: 'マッチョパンダ' },
-  { lv: 20, name: 'ゴリマッチョパンダ' },
-  { lv: 35, name: 'レジェンドパンダ' },
-];
-const DEFAULT_NAME = 'パンダくん';
+// 進化するレベル（キャラ共通）
+const STAGES = [1, 3, 6, 11, 20, 35].map(lv => ({ lv }));
+const COMMON_TALK = {
+  great: ['今日もナイスバルク！', 'まだまだいけるよ！', '筋肉がよろこんでる！', 'プロテイン飲んだ？'],
+  ok: ['そろそろトレーニングしない？', '休養も大事だよね', '次はどこ鍛える？'],
+  sad: ['さみしいな…', '筋肉がしぼんじゃう…', 'いっしょに動こうよ…'],
+  tired: ['zzz…', 'からだが重い…', '一緒にまた始めよう…'],
+};
+const CHARS = {
+  wolf: {
+    label: 'ウルフ', defName: 'ウルフくん',
+    stages: ['ウルフのたまご', 'ちびウルフ', 'わんぱくウルフ', 'マッチョウルフ', 'ゴリマッチョウルフ', 'レジェンドウルフ'],
+    egg: ['トレーニングを記録して、たまごを温めよう！', '…ガリッ', 'たまごの中から遠吠えが聞こえた！', 'もうすぐ生まれそう！'],
+    talk: { great: ['ワオーン！今日もバルクアップ！', '満月の夜は筋肉がうずくぜ'], ok: ['遠吠えしながら待ってるね'], sad: ['クゥーン…'] },
+  },
+  franken: {
+    label: 'フランケン', defName: 'フランケンくん',
+    stages: ['フランケンのたまご', 'ちびフランケン', 'わんぱくフランケン', 'マッチョフランケン', 'ゴリマッチョフランケン', 'レジェンドフランケン'],
+    egg: ['トレーニングを記録して、たまごに電気をためよう！', '…ビリッ', 'たまごのボルトが光った！', 'もうすぐ起動しそう！'],
+    talk: { great: ['電気でパンプアップ！', 'ボルトがビカビカ光ってるぜ'], ok: ['充電しながら待ってるね'], sad: ['バッテリーがきれそう…'] },
+  },
+  axolotl: {
+    label: 'ウーパー', defName: 'ウパちゃん',
+    stages: ['ウーパーのたまご', 'ちびウーパー', 'わんぱくウーパー', 'マッチョウーパー', 'ゴリマッチョウーパー', 'レジェンドウーパー'],
+    egg: ['トレーニングを記録して、たまごを育てよう！', '…ぷくぷく', 'たまごの中でうごいた！', 'もうすぐ生まれそう！'],
+    talk: { great: ['エラがぴくぴくしてる！', '水分補給もわすれずに！'], ok: ['水の中でまってるね'], sad: ['エラがしおれちゃう…'] },
+  },
+  ghost: {
+    label: 'おばけ', defName: 'おばけちゃん',
+    stages: ['ひとだま', 'ちびおばけ', 'わんぱくおばけ', 'マッチョおばけ', 'ゴリマッチョおばけ', 'レジェンドおばけ'],
+    egg: ['トレーニングを記録して、ひとだまを育てよう！', '…ゆらゆら', 'ひとだまが大きくなってきた！', 'もうすぐ姿をあらわしそう！'],
+    talk: { great: ['うらめしや…じゃなくて、うらやましいその筋肉！', 'すけすけボディが引きしまってきた！'], ok: ['ふわふわ待ってるね'], sad: ['さみしくて消えちゃいそう…'], tired: ['すーっ…（消えかけ）'] },
+  },
+};
+const charOf = () => CHARS[data.char] ? data.char : 'wolf';
+const petName = () => data.names[charOf()] || CHARS[charOf()].defName;
 const STORE_KEY = 'musclePet.v1';
 
 // ===== 保存 =====
@@ -361,12 +391,15 @@ function load() {
   try {
     const d = JSON.parse(localStorage.getItem(STORE_KEY));
     if (d && Array.isArray(d.records)) {
-      if (d.petName === 'マッスルくん') d.petName = DEFAULT_NAME; // 旧デフォルト名をパンダ用に置き換え
       if (!Array.isArray(d.draft)) d.draft = [];
+      // 旧形式からの移行
+      if (!d.names) d.names = {};
+      delete d.petName;
+      if (!CHARS[d.char]) d.char = 'wolf'; // パンダは廃止したのでウルフに
       return d;
     }
   } catch (e) {}
-  return { petName: DEFAULT_NAME, records: [], draft: [] };
+  return { char: 'wolf', names: {}, records: [], draft: [] };
 }
 function save() {
   try { localStorage.setItem(STORE_KEY, JSON.stringify(data)); }
@@ -452,24 +485,20 @@ function moodOf(st) {
 }
 
 function talkOf(st, mood) {
+  const c = CHARS[charOf()];
   if (st.stageIdx === 0) {
-    if (st.idle === null) return 'トレーニングを記録して、たまごを温めよう！';
-    return ['…ピキッ', 'たまごが少し動いた！', 'もうすぐ生まれそう！'][Math.min(st.lv - 1 + (st.rest > st.need / 2 ? 1 : 0), 2)];
+    if (st.idle === null) return c.egg[0];
+    return c.egg[1 + Math.min(st.lv - 1 + (st.rest > st.need / 2 ? 1 : 0), 2)];
   }
-  const msgs = {
-    great: ['今日もナイスバルク！', 'まだまだいけるよ！', '筋肉がよろこんでる！', 'プロテイン飲んだ？', 'トレーニング後のササはうまい！'],
-    ok: ['そろそろトレーニングしない？', '休養も大事だよね', '次はどこ鍛える？', 'ササ食べてまってるね'],
-    sad: ['さみしいな…', '筋肉がしぼんじゃう…', 'いっしょに動こうよ…', 'ササものどを通らない…'],
-    tired: ['zzz…', 'からだが重い…', '一緒にまた始めよう…'],
-  };
-  const list = msgs[mood.key] || msgs.great;
+  const key = COMMON_TALK[mood.key] ? mood.key : 'great';
+  const list = [...COMMON_TALK[key], ...(c.talk[key] || [])];
   return list[(st.total + new Date().getDate()) % list.length];
 }
 
-// ===== キャラ描画（SVG：パンダ） =====
+// ===== キャラ描画（SVG） =====
 // 陰影グラデーション＋毛並みフィルタで立体感を出し、シルエットにネオンの縁取りを付ける
 const NEON = '#00f0ff', PINK = '#ff2bd6', LIME = '#b6ff3b';
-const PANDA_DEFS = `
+const PET_DEFS = `
   <defs>
     <!-- 毛並み：輪郭を細かく揺らして毛のふわっと感を出し、外側にネオンの縁取り -->
     <filter id="fur" x="-25%" y="-25%" width="150%" height="150%">
@@ -485,10 +514,6 @@ const PANDA_DEFS = `
       <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
     <filter id="soft"><feGaussianBlur stdDeviation="2.5"/></filter>
-    <!-- 白い毛：左上から光が当たる -->
-    <radialGradient id="furW" cx="38%" cy="30%" r="75%">
-      <stop offset="0%" stop-color="#ffffff"/><stop offset="55%" stop-color="#ebebf2"/><stop offset="100%" stop-color="#a9a9b8"/>
-    </radialGradient>
     <!-- 黒い毛 -->
     <radialGradient id="furK" cx="35%" cy="28%" r="80%">
       <stop offset="0%" stop-color="#4a4a5c"/><stop offset="45%" stop-color="#1b1b24"/><stop offset="100%" stop-color="#050507"/>
@@ -502,9 +527,6 @@ const PANDA_DEFS = `
     <radialGradient id="muscle" cx="45%" cy="35%" r="70%">
       <stop offset="0%" stop-color="#ffffff" stop-opacity=".9"/><stop offset="70%" stop-color="#d6d6e0" stop-opacity=".5"/><stop offset="100%" stop-color="#8e8ea0" stop-opacity=".7"/>
     </radialGradient>
-    <radialGradient id="muzzle" cx="50%" cy="35%" r="70%">
-      <stop offset="0%" stop-color="#ffffff"/><stop offset="75%" stop-color="#f0f0f5"/><stop offset="100%" stop-color="#c4c4d0"/>
-    </radialGradient>
     <radialGradient id="eyeG" cx="45%" cy="40%" r="60%">
       <stop offset="0%" stop-color="#6b4630"/><stop offset="55%" stop-color="#24140c"/><stop offset="100%" stop-color="#000"/>
     </radialGradient>
@@ -514,14 +536,65 @@ const PANDA_DEFS = `
       <stop offset="100%" stop-color="${NEON}" stop-opacity="0"/>
     </radialGradient>
     <radialGradient id="floor"><stop offset="0%" stop-color="${NEON}" stop-opacity=".45"/><stop offset="100%" stop-color="${NEON}" stop-opacity="0"/></radialGradient>
+    <!-- 縁取りのみ（毛並みなし） -->
+    <filter id="rim" x="-25%" y="-25%" width="150%" height="150%">
+      <feMorphology in="SourceAlpha" operator="dilate" radius=".8" result="d"/>
+      <feFlood flood-color="${NEON}" flood-opacity=".75"/><feComposite in2="d" operator="in" result="rim"/>
+      <feGaussianBlur in="rim" stdDeviation="3" result="glow"/>
+      <feMerge><feMergeNode in="glow"/><feMergeNode in="rim"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <!-- 手描き風に線をゆらす -->
+    <filter id="sketch" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency=".035" numOctaves="2" seed="7" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="2.6" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="ghostGlow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="7"/></filter>
+    <radialGradient id="wolfFur" cx="36%" cy="28%" r="80%">
+      <stop offset="0%" stop-color="#dfe4ee"/><stop offset="45%" stop-color="#9aa3b8"/><stop offset="100%" stop-color="#454c60"/>
+    </radialGradient>
+    <radialGradient id="wolfLight" cx="45%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#ffffff"/><stop offset="70%" stop-color="#eef1f6"/><stop offset="100%" stop-color="#b9c0d0"/>
+    </radialGradient>
+    <radialGradient id="wolfEye" cx="45%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#fff2a8"/><stop offset="35%" stop-color="#ffc233"/><stop offset="62%" stop-color="#b86a00"/><stop offset="66%" stop-color="#140a00"/><stop offset="100%" stop-color="#000"/>
+    </radialGradient>
+    <radialGradient id="frSkin" cx="36%" cy="28%" r="80%">
+      <stop offset="0%" stop-color="#d9f5c8"/><stop offset="50%" stop-color="#9fd38f"/><stop offset="100%" stop-color="#4f8a55"/>
+    </radialGradient>
+    <linearGradient id="frHair" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#3a3a4a"/><stop offset="1" stop-color="#0c0c12"/></linearGradient>
+    <linearGradient id="frPants" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#3b2a66"/><stop offset="1" stop-color="#1a1230"/></linearGradient>
+    <radialGradient id="boot" cx="40%" cy="30%" r="80%"><stop offset="0%" stop-color="#4a4a5c"/><stop offset="100%" stop-color="#0a0a10"/></radialGradient>
+    <linearGradient id="metal" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#e8edf5"/><stop offset=".5" stop-color="#9aa3b5"/><stop offset="1" stop-color="#4b5263"/></linearGradient>
+    <radialGradient id="muscleG" cx="45%" cy="35%" r="70%">
+      <stop offset="0%" stop-color="#f0ffe6" stop-opacity=".8"/><stop offset="70%" stop-color="#b9e3a8" stop-opacity=".4"/><stop offset="100%" stop-color="#4f8a55" stop-opacity=".7"/>
+    </radialGradient>
+    <radialGradient id="axSkin" cx="38%" cy="30%" r="78%">
+      <stop offset="0%" stop-color="#ffe9f0"/><stop offset="50%" stop-color="#ffb3c9"/><stop offset="100%" stop-color="#d9708f"/>
+    </radialGradient>
+    <radialGradient id="axBelly" cx="45%" cy="35%" r="70%">
+      <stop offset="0%" stop-color="#fff6f9"/><stop offset="100%" stop-color="#ffcfdd"/>
+    </radialGradient>
+    <linearGradient id="axGill" x1="0" x2="1"><stop offset="0" stop-color="#ff3d8b"/><stop offset="1" stop-color="#ffa3c8"/></linearGradient>
+    <radialGradient id="axEyeG" cx="45%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#4a3048"/><stop offset="60%" stop-color="#140a12"/><stop offset="100%" stop-color="#000"/>
+    </radialGradient>
+    <radialGradient id="axJelly" cx="40%" cy="35%" r="70%">
+      <stop offset="0%" stop-color="#ffd6e4" stop-opacity=".18"/><stop offset="80%" stop-color="#ff9cc0" stop-opacity=".22"/><stop offset="100%" stop-color="#ff6fa3" stop-opacity=".45"/>
+    </radialGradient>
+    <radialGradient id="muscleP" cx="45%" cy="35%" r="70%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity=".85"/><stop offset="70%" stop-color="#ffd3e0" stop-opacity=".45"/><stop offset="100%" stop-color="#e07a9a" stop-opacity=".7"/>
+    </radialGradient>
+    <radialGradient id="flame" cx="50%" cy="65%" r="60%">
+      <stop offset="0%" stop-color="#ffffff"/><stop offset="45%" stop-color="#b8fbff"/><stop offset="100%" stop-color="${NEON}" stop-opacity=".55"/>
+    </radialGradient>
     <radialGradient id="egg" cx="38%" cy="30%" r="80%">
       <stop offset="0%" stop-color="#ffffff"/><stop offset="60%" stop-color="#e6e6ee"/><stop offset="100%" stop-color="#9c9cae"/>
     </radialGradient>
   </defs>`;
 
 // ツヤのある瞳
-function eye(cx, cy, r) {
-  return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#eyeG)" stroke="rgba(255,255,255,.18)" stroke-width=".8"/>
+function eye(cx, cy, r, grad = 'eyeG') {
+  return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#${grad})" stroke="rgba(255,255,255,.18)" stroke-width=".8"/>
     <circle cx="${cx + r * 0.35}" cy="${cy - r * 0.38}" r="${r * 0.36}" fill="#fff"/>
     <circle cx="${cx - r * 0.32}" cy="${cy + r * 0.36}" r="${r * 0.16}" fill="#bff9ff" opacity=".85"/>`;
 }
@@ -531,166 +604,468 @@ function drawPet(st, mood) {
   const s = st.stat;
   // 部位ごとのXPから見た目を決める（0〜1）
   const g = v => Math.min(1, Math.sqrt(v / 1500));
+  const k = st.stageIdx;                         // 0（たまご）〜5
   const upper = g(s.chest + s.shoulder + s.back / 2);
   const arm = g(s.arms * 2 + s.chest / 2);
   const leg = g(s.legs * 1.5);
   const core = g(s.core * 3);
-  const stamina = g(s.cardio * 2);
-
-  let body = '';
-  if (st.stageIdx === 0) {
-    // たまご：パンダ柄。XPが貯まるほどヒビが入る
-    const p = st.rest / st.need + (st.lv - 1);
-    const crackStyle = `stroke="#3a3a48" stroke-width="2.4" fill="none" stroke-linejoin="round" stroke-linecap="round"`;
-    const crack = p > 0.3 ? `<path d="M66 102 l9 9 l8 -9 l10 11 l9 -8 l10 9 l11 -8" ${crackStyle}/>` : '';
-    const crack2 = p > 1.0 ? `<path d="M80 140 l8 -7 l8 7 l9 -6 l9 8" ${crackStyle}/>` : '';
-    body = `${PANDA_DEFS}
-      <ellipse cx="100" cy="183" rx="62" ry="9" fill="url(#floor)"/>
-      <g filter="url(#fur)">
-        <circle cx="73" cy="58" r="13" fill="url(#furK)"/><circle cx="127" cy="58" r="13" fill="url(#furK)"/>
-        <ellipse cx="100" cy="114" rx="52" ry="65" fill="url(#egg)"/>
-        <ellipse cx="100" cy="114" rx="52" ry="65" fill="url(#rimLight)"/>
-        <ellipse cx="80" cy="150" rx="12" ry="9" fill="url(#furK)" transform="rotate(-15 80 150)"/>
-        <ellipse cx="128" cy="136" rx="9" ry="7" fill="url(#furK)"/>
-        <ellipse cx="111" cy="166" rx="7" ry="5" fill="url(#furK)"/>
-      </g>
-      <ellipse cx="82" cy="80" rx="14" ry="20" fill="#fff" opacity=".7" filter="url(#soft)" transform="rotate(20 82 80)"/>
-      ${crack}${crack2}`;
-  } else {
-    const k = st.stageIdx;                       // 1〜5
-    const scale = 0.76 + k * 0.05;               // 成長で大きくなる
-    const hs = 1.06 - k * 0.035;                 // 子どもほど頭が大きい
-    const S = 23 + k * 1.5 + upper * 12;         // 肩幅（胸・肩・背中）
-    const Wt = 17 + k * 0.8 + core * 1.5;        // ウエスト（シュッと細め）
-    const Hp = 21 + k * 0.8 + leg * 3;           // 腰
-    const A = 6 + k * 0.6 + arm * 6;             // 腕の太さ
-    const L = 9 + k * 0.6 + leg * 5;             // 脚の太さ
-
-    const torso = `M${100 - S} 124 C${100 - S} 112 ${100 - S * 0.5} 104 100 104 C${100 + S * 0.5} 104 ${100 + S} 112 ${100 + S} 124
-      C${100 + S} 138 ${100 + Wt} 144 ${100 + Wt} 152 C${100 + Wt} 160 ${100 + Hp} 161 ${100 + Hp} 168
-      Q100 177 ${100 - Hp} 168 C${100 - Hp} 161 ${100 - Wt} 160 ${100 - Wt} 152 C${100 - Wt} 144 ${100 - S} 138 ${100 - S} 124 Z`;
-
-    // 胸筋・腹筋（鍛えるほどくっきり）
-    const pecs = [-1, 1].map(d =>
-      `<ellipse cx="${100 + d * S * 0.42}" cy="136" rx="${S * 0.44}" ry="${7 + upper * 3}" fill="url(#muscle)" opacity="${0.25 + upper * 0.75}"/>
-       <path d="M${100 + d * S * 0.82} 138 Q${100 + d * S * 0.42} ${145 + upper * 2} 100 140" stroke="#8e8ea0" stroke-width="1.2" fill="none" opacity="${upper * 0.8}"/>`).join('');
-    let abs = '';
-    if (core > 0.15) {
-      for (let row = 0; row < 3; row++) for (const d of [-1, 1]) {
-        abs += `<rect x="${100 + (d < 0 ? -10.5 : 1.5)}" y="${145 + row * 8.2}" width="9" height="7" rx="3.2"
-          fill="url(#muscle)" opacity="${Math.min(1, core * 1.2)}"/>`;
-      }
-      abs += `<path d="M100 144 v25" stroke="#9a9aac" stroke-width="1" opacity="${core}"/>`;
-    }
-
-    // 腕（力こぶポーズ）：楕円を重ねて立体的に
-    const arms = [-1, 1].map(d => {
-      const x = v => 100 + d * v;
-      return `
-        <ellipse cx="${x(S + 8)}" cy="125" rx="17" ry="${A}" fill="url(#furK)" transform="rotate(${d * 8} ${x(S + 8)} 125)"/>
-        <ellipse cx="${x(S + 21)}" cy="111" rx="${A * 0.78}" ry="16" fill="url(#furK)" transform="rotate(${d * -5} ${x(S + 21)} 111)"/>
-        <ellipse cx="${x(S + 9)}" cy="${119 - arm * 2}" rx="${9 + arm * 5}" ry="${A * 0.75 + arm * 3}" fill="url(#furK)"/>
-        <ellipse cx="${x(S + 20)}" cy="93" rx="${A * 0.72 + 2}" ry="${A * 0.66 + 2}" fill="url(#furK)"/>
-        <circle cx="${x(S - 3)}" cy="118" r="${A + 3}" fill="url(#furK)"/>`;
-    }).join('');
-    // 力こぶのツヤ
-    const armShine = [-1, 1].map(d =>
-      `<ellipse cx="${100 + d * (S + 7)}" cy="${115 - arm * 3}" rx="${4 + arm * 3}" ry="${1.6 + arm}" fill="#9a9ab8" opacity="${0.3 + arm * 0.5}" filter="url(#soft)"/>
-       <path d="M${100 + d * (S + 14 + arm * 3)} ${124 - arm * 2} q${d * 4} -6 ${d * 2} -12" stroke="#000" stroke-width="2" fill="none" opacity=".6" filter="url(#soft)"/>
-       <ellipse cx="${100 + d * (S + 18)}" cy="90" rx="2.6" ry="1.4" fill="#9a9ab8" opacity=".5" filter="url(#soft)"/>`).join('');
-
-    const legs = [-1, 1].map(d => `
-      <ellipse cx="${100 + d * 15}" cy="168" rx="${L}" ry="17" fill="url(#furK)"/>
-      <ellipse cx="${100 + d * 16}" cy="182" rx="${L + 3}" ry="6.5" fill="url(#furK)"/>`).join('');
-
-    // 顔
-    const E = 5.6;
-    const faces = {
-      happy:  `<path d="M78.5 77 q5.5 -6.5 11 0 M110.5 77 q5.5 -6.5 11 0" stroke="#e8e8f0" stroke-width="2.4" fill="none" stroke-linecap="round"/>
-               <path d="M94 95 q6 9 12 0 z" fill="#3a1420"/><ellipse cx="100" cy="99" rx="3.5" ry="2" fill="#ff7aa8"/>`,
-      normal: `${eye(84, 76, E)}${eye(116, 76, E)}
-               <path d="M94.5 95.5 q2.8 3 5.5 -0.5 q2.7 3.5 5.5 0.5" stroke="#1a1a22" stroke-width="1.6" fill="none" stroke-linecap="round"/>`,
-      sad:    `${eye(84, 78, E * 0.9)}${eye(116, 78, E * 0.9)}
-               <path d="M95 98 q5 -4 10 0" stroke="#1a1a22" stroke-width="1.6" fill="none" stroke-linecap="round"/>
-               <path d="M121 86 q3.5 7 0 10.5 q-3.5 -3.5 0 -10.5" fill="${NEON}" filter="url(#glow)"/>`,
-      tired:  `${eye(84, 77, E * 0.85)}${eye(116, 77, E * 0.85)}
-               <path d="M78.5 77 A5.5 5.5 0 0 1 89.5 77 Z M110.5 77 A5.5 5.5 0 0 1 121.5 77 Z" fill="#14141b"/>
-               <path d="M78.5 77 h11 M110.5 77 h11" stroke="#6a6a80" stroke-width="1.2"/>
-               <ellipse cx="100" cy="97" rx="2.6" ry="2" fill="#1a1a22"/>
-               <text x="136" y="54" font-size="14" fill="${NEON}" filter="url(#glow)" font-weight="700">z</text>
-               <text x="147" y="42" font-size="10" fill="${NEON}" filter="url(#glow)" font-weight="700">z</text>`,
-    };
-
-    // アクセサリ
-    let acc = '';
-    if (k >= 2) acc += `<g filter="url(#glow)"><path d="M62 60 Q100 42 138 60" stroke="${PINK}" stroke-width="6" fill="none" stroke-linecap="round"/>
-                        <path d="M137 59 l14 -7 l-2 11 z M137 59 l13 6 l-8 6 z" fill="${PINK}"/></g>`;   // ハチマキ
-    if (k >= 4) acc += `<g filter="url(#glow)"><path d="M86 34 l5 -15 l9 8 l9 -8 l5 15 z" fill="rgba(182,255,59,.15)" stroke="${LIME}" stroke-width="2" stroke-linejoin="round"/>
-                        <circle cx="100" cy="25" r="2.4" fill="${PINK}"/></g>`;                              // 王冠
-    const sweat = stamina > 0.2 && mood.face === 'happy' ? `<path d="M140 76 q4 8 0 12 q-4 -4 0 -12" fill="${NEON}" filter="url(#glow)"/>` : '';
-    const wristband = k >= 3 ? [-1, 1].map(d =>
-      `<rect x="${100 + d * (S + 20.5) - A * 0.85}" y="101" width="${A * 1.7}" height="4" rx="2" fill="${LIME}" filter="url(#glow)"/>`).join('') : '';
-    const aura = k >= 4 ? `<ellipse cx="100" cy="112" rx="${96 + stamina * 6}" ry="${88 + stamina * 6}" fill="url(#aura)"/>` : '';
-    // レジェンドは笹を背負う
-    const bamboo = k >= 5 ? `
-      <g transform="rotate(-25 100 130)" filter="url(#glow)">
-        <rect x="96" y="40" width="8" height="120" rx="3" fill="rgba(57,255,136,.12)" stroke="#39ff88" stroke-width="2"/>
-        <path d="M96 70 h8 M96 100 h8 M96 130 h8" stroke="#39ff88" stroke-width="2"/>
-        <path d="M104 52 q20 -10 28 -2 q-14 8 -28 2 z M96 60 q-20 -12 -28 -4 q14 8 28 4 z" fill="rgba(57,255,136,.12)" stroke="#39ff88" stroke-width="1.5"/>
-      </g>` : '';
-
-    const headT = `translate(100 81) scale(${hs}) translate(-100 -76)`;
-    body = `${PANDA_DEFS}
-      ${aura}
-      <ellipse cx="100" cy="190" rx="${60 + leg * 10}" ry="9" fill="url(#floor)"/>
-      <g transform="translate(100 188) scale(${scale}) translate(-100 -188)">
-        <ellipse cx="100" cy="186" rx="${34 + S * 0.4}" ry="5" fill="#000" opacity=".55" filter="url(#soft)"/>
-        ${bamboo}
-        <!-- 体（毛並み＋縁取り） -->
-        <g filter="url(#fur)">
-          ${legs}
-          ${arms}
-          <defs><clipPath id="torsoClip"><path d="${torso}"/></clipPath></defs>
-          <path d="${torso}" fill="url(#furW)"/>
-          <path d="${torso}" fill="url(#rimLight)"/>
-          <g clip-path="url(#torsoClip)">
-            <path d="M${100 - S - 4} 100 L${100 + S + 4} 100 L${100 + S + 4} 124 Q100 ${136 - upper * 3} ${100 - S - 4} 124 Z" fill="url(#furK)"/>
-          </g>
-        </g>
-        <g clip-path="url(#torsoClip)">${pecs}${abs}</g>
-        ${armShine}
-        ${wristband}
-        <!-- 頭 -->
-        <g transform="${headT}">
-          <g filter="url(#fur)">
-            <circle cx="70" cy="46" r="13.5" fill="url(#furK)"/><circle cx="130" cy="46" r="13.5" fill="url(#furK)"/>
-            <ellipse cx="100" cy="76" rx="40" ry="34" fill="url(#furW)"/>
-            <ellipse cx="78" cy="88" rx="19" ry="15" fill="url(#furW)"/>
-            <ellipse cx="122" cy="88" rx="19" ry="15" fill="url(#furW)"/>
-            <ellipse cx="100" cy="80" rx="42" ry="30" fill="url(#rimLight)"/>
-          </g>
-          <circle cx="70" cy="46" r="6" fill="#2c2c3a"/><circle cx="130" cy="46" r="6" fill="#2c2c3a"/>
-          <!-- 目のまわりの黒い模様（たれ目型） -->
-          <path d="M77 66 C86 62 93 70 91 80 C89 89 80 92 75 87 C70 82 70 70 77 66 Z" fill="url(#furK)"/>
-          <path d="M123 66 C114 62 107 70 109 80 C111 89 120 92 125 87 C130 82 130 70 123 66 Z" fill="url(#furK)"/>
-          <!-- マズル -->
-          <ellipse cx="100" cy="91" rx="14.5" ry="10.5" fill="url(#muzzle)"/>
-          <path d="M93.5 84.5 Q100 80.5 106.5 84.5 Q104.5 91 100 91 Q95.5 91 93.5 84.5 Z" fill="#111118"/>
-          <ellipse cx="98.2" cy="84.2" rx="2.4" ry="1.1" fill="#fff" opacity=".55"/>
-          <path d="M100 91 v3.2" stroke="#1a1a22" stroke-width="1.4"/>
-          <!-- おでこのツヤ・ほっぺ -->
-          <ellipse cx="88" cy="56" rx="13" ry="7" fill="#fff" opacity=".85" filter="url(#soft)"/>
-          <ellipse cx="72" cy="94" rx="6.5" ry="3.5" fill="#ff8fb8" opacity=".45" filter="url(#soft)"/>
-          <ellipse cx="128" cy="94" rx="6.5" ry="3.5" fill="#ff8fb8" opacity=".45" filter="url(#soft)"/>
-          ${faces[mood.face]}
-          ${acc}
-        </g>
-        ${sweat}
-      </g>`;
-  }
-  svg.innerHTML = body;
+  const P = {
+    k, upper, arm, leg, core,
+    stamina: g(s.cardio * 2),
+    scale: 0.76 + k * 0.05,                      // 成長で大きくなる
+    hs: 1.06 - k * 0.035,                        // 子どもほど頭が大きい
+    S: 23 + k * 1.5 + upper * 12,                // 肩幅（胸・肩・背中）
+    Wt: 17 + k * 0.8 + core * 1.5,               // ウエスト（シュッと細め）
+    Hp: 21 + k * 0.8 + leg * 3,                  // 腰
+    A: 6 + k * 0.6 + arm * 6,                    // 腕の太さ
+    L: 9 + k * 0.6 + leg * 5,                    // 脚の太さ
+  };
+  const draw = { wolf: drawWolf, franken: drawFranken, axolotl: drawAxolotl, ghost: drawGhost }[charOf()];
+  svg.innerHTML = PET_DEFS + draw(st, mood, P);
   const box = document.getElementById('petBox');
   box.className = mood.face === 'sad' || mood.face === 'tired' ? 'sad' : 'bob';
+}
+
+// ---- 共通パーツ ----
+const neonHeadband = (x1, y1, cx, cy, x2, y2) => `<g filter="url(#glow)">
+  <path d="M${x1} ${y1} Q${cx} ${cy} ${x2} ${y2}" stroke="${PINK}" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <path d="M${x2 - 1} ${y2 - 1} l14 -7 l-2 11 z M${x2 - 1} ${y2 - 1} l13 6 l-8 6 z" fill="${PINK}"/></g>`;
+const neonCrown = (cx, base) => `<g filter="url(#glow)">
+  <path d="M${cx - 14} ${base} l5 -15 l9 8 l9 -8 l5 15 z" fill="rgba(182,255,59,.15)" stroke="${LIME}" stroke-width="2" stroke-linejoin="round"/>
+  <circle cx="${cx}" cy="${base - 9}" r="2.4" fill="${PINK}"/></g>`;
+const neonWrist = (cx, y, w) => `<rect x="${cx - w / 2}" y="${y}" width="${w}" height="4" rx="2" fill="${LIME}" filter="url(#glow)"/>`;
+const auraOf = P => P.k >= 4 ? `<ellipse cx="100" cy="112" rx="${96 + P.stamina * 6}" ry="${88 + P.stamina * 6}" fill="url(#aura)"/>` : '';
+const zzz = (x, y) => `<text x="${x}" y="${y}" font-size="14" fill="${NEON}" filter="url(#glow)" font-weight="700">z</text>
+  <text x="${x + 11}" y="${y - 12}" font-size="10" fill="${NEON}" filter="url(#glow)" font-weight="700">z</text>`;
+const tearDrop = (x, y) => `<path d="M${x} ${y} q3.5 7 0 10.5 q-3.5 -3.5 0 -10.5" fill="${NEON}" filter="url(#glow)"/>`;
+// たまご・ひとだまの成長度（0〜）
+const eggProgress = st => st.rest / st.need + (st.lv - 1);
+
+// ---- 人型ボディ（ウルフ・フランケン共通）：逆三角形の胴、力こぶポーズの腕、脚 ----
+function humanoid(P, { skin, limb = skin, foot = limb, belly = null, muscle = 'url(#muscle)', muscleLine = '#8e8ea0', id }) {
+  const { upper, arm, core, S, Wt, Hp, A, L } = P;
+  const torso = `M${100 - S} 124 C${100 - S} 112 ${100 - S * 0.5} 104 100 104 C${100 + S * 0.5} 104 ${100 + S} 112 ${100 + S} 124
+    C${100 + S} 138 ${100 + Wt} 144 ${100 + Wt} 152 C${100 + Wt} 160 ${100 + Hp} 161 ${100 + Hp} 168
+    Q100 177 ${100 - Hp} 168 C${100 - Hp} 161 ${100 - Wt} 160 ${100 - Wt} 152 C${100 - Wt} 144 ${100 - S} 138 ${100 - S} 124 Z`;
+  const pecs = [-1, 1].map(d =>
+    `<ellipse cx="${100 + d * S * 0.42}" cy="136" rx="${S * 0.44}" ry="${7 + upper * 3}" fill="${muscle}" opacity="${0.2 + upper * 0.8}"/>
+     <path d="M${100 + d * S * 0.82} 138 Q${100 + d * S * 0.42} ${145 + upper * 2} 100 140" stroke="${muscleLine}" stroke-width="1.2" fill="none" opacity="${upper * 0.8}"/>`).join('');
+  let abs = '';
+  if (core > 0.15) {
+    for (let row = 0; row < 3; row++) for (const d of [-1, 1]) {
+      abs += `<rect x="${100 + (d < 0 ? -10.5 : 1.5)}" y="${145 + row * 8.2}" width="9" height="7" rx="3.2" fill="${muscle}" opacity="${Math.min(1, core * 1.2)}"/>`;
+    }
+  }
+  const arms = [-1, 1].map(d => {
+    const x = v => 100 + d * v;
+    return `
+      <ellipse cx="${x(S + 8)}" cy="125" rx="17" ry="${A}" fill="${limb}" transform="rotate(${d * 8} ${x(S + 8)} 125)"/>
+      <ellipse cx="${x(S + 21)}" cy="111" rx="${A * 0.78}" ry="16" fill="${limb}" transform="rotate(${d * -5} ${x(S + 21)} 111)"/>
+      <ellipse cx="${x(S + 9)}" cy="${119 - arm * 2}" rx="${9 + arm * 5}" ry="${A * 0.75 + arm * 3}" fill="${limb}"/>
+      <ellipse cx="${x(S + 20)}" cy="93" rx="${A * 0.72 + 2}" ry="${A * 0.66 + 2}" fill="${limb}"/>
+      <circle cx="${x(S - 3)}" cy="118" r="${A + 3}" fill="${limb}"/>`;
+  }).join('');
+  const armShine = [-1, 1].map(d =>
+    `<ellipse cx="${100 + d * (S + 7)}" cy="${115 - arm * 3}" rx="${4 + arm * 3}" ry="${1.6 + arm}" fill="#fff" opacity="${0.15 + arm * 0.3}" filter="url(#soft)"/>
+     <path d="M${100 + d * (S + 14 + arm * 3)} ${124 - arm * 2} q${d * 4} -6 ${d * 2} -12" stroke="#000" stroke-width="2" fill="none" opacity=".4" filter="url(#soft)"/>`).join('');
+  const legs = [-1, 1].map(d => `
+    <ellipse cx="${100 + d * 15}" cy="168" rx="${L}" ry="17" fill="${limb}"/>
+    <ellipse cx="${100 + d * 16}" cy="182" rx="${L + 3}" ry="6.5" fill="${foot}"/>`).join('');
+  const clip = `<defs><clipPath id="${id}"><path d="${torso}"/></clipPath></defs>`;
+  const bellyFill = belly ? `<g clip-path="url(#${id})"><ellipse cx="100" cy="150" rx="${S * 0.72}" ry="27" fill="${belly}"/></g>` : '';
+  return { torso, pecs, abs, arms, armShine, legs, clip, bellyFill };
+}
+// 人型キャラ共通のレイアウト（影・オーラ・拡大縮小・頭の位置）
+function humanoidFrame(P, { behind = '', bodyFilter, body, overBody = '', head, after = '' }) {
+  const headT = `translate(100 82) scale(${P.hs}) translate(-100 -76)`;
+  return `
+    ${auraOf(P)}
+    <ellipse cx="100" cy="190" rx="${60 + P.leg * 10}" ry="9" fill="url(#floor)"/>
+    <g transform="translate(100 188) scale(${P.scale}) translate(-100 -188)">
+      <ellipse cx="100" cy="186" rx="${34 + P.S * 0.4}" ry="5" fill="#000" opacity=".55" filter="url(#soft)"/>
+      ${behind}
+      <g filter="url(#${bodyFilter})">${body}</g>
+      ${overBody}
+      <g transform="${headT}">${head}</g>
+      ${after}
+    </g>`;
+}
+const sweatOf = (P, mood, x = 146, y = 78) =>
+  P.stamina > 0.2 && mood.face === 'happy' ? `<path d="M${x} ${y} q4 8 0 12 q-4 -4 0 -12" fill="${NEON}" filter="url(#glow)"/>` : '';
+
+// ===== ウルフ：ふさふさの毛並みと金色の瞳 =====
+function drawWolf(st, mood, P) {
+  const { k, S, A, Hp } = P;
+  const fur = 'url(#wolfFur)', light = 'url(#wolfLight)';
+  if (k === 0) {
+    const p = eggProgress(st);
+    const cs = `stroke="#3a3f4e" stroke-width="2.4" fill="none" stroke-linejoin="round" stroke-linecap="round"`;
+    return `
+      <ellipse cx="100" cy="183" rx="62" ry="9" fill="url(#floor)"/>
+      <g filter="url(#fur)">
+        <path d="M66 70 L72 38 L90 58 Z M134 70 L128 38 L110 58 Z" fill="${fur}"/>
+        <ellipse cx="100" cy="114" rx="52" ry="65" fill="url(#egg)"/>
+        <path d="M60 140 Q100 120 140 140 L148 160 Q100 190 52 160 Z" fill="${fur}" opacity=".9"/>
+      </g>
+      <ellipse cx="82" cy="80" rx="14" ry="20" fill="#fff" opacity=".6" filter="url(#soft)" transform="rotate(20 82 80)"/>
+      ${p > 0.3 ? `<path d="M66 100 l9 9 l8 -9 l10 11 l9 -8 l10 9 l11 -8" ${cs}/>` : ''}
+      ${p > 1.0 ? `<circle cx="88" cy="118" r="3" fill="#ffd23f" filter="url(#glow)"/><circle cx="112" cy="118" r="3" fill="#ffd23f" filter="url(#glow)"/>` : ''}`;
+  }
+  const B = humanoid(P, { skin: fur, belly: light, id: 'wolfTorso' });
+  const tail = `M${100 + Hp - 6} 160 C${138 + Hp * 0.3} 172 ${160} 150 ${164} 124 C${168} 108 ${158} 98 ${152} 108 C${156} 130 ${140} 148 ${100 + Hp - 8} 148 Z`;
+  const E = 5.4;
+  const faces = {
+    happy:  `<path d="M78.5 75 q5.5 -6.5 11 0 M110.5 75 q5.5 -6.5 11 0" stroke="#1d2230" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+             <path d="M90 94 Q100 106 110 94 Z" fill="#3a1420"/><path d="M92 94.5 l2.2 4 l2 -4 Z M104 94.5 l2 4 l2.2 -4 Z" fill="#fff"/>`,
+    normal: `${eye(84, 74, E, 'wolfEye')}${eye(116, 74, E, 'wolfEye')}
+             <path d="M100 90 v3 M93 94 q3.5 3 7 -1 q3.5 4 7 1" stroke="#1d2230" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+             <path d="M94 95.5 l1.6 3 l1.4 -3 Z M103 95.5 l1.4 3 l1.6 -3 Z" fill="#fff"/>`,
+    sad:    `${eye(84, 76, E * 0.9, 'wolfEye')}${eye(116, 76, E * 0.9, 'wolfEye')}
+             <path d="M76 66 l12 3 M124 66 l-12 3" stroke="#1d2230" stroke-width="2" stroke-linecap="round"/>
+             <path d="M94 98 q6 -5 12 0" stroke="#1d2230" stroke-width="1.6" fill="none" stroke-linecap="round"/>${tearDrop(121, 84)}`,
+    tired:  `${eye(84, 75, E * 0.85, 'wolfEye')}${eye(116, 75, E * 0.85, 'wolfEye')}
+             <path d="M78.5 75 A5.5 5.5 0 0 1 89.5 75 Z M110.5 75 A5.5 5.5 0 0 1 121.5 75 Z" fill="#6d7488"/>
+             <path d="M78.5 75 h11 M110.5 75 h11" stroke="#2a2f3e" stroke-width="1.2"/>
+             <ellipse cx="100" cy="96" rx="2.6" ry="2" fill="#1d2230"/>${zzz(138, 50)}`,
+  };
+  let acc = '';
+  if (k >= 2) acc += neonHeadband(62, 58, 100, 42, 138, 58);
+  if (k >= 4) acc += neonCrown(100, 30);
+  const wrist = k >= 3 ? [-1, 1].map(d => neonWrist(100 + d * (S + 20.5), 101, A * 1.7)).join('') : '';
+  // レジェンドは背中に満月
+  const moon = k >= 5 ? `<g filter="url(#glow)"><circle cx="146" cy="52" r="20" fill="rgba(255,230,120,.12)" stroke="#ffe066" stroke-width="2"/>
+    <circle cx="140" cy="46" r="3" fill="none" stroke="#ffe066" stroke-width="1" opacity=".6"/><circle cx="152" cy="58" r="4" fill="none" stroke="#ffe066" stroke-width="1" opacity=".6"/></g>` : '';
+  const cheekTuft = d => `M${100 + d * 34} 72 L${100 + d * 50} 84 L${100 + d * 40} 86 L${100 + d * 52} 96 L${100 + d * 38} 96 L${100 + d * 44} 106 L${100 + d * 26} 100 Z`;
+  return humanoidFrame(P, {
+    behind: moon,
+    bodyFilter: 'fur',
+    body: `<path d="${tail}" fill="${fur}"/><path d="M152 108 C158 98 168 108 164 124 C160 116 156 112 152 108 Z" fill="${light}"/>
+      ${B.legs}${B.arms}${B.clip}<path d="${B.torso}" fill="${fur}"/>${B.bellyFill}<path d="${B.torso}" fill="url(#rimLight)"/>`,
+    overBody: `<g clip-path="url(#wolfTorso)">${B.pecs}${B.abs}</g>${B.armShine}${wrist}`,
+    head: `
+      <g filter="url(#fur)">
+        <path d="M60 66 L66 26 L90 50 Z M140 66 L134 26 L110 50 Z" fill="${fur}"/>
+        <path d="${cheekTuft(-1)}" fill="${fur}"/><path d="${cheekTuft(1)}" fill="${fur}"/>
+        <ellipse cx="100" cy="74" rx="38" ry="33" fill="${fur}"/>
+        <ellipse cx="100" cy="78" rx="40" ry="29" fill="url(#rimLight)"/>
+      </g>
+      <path d="M66 58 L68 36 L82 52 Z M134 58 L132 36 L118 52 Z" fill="#d9a0b4" opacity=".7"/>
+      <ellipse cx="84" cy="66" rx="9" ry="4" fill="#eef1f6" opacity=".85"/><ellipse cx="116" cy="66" rx="9" ry="4" fill="#eef1f6" opacity=".85"/>
+      <path d="M100 56 C90 70 82 84 84 94 C88 104 112 104 116 94 C118 84 110 70 100 56 Z" fill="${light}"/>
+      <path d="M92.5 84 Q100 79.5 107.5 84 Q105.5 91.5 100 91.5 Q94.5 91.5 92.5 84 Z" fill="#111118"/>
+      <ellipse cx="98" cy="83.6" rx="2.6" ry="1.1" fill="#fff" opacity=".55"/>
+      <ellipse cx="70" cy="92" rx="6" ry="3.4" fill="#ff8fb8" opacity=".4" filter="url(#soft)"/>
+      <ellipse cx="130" cy="92" rx="6" ry="3.4" fill="#ff8fb8" opacity=".4" filter="url(#soft)"/>
+      ${faces[mood.face]}${acc}`,
+    after: sweatOf(P, mood),
+  });
+}
+
+// ===== フランケンシュタイン：縫い目とボルト、緑の肌 =====
+function drawFranken(st, mood, P) {
+  const { k, S, A, Hp, Wt } = P;
+  const skin = 'url(#frSkin)';
+  const stitch = (x1, y1, x2, y2, n = 4) => {
+    let t = `<path d="M${x1} ${y1} L${x2} ${y2}" stroke="#2c4a35" stroke-width="1.4" stroke-linecap="round"/>`;
+    const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy), nx = -dy / len * 3, ny = dx / len * 3;
+    for (let i = 1; i < n; i++) { const x = x1 + dx * i / n, y = y1 + dy * i / n;
+      t += `<path d="M${x - nx} ${y - ny} L${x + nx} ${y + ny}" stroke="#2c4a35" stroke-width="1.3" stroke-linecap="round"/>`; }
+    return t;
+  };
+  const glowBolt = mood.face === 'happy' || mood.face === 'normal';
+  const bolt = (x, y, d) => `<rect x="${x - (d < 0 ? 9 : 0)}" y="${y - 4}" width="9" height="8" rx="2" fill="url(#metal)"/>
+    <circle cx="${x + d * 10}" cy="${y}" r="3.2" fill="${glowBolt ? NEON : '#7a8494'}" ${glowBolt ? 'filter="url(#glow)"' : ''}/>`;
+  if (k === 0) {
+    const p = eggProgress(st);
+    return `
+      <ellipse cx="100" cy="183" rx="62" ry="9" fill="url(#floor)"/>
+      <g filter="url(#rim)">
+        <ellipse cx="100" cy="114" rx="52" ry="65" fill="${skin}"/>
+        <path d="M52 92 Q100 62 148 92 L148 74 Q100 40 52 74 Z" fill="url(#frHair)"/>
+      </g>
+      ${bolt(48, 128, -1)}${bolt(152, 128, 1)}
+      ${stitch(70, 108, 102, 100, 5)}${p > 0.6 ? stitch(98, 140, 128, 148, 4) : ''}
+      <ellipse cx="82" cy="96" rx="12" ry="16" fill="#fff" opacity=".35" filter="url(#soft)" transform="rotate(20 82 96)"/>
+      ${p > 1.0 ? `<path d="M128 48 l-8 14 h8 l-6 14" stroke="${NEON}" stroke-width="2" fill="none" filter="url(#glow)"/>` : ''}`;
+  }
+  const B = humanoid(P, { skin, limb: skin, foot: 'url(#boot)', muscle: 'url(#muscleG)', muscleLine: '#3f6b4a', id: 'frTorso' });
+  // 半ズボン＋ブーツ
+  const shorts = `<path d="M${100 - Wt - 2} 154 L${100 + Wt + 2} 154 L${100 + Hp + 3} 172 L${100 + 4} 174 L100 166 L${100 - 4} 174 L${100 - Hp - 3} 172 Z" fill="url(#frPants)"/>
+    <path d="M${100 - Wt - 2} 155 L${100 + Wt + 2} 155" stroke="#6b4ad6" stroke-width="2"/>`;
+  const E = 5;
+  const faces = {
+    happy:  `<path d="M79 77 q5 -6 10 0 M111 77 q5 -6 10 0" stroke="#16261b" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+             <path d="M90 93 Q100 103 110 93 Z" fill="#1d2a20"/>`,
+    normal: `${eye(84, 77, E, 'axEyeG')}${eye(116, 77, E, 'axEyeG')}
+             <path d="M79 77 A5 5 0 0 1 89 77 Z M111 77 A5 5 0 0 1 121 77 Z" fill="#7fb878" opacity=".9"/>
+             <path d="M89 95 h22" stroke="#16261b" stroke-width="1.8" stroke-linecap="round"/>
+             <path d="M93 92.5 v5 M100 92.5 v5 M107 92.5 v5" stroke="#16261b" stroke-width="1.1"/>`,
+    sad:    `${eye(84, 78, E * 0.9, 'axEyeG')}${eye(116, 78, E * 0.9, 'axEyeG')}
+             <path d="M90 99 q10 -6 20 0" stroke="#16261b" stroke-width="1.8" fill="none" stroke-linecap="round"/>${tearDrop(121, 86)}`,
+    tired:  `<path d="M79 78 h10 M111 78 h10" stroke="#16261b" stroke-width="2.4" stroke-linecap="round"/>
+             <ellipse cx="100" cy="96" rx="3" ry="2.2" fill="#16261b"/>${zzz(140, 46)}`,
+  };
+  let acc = '';
+  if (k >= 2) acc += neonHeadband(60, 62, 100, 54, 140, 62);
+  if (k >= 4) acc += neonCrown(100, 34);
+  const wrist = k >= 3 ? [-1, 1].map(d => neonWrist(100 + d * (S + 20.5), 101, A * 1.7)).join('') : '';
+  // レジェンドは稲妻をまとう
+  const zap = k >= 5 ? [[34, 70, 1], [166, 84, -1]].map(([x, y, d]) =>
+    `<path d="M${x} ${y} l${d * 8} 12 h${-d * 7} l${d * 9} 16" stroke="#ffe066" stroke-width="2.4" fill="none" stroke-linejoin="round" filter="url(#glow)"/>`).join('') : '';
+  return humanoidFrame(P, {
+    behind: zap,
+    bodyFilter: 'rim',
+    body: `${B.legs}${B.arms}${B.clip}<path d="${B.torso}" fill="${skin}"/><path d="${B.torso}" fill="url(#rimLight)"/>`,
+    overBody: `<g clip-path="url(#frTorso)">${B.pecs}${B.abs}${stitch(100 - S * 0.75, 126, 100 - S * 0.1, 120, 4)}</g>
+      <g filter="url(#rim)">${shorts}</g>
+      ${[-1, 1].map(d => stitch(100 + d * (S + 2), 110, 100 + d * (S - 6), 126, 3)).join('')}
+      ${B.armShine}${wrist}`,
+    head: `
+      ${bolt(56, 98, -1)}${bolt(144, 98, 1)}
+      <g filter="url(#rim)">
+        <ellipse cx="59" cy="82" rx="6" ry="9" fill="${skin}"/><ellipse cx="141" cy="82" rx="6" ry="9" fill="${skin}"/>
+        <rect x="60" y="42" width="80" height="68" rx="22" fill="${skin}"/>
+        <path d="M57 64 L57 44 Q57 34 68 34 L132 34 Q143 34 143 44 L143 64 L134 57 L126 64 L117 56 L108 63 L99 56 L90 63 L81 56 L72 63 L64 57 Z" fill="url(#frHair)"/>
+        <rect x="60" y="42" width="80" height="68" rx="22" fill="url(#rimLight)"/>
+      </g>
+      <path d="M74 69 h18 M108 69 h18" stroke="#16261b" stroke-width="3" stroke-linecap="round"/>
+      ${stitch(110, 54, 126, 60, 4)}
+      ${stitch(122, 92, 132, 100, 3)}
+      <ellipse cx="86" cy="48" rx="14" ry="4" fill="#fff" opacity=".45" filter="url(#soft)"/>
+      <ellipse cx="72" cy="94" rx="6" ry="3.4" fill="#ff8fb8" opacity=".35" filter="url(#soft)"/>
+      <ellipse cx="128" cy="94" rx="6" ry="3.4" fill="#ff8fb8" opacity=".35" filter="url(#soft)"/>
+      ${faces[mood.face]}${acc}`,
+    after: sweatOf(P, mood),
+  });
+}
+
+// ===== ウーパールーパー：つるっと濡れた肌のツヤと、ふさふさのエラ =====
+function drawAxolotl(st, mood, P) {
+  const { k, upper, arm, leg, core, stamina, scale, hs, S, Wt, Hp, A, L } = P;
+  const skin = 'url(#axSkin)';
+  const line = '#9a3e5e';
+
+  // エラ（左右3本ずつ、ふちに細かいフリル）
+  const gills = (bx, by, len) => [-1, 1].map(d => [-1, 0, 1].map(j => {
+    const ang = (-38 + (j + 1) * 26) * Math.PI / 180;
+    const x0 = 100 + d * bx, y0 = by + j * 9;
+    const cx = x0 + d * Math.cos(ang) * len, cy = y0 + Math.sin(ang) * len;
+    const rot = d > 0 ? ang * 180 / Math.PI : 180 - ang * 180 / Math.PI;
+    return `<ellipse cx="${cx}" cy="${cy}" rx="${len + 2}" ry="${len * 0.42}" fill="none" stroke="#ff6aa8" stroke-width="2.6" stroke-dasharray=".1 3.1" stroke-linecap="round" transform="rotate(${rot} ${cx} ${cy})"/>
+            <ellipse cx="${cx}" cy="${cy}" rx="${len}" ry="${len * 0.3}" fill="url(#axGill)" transform="rotate(${rot} ${cx} ${cy})"/>`;
+  }).join('')).join('');
+
+  if (k === 0) {
+    // ゼリー状のたまごの中で、ちびウーパーが育つ
+    const p = Math.min(eggProgress(st), 2);
+    const es = 0.7 + p * 0.15;
+    return `
+      <ellipse cx="100" cy="183" rx="62" ry="9" fill="url(#floor)"/>
+      <circle cx="100" cy="118" r="56" fill="url(#axJelly)" stroke="rgba(255,170,200,.55)" stroke-width="2" filter="url(#rim)"/>
+      <g transform="translate(100 122) scale(${es}) translate(-100 -122)">
+        <path d="M112 132 C135 140 140 118 128 108 C134 124 124 130 110 124 Z" fill="${skin}"/>
+        <circle cx="100" cy="122" r="22" fill="${skin}"/>
+        ${gills(18, 112, 8)}
+        <circle cx="92" cy="118" r="2.6" fill="#2a1a24"/><circle cx="108" cy="118" r="2.6" fill="#2a1a24"/>
+        <path d="M94 126 q6 4 12 0" stroke="${line}" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      </g>
+      <ellipse cx="80" cy="88" rx="14" ry="8" fill="#fff" opacity=".7" filter="url(#soft)" transform="rotate(-30 80 88)"/>
+      <circle cx="76" cy="84" r="3" fill="#fff" opacity=".9"/>
+      <circle cx="146" cy="76" r="5" fill="none" stroke="${NEON}" stroke-width="1.5" opacity=".7"/>
+      <circle cx="156" cy="58" r="3" fill="none" stroke="${NEON}" stroke-width="1.2" opacity=".6"/>`;
+  }
+
+  const torso = `M${100 - S} 124 C${100 - S} 112 ${100 - S * 0.5} 104 100 104 C${100 + S * 0.5} 104 ${100 + S} 112 ${100 + S} 124
+    C${100 + S} 138 ${100 + Wt} 144 ${100 + Wt} 152 C${100 + Wt} 160 ${100 + Hp} 161 ${100 + Hp} 168
+    Q100 177 ${100 - Hp} 168 C${100 - Hp} 161 ${100 - Wt} 160 ${100 - Wt} 152 C${100 - Wt} 144 ${100 - S} 138 ${100 - S} 124 Z`;
+  const tail = `M${100 + Hp - 6} 158 C${128 + Hp} 168 ${150 + Hp * 0.4} 150 ${160 + Hp * 0.3} 124
+    C${154 + Hp * 0.3} 156 ${134} 180 ${100 + Hp - 8} 176 Z`;
+
+  const pecs = [-1, 1].map(d =>
+    `<ellipse cx="${100 + d * S * 0.42}" cy="136" rx="${S * 0.44}" ry="${7 + upper * 3}" fill="url(#muscleP)" opacity="${0.2 + upper * 0.8}"/>
+     <path d="M${100 + d * S * 0.82} 138 Q${100 + d * S * 0.42} ${145 + upper * 2} 100 140" stroke="#e58aa6" stroke-width="1.2" fill="none" opacity="${upper * 0.8}"/>`).join('');
+  let abs = '';
+  if (core > 0.15) {
+    for (let row = 0; row < 3; row++) for (const d of [-1, 1]) {
+      abs += `<rect x="${100 + (d < 0 ? -10.5 : 1.5)}" y="${145 + row * 8.2}" width="9" height="7" rx="3.2" fill="url(#muscleP)" opacity="${Math.min(1, core * 1.2)}"/>`;
+    }
+  }
+  const arms = [-1, 1].map(d => {
+    const x = v => 100 + d * v;
+    return `
+      <ellipse cx="${x(S + 8)}" cy="125" rx="17" ry="${A}" fill="${skin}" transform="rotate(${d * 8} ${x(S + 8)} 125)"/>
+      <ellipse cx="${x(S + 21)}" cy="111" rx="${A * 0.78}" ry="16" fill="${skin}" transform="rotate(${d * -5} ${x(S + 21)} 111)"/>
+      <ellipse cx="${x(S + 9)}" cy="${119 - arm * 2}" rx="${9 + arm * 5}" ry="${A * 0.75 + arm * 3}" fill="${skin}"/>
+      <ellipse cx="${x(S + 20)}" cy="93" rx="${A * 0.72 + 2}" ry="${A * 0.66 + 2}" fill="${skin}"/>
+      ${[-1, 0, 1].map(j => `<circle cx="${x(S + 20) + j * 3.4}" cy="${86 - A * 0.4 + Math.abs(j)}" r="2.3" fill="${skin}"/>`).join('')}
+      <circle cx="${x(S - 3)}" cy="118" r="${A + 3}" fill="${skin}"/>`;
+  }).join('');
+  // 肌のツヤ（濡れた感じ）
+  const armShine = [-1, 1].map(d =>
+    `<ellipse cx="${100 + d * (S + 6)}" cy="${114 - arm * 3}" rx="${4 + arm * 3}" ry="${1.5 + arm}" fill="#fff" opacity=".75" filter="url(#soft)"/>
+     <ellipse cx="${100 + d * (S + 5)}" cy="${113 - arm * 3}" rx="${1.8 + arm}" ry=".9" fill="#fff"/>
+     <path d="M${100 + d * (S + 14 + arm * 3)} ${124 - arm * 2} q${d * 4} -6 ${d * 2} -12" stroke="#b5476d" stroke-width="2" fill="none" opacity=".45" filter="url(#soft)"/>`).join('');
+  const legs = [-1, 1].map(d => `
+    <ellipse cx="${100 + d * 15}" cy="168" rx="${L}" ry="17" fill="${skin}"/>
+    <ellipse cx="${100 + d * 16}" cy="182" rx="${L + 3}" ry="6.5" fill="${skin}"/>
+    ${[-1, 0, 1].map(j => `<circle cx="${100 + d * 16 + j * 4.5}" cy="186" r="2.4" fill="${skin}"/>`).join('')}`).join('');
+  // そばかす
+  const dots = [[84, 58], [116, 60], [96, 52], [70, 70], [130, 68], [108, 50]].map(([x, y]) =>
+    `<circle cx="${x}" cy="${y}" r="1.3" fill="#d76b8d" opacity=".55"/>`).join('');
+
+  const E = 4.8;
+  const faces = {
+    happy:  `<path d="M69 79 q5 -6 10 0 M121 79 q5 -6 10 0" stroke="#3a1a2a" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+             <path d="M86 90 Q100 104 114 90 Z" fill="#7a2a45"/><ellipse cx="100" cy="96" rx="5" ry="2.5" fill="#ff8fb3"/>`,
+    normal: `${eye(74, 78, E, 'axEyeG')}${eye(126, 78, E, 'axEyeG')}
+             <path d="M80 90 Q100 101 120 90" stroke="${line}" stroke-width="1.8" fill="none" stroke-linecap="round"/>`,
+    sad:    `${eye(74, 80, E * 0.9, 'axEyeG')}${eye(126, 80, E * 0.9, 'axEyeG')}
+             <path d="M86 96 Q100 89 114 96" stroke="${line}" stroke-width="1.8" fill="none" stroke-linecap="round"/>${tearDrop(130, 86)}`,
+    tired:  `${eye(74, 79, E * 0.85, 'axEyeG')}${eye(126, 79, E * 0.85, 'axEyeG')}
+             <path d="M69.5 79 A4.5 4.5 0 0 1 78.5 79 Z M121.5 79 A4.5 4.5 0 0 1 130.5 79 Z" fill="#f2a0ba"/>
+             <path d="M69.5 79 h9 M121.5 79 h9" stroke="${line}" stroke-width="1.2"/>
+             <ellipse cx="100" cy="94" rx="3" ry="2.2" fill="#7a2a45"/>${zzz(140, 52)}`,
+  };
+
+  let acc = '';
+  if (k >= 2) acc += neonHeadband(60, 62, 100, 44, 140, 62);
+  if (k >= 4) acc += neonCrown(100, 42);
+  const wrist = k >= 3 ? [-1, 1].map(d => neonWrist(100 + d * (S + 20.5), 101, A * 1.7)).join('') : '';
+  const sweat = stamina > 0.2 && mood.face === 'happy' ? `<path d="M146 78 q4 8 0 12 q-4 -4 0 -12" fill="${NEON}" filter="url(#glow)"/>` : '';
+  // レジェンドはネオンの泡をまとう
+  const bubbles = k >= 5 ? [[34, 120, 7], [44, 92, 4], [166, 104, 6], [158, 78, 3.5], [30, 66, 3]].map(([x, y, r]) =>
+    `<circle cx="${x}" cy="${y}" r="${r}" fill="rgba(0,240,255,.08)" stroke="${NEON}" stroke-width="1.4" filter="url(#glow)"/>
+     <circle cx="${x - r * 0.35}" cy="${y - r * 0.35}" r="${r * 0.25}" fill="#fff" opacity=".8"/>`).join('') : '';
+
+  const headT = `translate(100 82) scale(${hs}) translate(-100 -76)`;
+  return `
+    ${auraOf(P)}
+    <ellipse cx="100" cy="190" rx="${60 + leg * 10}" ry="9" fill="url(#floor)"/>
+    <g transform="translate(100 188) scale(${scale}) translate(-100 -188)">
+      <ellipse cx="100" cy="186" rx="${34 + S * 0.4}" ry="5" fill="#000" opacity=".55" filter="url(#soft)"/>
+      ${bubbles}
+      <g filter="url(#rim)">
+        <path d="${tail}" fill="${skin}"/>
+        <path d="${tail}" fill="none" stroke="rgba(255,215,228,.7)" stroke-width="3"/>
+        ${legs}
+        ${arms}
+        <defs><clipPath id="axTorso"><path d="${torso}"/></clipPath></defs>
+        <path d="${torso}" fill="${skin}"/>
+        <g clip-path="url(#axTorso)"><ellipse cx="100" cy="150" rx="${S * 0.72}" ry="27" fill="url(#axBelly)"/></g>
+        <path d="${torso}" fill="url(#rimLight)"/>
+      </g>
+      <g clip-path="url(#axTorso)">${pecs}${abs}</g>
+      ${armShine}
+      ${wrist}
+      <g transform="${headT}">
+        <g filter="url(#rim)">
+          ${gills(36, 72, 13)}
+          <ellipse cx="100" cy="76" rx="44" ry="31" fill="${skin}"/>
+          <ellipse cx="100" cy="80" rx="44" ry="27" fill="url(#rimLight)"/>
+        </g>
+        ${dots}
+        <ellipse cx="86" cy="57" rx="15" ry="5" fill="#fff" opacity=".8" filter="url(#soft)"/>
+        <ellipse cx="81" cy="56" rx="4.5" ry="1.6" fill="#fff" opacity=".95"/>
+        <ellipse cx="64" cy="89" rx="7" ry="3.8" fill="#ff5f95" opacity=".4" filter="url(#soft)"/>
+        <ellipse cx="136" cy="89" rx="7" ry="3.8" fill="#ff5f95" opacity=".4" filter="url(#soft)"/>
+        ${faces[mood.face]}
+        ${acc}
+      </g>
+      ${sweat}
+    </g>`;
+}
+
+// ===== おばけ：手描き風のゆるい線画 =====
+function drawGhost(st, mood, P) {
+  const { k, upper, arm, core, stamina, scale } = P;
+  const ink = '#2b2b33', paper = '#fbfbff';
+  // 元気がないと、うすく消えかける
+  const fade = mood.face === 'tired' ? 0.55 : mood.face === 'sad' ? 0.78 : 1;
+
+  if (k === 0) {
+    // ひとだま：成長するほど大きく
+    const fs = 0.75 + Math.min(eggProgress(st), 2) * 0.15;
+    return `
+      <ellipse cx="100" cy="183" rx="50" ry="8" fill="url(#floor)"/>
+      <g transform="translate(100 150) scale(${fs}) translate(-100 -150)">
+        <path d="M100 62 C112 88 132 104 128 132 C125 154 110 164 100 164 C88 164 72 154 72 134 C72 112 92 104 100 62 Z" fill="url(#flame)" filter="url(#ghostGlow)" opacity=".8"/>
+        <path d="M100 62 C112 88 132 104 128 132 C125 154 110 164 100 164 C88 164 72 154 72 134 C72 112 92 104 100 62 Z" fill="url(#flame)"/>
+        <g filter="url(#sketch)">
+          <path d="M100 62 C112 88 132 104 128 132 C125 154 110 164 100 164 C88 164 72 154 72 134 C72 112 92 104 100 62 Z" fill="none" stroke="${ink}" stroke-width="2" opacity=".55"/>
+          <path d="M88 138 q4 3 8 0 M104 138 q4 3 8 0" stroke="${ink}" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </g>
+      </g>`;
+  }
+
+  const bw = 30 + k * 1.5 + upper * 10;          // からだの幅
+  const A = 4.5 + k * 0.5 + arm * 5;             // 腕の太さ
+  const top = 50, base = 156;
+  let bottom = '';
+  const n = 4, w = (bw * 2) / n;
+  for (let i = 0; i < n; i++) {
+    const x0 = 100 + bw - i * w;
+    bottom += ` Q${x0 - w / 2} ${base + 16 + (i % 2) * 3} ${x0 - w} ${base}`;
+  }
+  const body = `M${100 - bw} 112 C${100 - bw} 74 ${100 - bw * 0.62} ${top} 100 ${top} C${100 + bw * 0.62} ${top} ${100 + bw} 74 ${100 + bw} 112 L${100 + bw} ${base}${bottom} Z`;
+
+  // 腕：線で縁取ったチューブ＋力こぶ
+  const armPath = d => `M${100 + d * (bw - 6)} 126 L${100 + d * (bw + 17)} 128 L${100 + d * (bw + 16)} 104`;
+  const arms = [-1, 1].map(d => `
+    <path d="${armPath(d)}" stroke="${ink}" stroke-width="${A * 2 + 3.6}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="${armPath(d)}" stroke="${paper}" stroke-width="${A * 2}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    ${arm > 0.15 ? `<path d="M${100 + d * (bw + 1)} ${126 - A * 0.6} q${d * 7} ${-(4 + arm * 9)} ${d * 14} ${-1}" stroke="${ink}" stroke-width="1.8" fill="${paper}" stroke-linecap="round"/>` : ''}
+    <circle cx="${100 + d * (bw + 16)}" cy="101" r="${A * 0.85 + 1.5}" fill="${paper}" stroke="${ink}" stroke-width="1.8"/>`).join('');
+  // 力こぶの「シュッ」線
+  const flexLines = arm > 0.4 ? [-1, 1].map(d =>
+    `<path d="M${100 + d * (bw + 30)} 96 l${d * 6} -3 M${100 + d * (bw + 31)} 106 l${d * 7} 0 M${100 + d * (bw + 29)} 116 l${d * 6} 3" stroke="${NEON}" stroke-width="1.6" stroke-linecap="round" filter="url(#glow)"/>`).join('') : '';
+
+  const pecs = upper > 0.2 ? `<path d="M${100 - bw * 0.55} 112 q${bw * 0.27} 6 ${bw * 0.55} 0 q${bw * 0.28} 6 ${bw * 0.55} 0" stroke="${ink}" stroke-width="1.5" fill="none" opacity="${Math.min(1, upper + 0.2)}" stroke-linecap="round"/>` : '';
+  const abs = core > 0.2 ? `<g stroke="${ink}" stroke-width="1.4" fill="none" stroke-linecap="round" opacity="${Math.min(1, core + 0.2)}">
+      <path d="M100 119 v24"/><path d="M92 125 h5 M103 125 h5"/><path d="M92 133 h5 M103 133 h5"/><path d="M93 141 h4 M103 141 h4"/></g>` : '';
+  const blush = [-1, 1].map(d => { const x = 100 + d * 24;
+    return `<path d="M${x - 6} 101 l3 -4 M${x - 2} 101 l3 -4 M${x + 2} 101 l3 -4" stroke="#ff7aa8" stroke-width="1.4" stroke-linecap="round"/>`; }).join('');
+  const faces = {
+    happy:  `<path d="M84 90 q3.5 -5 7 0 M109 90 q3.5 -5 7 0" stroke="${ink}" stroke-width="2" fill="none" stroke-linecap="round"/>
+             <path d="M95 96 q5 7 10 0 z" fill="${ink}" stroke="${ink}" stroke-width="1.2" stroke-linejoin="round"/>`,
+    normal: `<ellipse cx="87.5" cy="89" rx="2.3" ry="3" fill="${ink}"/><ellipse cx="112.5" cy="89" rx="2.3" ry="3" fill="${ink}"/>
+             <path d="M96 97 q2 2.5 4 0 q2 2.5 4 0" stroke="${ink}" stroke-width="1.6" fill="none" stroke-linecap="round"/>`,
+    sad:    `<ellipse cx="87.5" cy="90" rx="2.2" ry="2.8" fill="${ink}"/><ellipse cx="112.5" cy="90" rx="2.2" ry="2.8" fill="${ink}"/>
+             <path d="M82 83 l8 2 M118 83 l-8 2" stroke="${ink}" stroke-width="1.5" stroke-linecap="round"/>
+             <path d="M95 99 q2.5 -3 5 0 q2.5 3 5 0" stroke="${ink}" stroke-width="1.5" fill="none" stroke-linecap="round"/>${tearDrop(117, 93)}`,
+    tired:  `<path d="M84 90 h7 M109 90 h7" stroke="${ink}" stroke-width="2" stroke-linecap="round"/>
+             <ellipse cx="100" cy="98" rx="2.2" ry="2.6" fill="none" stroke="${ink}" stroke-width="1.5"/>${zzz(134, 60)}`,
+  };
+
+  let acc = '';
+  if (k >= 2) acc += neonHeadband(100 - bw * 0.86, 72, 100, 52, 100 + bw * 0.86, 72);
+  if (k >= 4) acc += neonCrown(100, 50);
+  const wrist = k >= 3 ? [-1, 1].map(d => neonWrist(100 + d * (bw + 16.5), 106, A * 1.8)).join('') : '';
+  const sweat = stamina > 0.2 && mood.face === 'happy' ? `<path d="M${100 + bw - 2} 70 q4 8 0 12 q-4 -4 0 -12" fill="${NEON}" filter="url(#glow)"/>` : '';
+  // レジェンドはひとだまをお供にする
+  const wisps = k >= 5 ? [[32, 76, 0.32], [168, 64, 0.26]].map(([x, y, r]) =>
+    `<g transform="translate(${x} ${y}) scale(${r}) translate(-100 -113)">
+       <path d="M100 62 C112 88 132 104 128 132 C125 154 110 164 100 164 C88 164 72 154 72 134 C72 112 92 104 100 62 Z" fill="url(#flame)" filter="url(#ghostGlow)"/>
+       <path d="M100 62 C112 88 132 104 128 132 C125 154 110 164 100 164 C88 164 72 154 72 134 C72 112 92 104 100 62 Z" fill="url(#flame)"/></g>`).join('') : '';
+
+  return `
+    ${auraOf(P)}
+    <ellipse cx="100" cy="192" rx="${40 + bw * 0.5}" ry="7" fill="url(#floor)"/>
+    <g transform="translate(100 188) scale(${scale}) translate(-100 -188)" opacity="${fade}">
+      <ellipse cx="100" cy="190" rx="${bw * 0.7}" ry="4" fill="#000" opacity=".45" filter="url(#soft)"/>
+      ${wisps}
+      <path d="${body}" fill="${NEON}" opacity=".28" filter="url(#ghostGlow)"/>
+      <g filter="url(#sketch)">
+        ${arms}
+        <path d="${body}" fill="${paper}" stroke="${ink}" stroke-width="2.2" stroke-linejoin="round"/>
+        ${pecs}${abs}
+        ${faces[mood.face]}
+        ${blush}
+      </g>
+      ${flexLines}
+      ${wrist}
+      ${acc}
+      ${sweat}
+    </g>`;
 }
 
 // ===== 画面描画 =====
@@ -698,10 +1073,13 @@ let lastLv = null, lastStage = null;
 function render() {
   const st = computeState();
   const mood = moodOf(st);
-  const stage = STAGES[st.stageIdx];
+  const c = CHARS[charOf()];
+  const stage = { name: c.stages[st.stageIdx] };
 
   document.getElementById('todayLabel').textContent = today().replace(/-/g, '/');
-  document.getElementById('petName').textContent = data.petName;
+  document.getElementById('petName').textContent = petName();
+  document.getElementById('charPicker').innerHTML = Object.entries(CHARS).map(([id, ch]) =>
+    `<button class="chip ${id === charOf() ? 'on' : ''}" style="--c:var(--cyan)" data-char="${id}">${ch.label}</button>`).join('');
   document.getElementById('petStage').textContent = `${stage.name}（Lv ${st.lv}）` +
     (STAGES[st.stageIdx + 1] ? ` ・ Lv ${STAGES[st.stageIdx + 1].lv}で進化` : ' ・ 最終形態！');
   document.getElementById('petTalk').textContent = talkOf(st, mood);
@@ -920,9 +1298,15 @@ document.body.addEventListener('click', async e => {
   save(); lastLv = null; render();
 });
 
+document.getElementById('charPicker').addEventListener('click', e => {
+  const id = e.target.dataset.char;
+  if (!id || id === data.char) return;
+  data.char = id; save(); render();
+});
+
 document.getElementById('renameBtn').addEventListener('click', async () => {
-  const n = await dialog('パンダの名前', { input: data.petName });
-  if (n && n.trim()) { data.petName = n.trim().slice(0, 20); save(); render(); }
+  const n = await dialog(`${CHARS[charOf()].label}の名前`, { input: petName() });
+  if (n && n.trim()) { data.names[charOf()] = n.trim().slice(0, 20); save(); render(); }
 });
 
 // ===== データ管理 =====
@@ -947,14 +1331,14 @@ document.getElementById('importFile').addEventListener('change', async e => {
     const d = JSON.parse(await f.text());
     if (!Array.isArray(d.records)) throw new Error();
     if (!await dialog(`${d.records.length}件の記録で上書きします。よろしいですか？`)) { e.target.value = ''; return; }
-    data = { petName: d.petName || DEFAULT_NAME, records: d.records, draft: [] };
+    data = { char: d.char || data.char, names: d.names || data.names, records: d.records, draft: [] };
     save(); lastLv = null; render(); toast('復元しました');
   } catch { toast('ファイルを読み込めませんでした'); }
   e.target.value = '';
 });
 document.getElementById('resetBtn').addEventListener('click', async () => {
-  if (!await dialog('すべての記録とパンダが消えます。本当に削除しますか？', { danger: true })) return;
-  data = { petName: data.petName, records: [], draft: [] };
+  if (!await dialog('すべての記録が消え、キャラの育ち具合もリセットされます。本当に削除しますか？', { danger: true })) return;
+  data = { char: data.char, names: data.names, records: [], draft: [] };
   save(); lastLv = null; render(); toast('リセットしました');
 });
 
