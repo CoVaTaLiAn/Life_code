@@ -139,6 +139,22 @@
     border-radius: 999px; padding: 6px 14px; font-size: 13px; cursor: pointer;
   }
   .chip.on { color: var(--c); border-color: var(--c); box-shadow: 0 0 10px var(--c), inset 0 0 8px rgba(255,255,255,.04); text-shadow: 0 0 6px var(--c); }
+  .guide { margin-top: 10px; border: 1px solid var(--line); border-radius: 10px; background: #0b0b11; }
+  .guide summary {
+    list-style: none; cursor: pointer; padding: 10px 12px; font-size: 13px; color: var(--cyan);
+    display: flex; justify-content: space-between; gap: 8px;
+  }
+  .guide summary::-webkit-details-marker { display: none; }
+  .guide summary::after { content: "やり方 ▼"; color: var(--sub); font-size: 11px; white-space: nowrap; }
+  .guide[open] summary::after { content: "とじる ▲"; }
+  .guide summary.empty-guide { color: var(--sub); }
+  .guide summary.empty-guide::after { content: ""; }
+  #guideBody { padding: 0 12px 12px; font-size: 13px; line-height: 1.7; }
+  #guideBody h4 { margin: 10px 0 2px; font-size: 11px; letter-spacing: .12em; color: var(--sub); font-weight: 600; }
+  #guideBody ol, #guideBody ul { margin: 0; padding-left: 1.3em; }
+  #guideBody li::marker { color: var(--cyan); }
+  .lvl { display: inline-block; font-size: 10px; padding: 0 6px; border-radius: 4px; margin-left: 6px; border: 1px solid currentColor; vertical-align: 1px; }
+  .lvl1 { color: var(--lime); } .lvl2 { color: #ff9f1c; } .lvl3 { color: var(--pink); }
   .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
   .btn-row .btn { margin-top: 0; font-size: 14px; letter-spacing: .06em; padding: 13px 8px; }
   .btn.ghost { background: transparent; box-shadow: none; text-shadow: none; }
@@ -272,7 +288,7 @@
       <div class="summary">
         <div><b id="sumDays">0</b><span>トレーニング日数</span></div>
         <div><b id="sumSets">0</b><span>総セット数</span></div>
-        <div><b id="sumVolume">0</b><span>総挙上量(kg)</span></div>
+        <div><b id="sumVolume">0</b><span>総回数</span></div>
       </div>
     </div>
   </section>
@@ -288,11 +304,15 @@
       <label>種目</label>
       <select id="fExercise"></select>
       <input id="fCustom" class="hidden" placeholder="種目名を入力" style="margin-top:6px">
+      <details class="guide" id="guide">
+        <summary><span id="guideSummary"></span></summary>
+        <div id="guideBody"></div>
+      </details>
       <div id="weightFields">
         <div class="grid3">
-          <div><label>重量(kg)</label><input type="number" id="fWeight" inputmode="decimal" min="0" step="0.5" placeholder="0=自重"></div>
-          <div><label>回数</label><input type="number" id="fReps" inputmode="numeric" min="1" placeholder="10"></div>
+          <div><label id="repsLabel">回数</label><input type="number" id="fReps" inputmode="numeric" min="1" placeholder="10"></div>
           <div><label>セット数</label><input type="number" id="fSets" inputmode="numeric" min="1" value="3"></div>
+          <div><label>加重(kg)・任意</label><input type="number" id="fWeight" inputmode="decimal" min="0" step="0.5" placeholder="なし"></div>
         </div>
       </div>
       <div id="cardioFields" class="hidden">
@@ -341,7 +361,7 @@
       <div id="partShare"></div>
     </div>
     <div class="card">
-      <h2>週ごとの総挙上量（kg）</h2>
+      <h2>週ごとの総回数</h2>
       <div id="volumeChart"></div>
     </div>
     <div class="card">
@@ -405,14 +425,133 @@
 <script>
 // ===== 定義 =====
 const PARTS = {
-  chest:    { name: '胸',     stat: 'パワー',   color: '#ff2bd6', ex: ['ベンチプレス', 'ダンベルプレス', 'インクラインプレス', 'ダンベルフライ', '腕立て伏せ', 'ディップス'] },
-  back:     { name: '背中',   stat: 'タフさ',   color: '#3d7bff', ex: ['デッドリフト', '懸垂', 'ラットプルダウン', 'ベントオーバーロウ', 'シーテッドロウ'] },
-  legs:     { name: '脚',     stat: 'ふんばり', color: '#39ff88', ex: ['スクワット', 'レッグプレス', 'ランジ', 'ブルガリアンスクワット', 'レッグカール', 'カーフレイズ'] },
-  shoulder: { name: '肩',     stat: 'かまえ',   color: '#ff9f1c', ex: ['ショルダープレス', 'サイドレイズ', 'フロントレイズ', 'リアレイズ', 'アップライトロウ'] },
-  arms:     { name: '腕',     stat: 'うでっぷし', color: '#b14dff', ex: ['バーベルカール', 'ダンベルカール', 'ハンマーカール', 'トライセプスエクステンション', 'ナローベンチ'] },
-  core:     { name: '腹',     stat: 'たいかん', color: '#f5ff3b', ex: ['クランチ', 'プランク(秒→回数)', 'レッグレイズ', 'アブローラー', 'ロシアンツイスト'] },
-  cardio:   { name: '有酸素', stat: 'スタミナ', color: '#00f0ff', ex: ['ランニング', 'ウォーキング', 'バイク', '水泳', 'なわとび', 'HIIT'] },
+  chest:    { name: '胸',     stat: 'パワー',     color: '#ff2bd6' },
+  back:     { name: '背中',   stat: 'タフさ',     color: '#3d7bff' },
+  legs:     { name: '脚',     stat: 'ふんばり',   color: '#39ff88' },
+  shoulder: { name: '肩',     stat: 'かまえ',     color: '#ff9f1c' },
+  arms:     { name: '腕',     stat: 'うでっぷし', color: '#b14dff' },
+  core:     { name: '腹',     stat: 'たいかん',   color: '#f5ff3b' },
+  cardio:   { name: '有酸素', stat: 'スタミナ',   color: '#00f0ff' },
 };
+// 自重トレーニングの種目とやり方
+// level: 1=初級 2=中級 3=上級 / sec: 秒数で記録する種目 / goal: 目安
+const EXERCISES = [
+  // 胸
+  { part: 'chest', name: '膝つき腕立て伏せ', level: 1, goal: '10〜20回 × 3セット', target: '胸・二の腕',
+    steps: ['膝を床につき、手は肩幅より少し広めに置く', '頭から膝まで一直線のまま、胸が床に近づくまでひじを曲げる', '床を押して元の位置に戻る'],
+    points: ['腰を反らさない', '楽に20回できたら普通の腕立て伏せへ'] },
+  { part: 'chest', name: '腕立て伏せ', level: 2, goal: '10〜15回 × 3セット', target: '胸・二の腕・肩',
+    steps: ['手を肩幅より少し広めに床につき、つま先立ちで頭からかかとまで一直線にする', '2秒かけて、胸が床すれすれになるまでひじを曲げる', '床を押して元の姿勢に戻る'],
+    points: ['お腹に力を入れ、お尻が上がったり腰が落ちたりしないようにする', 'ひじは体から45度くらいに開く（真横に開きすぎない）'] },
+  { part: 'chest', name: 'インクラインプッシュアップ', level: 1, goal: '12〜20回 × 3セット', target: '胸の下部',
+    steps: ['イスや机など、動かない台に手をつく', '体を一直線にして、胸を台に近づける', '台を押して戻る'],
+    points: ['台が高いほど楽になる。腕立てができない人の入門に'] },
+  { part: 'chest', name: 'ワイドプッシュアップ', level: 2, goal: '10〜15回 × 3セット', target: '胸の外側',
+    steps: ['手幅を肩幅の1.5倍くらいに広げて腕立ての姿勢をとる', '胸を張ったまま床すれすれまで下ろす', '押し上げて戻る'],
+    points: ['肩をすくめない', '胸がストレッチされるのを感じながら下ろす'] },
+  { part: 'chest', name: 'デクラインプッシュアップ', level: 3, goal: '8〜12回 × 3セット', target: '胸の上部・肩',
+    steps: ['足をイスや台に乗せ、手は肩幅で床につく', '頭からかかとまで一直線のまま、胸を床に近づける', '押し上げて戻る'],
+    points: ['足の位置が高いほどきつくなる', '腰が反りやすいのでお腹に力を入れ続ける'] },
+  // 背中
+  { part: 'back', name: '斜め懸垂', level: 1, goal: '8〜15回 × 3セット', target: '背中・腕',
+    steps: ['低い鉄棒や丈夫なテーブルの縁を肩幅より少し広く握り、体を斜めにぶら下げる', 'かかとを床につけ、体を一直線にしたまま胸をバーに引き寄せる', 'ゆっくりひじを伸ばして戻る'],
+    points: ['肩甲骨を寄せるように引く', '体が立っているほど楽、床と平行に近いほどきつい'] },
+  { part: 'back', name: '懸垂', level: 3, goal: '3〜10回 × 3セット', target: '背中・腕',
+    steps: ['鉄棒を肩幅より少し広く、手の甲を手前にして握ってぶら下がる', '胸を張り、肩甲骨を寄せながら、あごがバーを越えるまで体を引き上げる', 'ゆっくり下ろし、ひじを伸ばしきる'],
+    points: ['足を振って反動をつけない', 'できない人は斜め懸垂や、ぶら下がるだけから始める'] },
+  { part: 'back', name: 'スーパーマン', level: 1, goal: '10〜15回 × 3セット', target: '背中・お尻',
+    steps: ['うつ伏せになり、手と足をまっすぐ伸ばす', '手・足・胸を同時に床から浮かせて2秒キープ', 'ゆっくり下ろす'],
+    points: ['目線は床に向け、首を反らしすぎない', '腰に痛みがあれば無理しない'] },
+  { part: 'back', name: 'リバーススノーエンジェル', level: 2, goal: '10〜12回 × 3セット', target: '背中の上部・肩の後ろ',
+    steps: ['うつ伏せで胸を少し浮かせ、腕を体の横に伸ばす', '腕を床から浮かせたまま、弧を描くように頭の上まで動かす', '同じ軌道で体の横に戻す'],
+    points: ['ゆっくり動かすほど効く', '肩甲骨の動きを意識する'] },
+  // 脚
+  { part: 'legs', name: 'スクワット', level: 1, goal: '15〜20回 × 3セット', target: '太もも・お尻',
+    steps: ['足を肩幅に開き、つま先を少し外に向ける', 'イスに座るようにお尻を後ろに引きながら、太ももが床と平行になるまで下ろす', 'かかとで床を押して立ち上がる'],
+    points: ['膝はつま先と同じ向きに曲げる', '背中を丸めず、胸を張る'] },
+  { part: 'legs', name: 'ワイドスクワット', level: 1, goal: '15〜20回 × 3セット', target: '内もも・お尻',
+    steps: ['足を肩幅の1.5〜2倍に開き、つま先を外に向ける', '上体をまっすぐにしたまま、真下に腰を落とす', '内ももを意識して立ち上がる'],
+    points: ['膝が内側に入らないようにする'] },
+  { part: 'legs', name: 'ランジ', level: 2, goal: '左右10回ずつ × 3セット', target: '太もも・お尻',
+    steps: ['まっすぐ立ち、片足を大きく前に踏み出す', '両膝が90度になるまで腰を沈める', '前足で床を押して元に戻り、左右交互に行う'],
+    points: ['上体はまっすぐ立てたまま', '回数は片足ぶんで数える'] },
+  { part: 'legs', name: 'ブルガリアンスクワット', level: 3, goal: '左右8〜12回ずつ × 3セット', target: '太もも・お尻',
+    steps: ['イスに背を向けて立ち、片足の甲をイスに乗せる', '前足に体重をかけ、前の太ももが床と平行になるまで沈む', '前足のかかとで押して戻る'],
+    points: ['ぐらつく時は壁に手をそえてOK', '回数は片足ぶんで数える'] },
+  { part: 'legs', name: 'ヒップリフト', level: 1, goal: '15〜20回 × 3セット', target: 'お尻・太ももの裏',
+    steps: ['仰向けで膝を立て、足は腰幅に開く', 'お尻を持ち上げ、肩から膝まで一直線にして1秒キープ', 'ゆっくり下ろす'],
+    points: ['腰を反らせすぎず、お尻をしめる意識で上げる'] },
+  { part: 'legs', name: 'カーフレイズ', level: 1, goal: '20〜30回 × 3セット', target: 'ふくらはぎ',
+    steps: ['壁に手をそえて立ち、段差があればつま先だけを乗せる', 'かかとをできるだけ高く上げる', 'ゆっくりかかとを下ろす'],
+    points: ['上で1秒止めると効きが上がる'] },
+  { part: 'legs', name: '空気椅子', level: 2, sec: true, goal: '30〜60秒 × 3セット', target: '太もも',
+    steps: ['壁に背中をつけて立つ', '壁にそって腰を下ろし、太ももが床と平行になったら止める', 'その姿勢をキープする'],
+    points: ['膝の真下にかかとがくる位置に足を置く', '呼吸を止めない'] },
+  // 肩
+  { part: 'shoulder', name: 'パイクプッシュアップ', level: 2, goal: '8〜12回 × 3セット', target: '肩',
+    steps: ['腕立ての姿勢からお尻を高く上げ、体を「へ」の字にする', '頭を両手の間の床に近づけるようにひじを曲げる', '床を押して戻る'],
+    points: ['頭は斜め前に下ろす', 'お尻が高いほど肩に効く'] },
+  { part: 'shoulder', name: '壁倒立腕立て伏せ', level: 3, goal: '3〜8回 × 3セット', target: '肩・二の腕',
+    steps: ['壁に向かって逆立ちし、かかとを壁につける', '頭が床に近づくまでゆっくりひじを曲げる', '床を押して腕を伸ばす'],
+    points: ['慣れるまでは壁倒立のキープだけでOK', '頭を床に打たないよう、ゆっくり行う'] },
+  { part: 'shoulder', name: 'プランクショルダータップ', level: 2, goal: '左右10回ずつ × 3セット', target: '肩・体幹',
+    steps: ['腕を伸ばした腕立ての姿勢になる', '片手を床から離し、反対の肩をタッチする', '手を戻して左右交互に繰り返す'],
+    points: ['腰が左右に揺れないようにお腹をしめる', '足を広げると安定する'] },
+  { part: 'shoulder', name: 'Yレイズ', level: 1, goal: '12〜15回 × 3セット', target: '肩の後ろ・背中の上部',
+    steps: ['うつ伏せになり、腕を頭の上でY字に伸ばす', '親指を上に向けたまま、腕を床から浮かせる', 'ゆっくり下ろす'],
+    points: ['反動を使わず、肩甲骨を下げる意識で上げる'] },
+  // 腕
+  { part: 'arms', name: 'ダイヤモンドプッシュアップ', level: 2, goal: '8〜12回 × 3セット', target: '二の腕（裏）・胸',
+    steps: ['両手の親指と人差し指でひし形を作り、胸の真下に置く', '体を一直線にしたまま、ひじを体にそわせて胸を手に近づける', '押し上げて戻る'],
+    points: ['きつい時は膝をついてもOK'] },
+  { part: 'arms', name: 'ベンチディップス', level: 1, goal: '10〜15回 × 3セット', target: '二の腕（裏）',
+    steps: ['イスの端に後ろ向きで手をつき、お尻をイスの前に出す', 'ひじが90度になるまで、ひじを後ろに曲げて体を下ろす', '腕を伸ばして戻る'],
+    points: ['肩をすくめない', '足を遠くに置くほどきつくなる'] },
+  { part: 'arms', name: '逆手斜め懸垂', level: 2, goal: '8〜12回 × 3セット', target: '力こぶ・背中',
+    steps: ['低い鉄棒やテーブルの縁を、手のひらを自分に向けて肩幅で握る', '体を一直線にしたまま、胸をバーに引き寄せる', 'ゆっくり戻る'],
+    points: ['ひじを体に近づけたまま引くと力こぶに効く'] },
+  { part: 'arms', name: 'チンアップ（逆手懸垂）', level: 3, goal: '3〜10回 × 3セット', target: '力こぶ・背中',
+    steps: ['鉄棒を手のひらを自分に向けて肩幅で握り、ぶら下がる', 'あごがバーを越えるまで体を引き上げる', 'ゆっくり下ろす'],
+    points: ['反動を使わない', '順手の懸垂より少し楽にできることが多い'] },
+  // 腹
+  { part: 'core', name: 'クランチ', level: 1, goal: '15〜20回 × 3セット', target: 'お腹（上部）',
+    steps: ['仰向けで膝を立て、手は胸の前でクロスするか耳の横にそえる', 'おへそをのぞき込むように、肩甲骨が浮くまで上体を丸める', 'ゆっくり戻る'],
+    points: ['手で首を引っぱらない', '反動を使わず、息を吐きながら丸める'] },
+  { part: 'core', name: 'レッグレイズ', level: 2, goal: '10〜15回 × 3セット', target: 'お腹（下部）',
+    steps: ['仰向けで脚を伸ばし、手はお尻の横に置く', '脚をそろえたまま床と垂直まで上げる', 'かかとが床につく直前まで、ゆっくり下ろす'],
+    points: ['腰が浮くなら膝を曲げて行う'] },
+  { part: 'core', name: 'プランク', level: 1, sec: true, goal: '30〜60秒 × 3セット', target: '体幹全体',
+    steps: ['ひじを肩の真下につき、うつ伏せになる', 'つま先立ちになり、頭からかかとまで一直線にする', 'その姿勢をキープする'],
+    points: ['お尻を上げすぎず、下げすぎない', '呼吸を止めない'] },
+  { part: 'core', name: 'サイドプランク', level: 2, sec: true, goal: '左右20〜40秒ずつ × 3セット', target: '脇腹',
+    steps: ['横向きに寝て、下側のひじを肩の真下につく', '腰を浮かせ、頭から足まで一直線にする', 'その姿勢をキープし、左右とも行う'],
+    points: ['腰が落ちないように', '秒数は片側ぶんで記録する'] },
+  { part: 'core', name: 'バイシクルクランチ', level: 2, goal: '左右10回ずつ × 3セット', target: '脇腹・お腹',
+    steps: ['仰向けで手を耳の横にそえ、脚を床から浮かせる', '自転車をこぐように片膝を胸に引き寄せ、反対のひじを近づける', '左右交互に繰り返す'],
+    points: ['ゆっくりひねるほど効く'] },
+  { part: 'core', name: 'マウンテンクライマー', level: 2, goal: '左右20回ずつ × 3セット', target: 'お腹・全身',
+    steps: ['腕を伸ばした腕立ての姿勢になる', '片膝を胸に引きつけて戻す', '左右交互に、リズムよく素早く繰り返す'],
+    points: ['お尻が上がらないようにする'] },
+  // 有酸素（時間で記録）
+  { part: 'cardio', name: 'ウォーキング', level: 1, goal: '20〜40分', target: '全身・心肺',
+    steps: ['背すじを伸ばし、目線は少し先に向ける', '腕を前後にしっかり振る', '少し息が上がるくらいの速さで歩く'],
+    points: ['かかとから着地し、つま先でけり出す'] },
+  { part: 'cardio', name: 'ジョギング', level: 2, goal: '20〜30分', target: '全身・心肺',
+    steps: ['会話ができるくらいのペースで走る', '足は体の真下に着地させる', '腕は軽くひじを曲げて前後に振る'],
+    points: ['最初は走る1分＋歩く1分のくり返しでもOK'] },
+  { part: 'cardio', name: 'なわとび', level: 2, goal: '10〜15分', target: 'ふくらはぎ・心肺',
+    steps: ['なわは手首で回す', 'つま先で軽く、低く跳ぶ', '1分跳ぶ＋30秒休むをくり返す'],
+    points: ['クッション性のある靴と床で行う'] },
+  { part: 'cardio', name: '踏み台昇降', level: 1, goal: '15〜30分', target: '脚・心肺',
+    steps: ['高さ15〜20cmくらいの段差の前に立つ', '右足、左足の順に上がる', '右足、左足の順に降り、リズムよくくり返す'],
+    points: ['途中で先に出す足を入れかえる', 'テレビを見ながらでもできる'] },
+  { part: 'cardio', name: 'HIIT（自重サーキット）', level: 3, goal: '4〜12分', target: '全身・心肺',
+    steps: ['バーピーやジャンピングスクワットなどを20秒全力で行う', '10秒休む', 'これを8回くり返す（4分）。慣れたら2〜3ラウンド'],
+    points: ['短時間でも息が上がるきつさで行う', '体調の悪い日は避ける'] },
+];
+const EX_BY_NAME = Object.fromEntries(EXERCISES.map(e => [e.name, e]));
+Object.entries(PARTS).forEach(([k, p]) => p.ex = EXERCISES.filter(e => e.part === k).map(e => e.name));
+const LEVELS = ['', '初級', '中級', '上級'];
 // 進化するレベル（キャラ共通）
 const STAGES = [1, 3, 6, 11, 20, 35].map(lv => ({ lv }));
 const COMMON_TALK = {
@@ -502,7 +641,8 @@ const dayDiff = (a, b) => Math.round((new Date(b + 'T00:00') - new Date(a + 'T00
 function baseXp(r) {
   if (r.part === 'cardio') return Math.round(5 + r.minutes * 1.5);
   const w = Number(r.weight) || 0;
-  return Math.round(5 + r.sets * r.reps * (1 + w / 25) * 0.5);
+  const n = r.sec ? r.reps / 3 : r.reps;       // 秒数の種目は3秒を1回ぶんとして計算
+  return Math.round(5 + r.sets * n * (1 + w / 25) * 0.5);
 }
 // Lv n → n+1 に必要なXP
 const xpForNext = lv => 40 + lv * 30;
@@ -523,7 +663,7 @@ function computeState() {
     r._xp = Math.round(baseXp(r) * bonus);
     total += r._xp;
     stat[r.part] += r._xp;
-    if (r.part !== 'cardio') { sets += r.sets; volume += (Number(r.weight) || 0) * r.reps * r.sets; }
+    if (r.part !== 'cardio') { sets += r.sets; if (!r.sec) volume += r.reps * r.sets; }
   }
   let lv = 1, rest = total;
   while (rest >= xpForNext(lv)) { rest -= xpForNext(lv); lv++; }
@@ -1121,7 +1261,7 @@ function render() {
 function entryHtml(r, draftIdx = null) {
   const p = PARTS[r.part];
   const detail = r.part === 'cardio' ? `${r.minutes}分`
-    : `${Number(r.weight) ? r.weight + 'kg' : '自重'} × ${r.reps}回 × ${r.sets}セット`;
+    : `${r.reps}${r.sec ? '秒' : '回'} × ${r.sets}セット${Number(r.weight) ? `（+${r.weight}kg）` : ''}`;
   const right = draftIdx === null
     ? `<span class="xp">+${r._xp}XP</span><button class="mini" data-del="${r.id}">削除</button>`
     : `<span class="xp">+${baseXp(r)}XP</span><button class="mini" data-draft-del="${draftIdx}">外す</button>`;
@@ -1229,7 +1369,9 @@ function lineChart(labels, series, { unit = '' } = {}) {
 const md = d => `${Number(d.slice(5, 7))}/${Number(d.slice(8))}`;
 const addDays = (d, n) => { const t = new Date(d + 'T00:00'); t.setDate(t.getDate() + n); return ymd(t); };
 const weekStart = d => { const t = new Date(d + 'T00:00'); t.setDate(t.getDate() - t.getDay()); return ymd(t); };
-const volOf = r => r.part === 'cardio' ? 0 : (Number(r.weight) || 0) * r.reps * r.sets;
+// 合計回数（秒数の種目と有酸素は0）
+const volOf = r => r.part === 'cardio' || r.sec ? 0 : r.reps * r.sets;
+const totalOf = r => r.part === 'cardio' ? 0 : r.reps * r.sets;
 
 let xpRange = '30';
 const db = { sort: 'date', dir: -1, limit: 50 };
@@ -1269,11 +1411,11 @@ function renderData(st) {
       <div class="bar"><div style="width:${st.stat[k] / total * 100}%"></div></div>
       <span class="pct">${(st.stat[k] / total * 100).toFixed(1)}%</span></div>`).join('') : empty;
 
-  // 週ごとの総挙上量
+  // 週ごとの総回数
   const w0 = weekStart(t);
   const weeks = Array.from({ length: 12 }, (_, i) => addDays(w0, (i - 11) * 7));
   const vols = weeks.map(w => recs.filter(r => weekStart(r.date) === w).reduce((a, r) => a + volOf(r), 0));
-  document.getElementById('volumeChart').innerHTML = vols.some(v => v) ? barChart(weeks.map(md), vols, { color: '#39ff88', unit: ' kg' }) : empty;
+  document.getElementById('volumeChart').innerHTML = vols.some(v => v) ? barChart(weeks.map(md), vols, { color: '#39ff88', unit: ' 回' }) : empty;
 
   // 種目別の伸び
   const sel = document.getElementById('exSelect');
@@ -1292,9 +1434,16 @@ function renderData(st) {
     if (rs[0].part === 'cardio') {
       exHtml = lineChart(days.map(md), [{ name: '時間', color: NEON, fill: true,
         values: days.map(d => rs.filter(r => r.date === d).reduce((a, r) => a + r.minutes, 0)) }], { unit: ' 分' });
+    } else if (rs.some(r => r.sec)) {
+      exHtml = lineChart(days.map(md), [
+        { name: '最長キープ（1セット）', color: NEON, values: days.map(d => Math.max(...rs.filter(r => r.date === d).map(r => r.reps))) },
+        { name: '合計秒数', color: PINK, values: days.map(d => rs.filter(r => r.date === d).reduce((a, r) => a + r.reps * r.sets, 0)) },
+      ], { unit: ' 秒' });
     } else if (rs.every(r => !Number(r.weight))) {
-      exHtml = lineChart(days.map(md), [{ name: '総回数', color: NEON, fill: true,
-        values: days.map(d => rs.filter(r => r.date === d).reduce((a, r) => a + r.reps * r.sets, 0)) }], { unit: ' 回' });
+      exHtml = lineChart(days.map(md), [
+        { name: '1セットの最高回数', color: NEON, values: days.map(d => Math.max(...rs.filter(r => r.date === d).map(r => r.reps))) },
+        { name: '合計回数', color: PINK, values: days.map(d => rs.filter(r => r.date === d).reduce((a, r) => a + r.reps * r.sets, 0)) },
+      ], { unit: ' 回' });
     } else {
       // 推定1RM（Epley式：重量 ×（1 + 回数 / 30））
       exHtml = lineChart(days.map(md), [
@@ -1316,7 +1465,7 @@ function dbRows(recs) {
   const key = {
     date: r => r.date + String(r.id).padStart(15, '0'), part: r => PARTS[r.part].name, exercise: r => r.exercise,
     weight: r => Number(r.weight) || 0, reps: r => r.reps || 0, sets: r => r.sets || 0,
-    minutes: r => r.minutes || 0, volume: volOf, xp: r => r._xp,
+    minutes: r => r.minutes || 0, volume: totalOf, xp: r => r._xp,
   }[db.sort];
   return rows.sort((a, b) => { const x = key(a), y = key(b); return (x > y ? 1 : x < y ? -1 : 0) * db.dir; });
 }
@@ -1329,14 +1478,15 @@ function renderDb(recs) {
   exSel.innerHTML = '<option value="">すべての種目</option>' + exs.map(e => `<option ${e === ev ? 'selected' : ''}>${esc(e)}</option>`).join('');
 
   const rows = dbRows(recs);
-  const cols = [['date', '日付'], ['part', '部位'], ['exercise', '種目'], ['weight', '重量', 1], ['reps', '回数', 1], ['sets', 'セット', 1], ['minutes', '分', 1], ['volume', '挙上量', 1], ['xp', 'XP', 1]];
+  const cols = [['date', '日付'], ['part', '部位'], ['exercise', '種目'], ['reps', '回数', 1], ['sets', 'セット', 1], ['volume', '合計', 1], ['weight', '加重', 1], ['minutes', '分', 1], ['xp', 'XP', 1]];
   const head = '<tr>' + cols.map(([k, l, n]) => `<th data-sort="${k}" class="${n ? 'n' : ''} ${db.sort === k ? 'sorted' : ''}">${l}${db.sort === k ? (db.dir > 0 ? ' ▲' : ' ▼') : ''}</th>`).join('') + '</tr>';
   const dash = '<span style="color:var(--line)">-</span>';
   const body = rows.slice(0, db.limit).map(r => {
     const c = r.part === 'cardio', p = PARTS[r.part];
     return `<tr><td>${r.date.slice(2).replace(/-/g, '/')}</td><td><span class="tag" style="--c:${p.color}">${p.name}</span></td><td>${esc(r.exercise)}</td>
-      <td class="n">${c ? dash : (Number(r.weight) || '自重')}</td><td class="n">${c ? dash : r.reps}</td><td class="n">${c ? dash : r.sets}</td>
-      <td class="n">${c ? r.minutes : dash}</td><td class="n">${c ? dash : fmt(volOf(r))}</td><td class="n" style="color:var(--lime)">${r._xp}</td></tr>`;
+      <td class="n">${c ? dash : r.reps + (r.sec ? '秒' : '')}</td><td class="n">${c ? dash : r.sets}</td>
+      <td class="n">${c ? dash : fmt(totalOf(r)) + (r.sec ? '秒' : '')}</td><td class="n">${c || !Number(r.weight) ? dash : r.weight}</td>
+      <td class="n">${c ? r.minutes : dash}</td><td class="n" style="color:var(--lime)">${r._xp}</td></tr>`;
   }).join('');
   document.getElementById('dbTable').innerHTML = rows.length ? head + body : `<tr><td class="empty">該当する記録がありません</td></tr>`;
   document.getElementById('dbCount').textContent = `${rows.length}件${rows.length > db.limit ? `（${db.limit}件表示）` : ''}`;
@@ -1357,12 +1507,31 @@ function renderChips() {
   document.getElementById('partChips').innerHTML = Object.entries(PARTS).map(([k, p]) =>
     `<button class="chip ${k === currentPart ? 'on' : ''}" style="--c:${p.color}" data-part="${k}">${p.name}</button>`).join('');
   document.getElementById('fExercise').innerHTML =
-    PARTS[currentPart].ex.map(e => `<option>${e}</option>`).join('') + '<option value="__custom">その他（自由入力）</option>';
+    PARTS[currentPart].ex.map(e => `<option value="${e}">${e}（${LEVELS[EX_BY_NAME[e].level]}）</option>`).join('') + '<option value="__custom">その他（自由入力）</option>';
   const cardio = currentPart === 'cardio';
   document.getElementById('weightFields').classList.toggle('hidden', cardio);
   document.getElementById('cardioFields').classList.toggle('hidden', !cardio);
   document.getElementById('fCustom').classList.add('hidden');
+  renderGuide();
   updatePreview();
+}
+// 選んだ種目のやり方
+function renderGuide() {
+  const ex = EX_BY_NAME[document.getElementById('fExercise').value];
+  const sum = document.getElementById('guideSummary');
+  const box = document.getElementById('guide');
+  sum.parentElement.classList.toggle('empty-guide', !ex);
+  if (!ex) { sum.textContent = '自由入力の種目です'; box.open = false; document.getElementById('guideBody').innerHTML = ''; }
+  else {
+    sum.innerHTML = `目安：${ex.goal}<span class="lvl lvl${ex.level}">${LEVELS[ex.level]}</span>`;
+    document.getElementById('guideBody').innerHTML = `
+      <h4>効く部位</h4><div>${ex.target}</div>
+      <h4>やり方</h4><ol>${ex.steps.map(t => `<li>${t}</li>`).join('')}</ol>
+      <h4>ポイント</h4><ul>${ex.points.map(t => `<li>${t}</li>`).join('')}</ul>`;
+  }
+  const sec = !!(ex && ex.sec);
+  document.getElementById('repsLabel').textContent = sec ? '秒数' : '回数';
+  document.getElementById('fReps').placeholder = sec ? '30' : '10';
 }
 function readForm() {
   const sel = document.getElementById('fExercise').value;
@@ -1374,13 +1543,14 @@ function readForm() {
     r.weight = parseFloat(document.getElementById('fWeight').value) || 0;
     r.reps = parseInt(document.getElementById('fReps').value, 10) || 0;
     r.sets = parseInt(document.getElementById('fSets').value, 10) || 0;
+    if (EX_BY_NAME[exercise]?.sec) r.sec = true;
   }
   return r;
 }
 function validRecord(r) {
   if (!r.exercise) return '種目名を入力してください';
   if (r.part === 'cardio') return r.minutes > 0 ? null : '時間を入力してください';
-  if (r.reps <= 0) return '回数を入力してください';
+  if (r.reps <= 0) return r.sec ? '秒数を入力してください' : '回数を入力してください';
   if (r.sets <= 0) return 'セット数を入力してください';
   if (r.weight < 0) return '重量が正しくありません';
   return null;
@@ -1396,6 +1566,7 @@ document.getElementById('partChips').addEventListener('click', e => {
 });
 document.getElementById('fExercise').addEventListener('change', e => {
   document.getElementById('fCustom').classList.toggle('hidden', e.target.value !== '__custom');
+  renderGuide();
   updatePreview();
 });
 ['fWeight', 'fReps', 'fSets', 'fMinutes', 'fCustom'].forEach(id =>
@@ -1455,8 +1626,8 @@ document.getElementById('loadLastBtn').addEventListener('click', () => {
   const last = days[days.length - 1];
   if (!last) { toast('前回の記録がありません'); return; }
   const items = data.records.filter(r => r.date === last).sort((a, b) => a.id - b.id)
-    .map(({ part, exercise, weight, reps, sets, minutes }) =>
-      part === 'cardio' ? { part, exercise, minutes } : { part, exercise, weight, reps, sets });
+    .map(({ part, exercise, weight, reps, sets, minutes, sec }) =>
+      part === 'cardio' ? { part, exercise, minutes } : { part, exercise, weight, reps, sets, ...(sec ? { sec } : {}) });
   data.draft.push(...items);
   save(); renderDraft();
   toast(`${last.slice(5).replace('-', '/')} のメニューを${items.length}件追加`);
@@ -1531,8 +1702,9 @@ document.getElementById('dbMore').addEventListener('click', () => { db.limit += 
 document.getElementById('csvBtn').addEventListener('click', async () => {
   const rows = dbRows(computeState().recs);
   const q = v => /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : v;
-  const csv = ['日付,部位,種目,重量(kg),回数,セット,時間(分),挙上量(kg),XP',
-    ...rows.map(r => [r.date, PARTS[r.part].name, r.exercise, r.weight ?? '', r.reps ?? '', r.sets ?? '', r.minutes ?? '', volOf(r) || '', r._xp].map(q).join(','))].join('\n');
+  const csv = ['日付,部位,種目,回数・秒数,単位,セット,合計,加重(kg),時間(分),XP',
+    ...rows.map(r => [r.date, PARTS[r.part].name, r.exercise, r.reps ?? '', r.part === 'cardio' ? '' : r.sec ? '秒' : '回', r.sets ?? '',
+      totalOf(r) || '', Number(r.weight) || '', r.minutes ?? '', r._xp].map(q).join(','))].join('\n');
   try { await navigator.clipboard.writeText(csv); toast(`${rows.length}件をCSVでコピーしました`); }
   catch { toast('コピーできませんでした'); }
 });
