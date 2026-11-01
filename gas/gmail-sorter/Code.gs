@@ -74,6 +74,9 @@ const CONFIG = {
     'marketing.', 'newsletter', 'news@', 'store-news@',
   ],
 
+  // 既読にしてゴミ箱へ移す送信元（30日でGmailが完全に削除する）
+  trashSenders: ['contract-one.com'],
+
   // 既読だけにして受信箱に残す送信元（領収書・自動タスク通知など）
   noticeSenders: ['tm.openai.com', 'invoice@', 'mail.anthropic.com'],
 
@@ -131,11 +134,12 @@ function sortInbox() {
         log.counts.other++;
         return; // 上限超え：ラベルを付けずに次の実行に回す
       }
-      by = 'AI';
       if (!apiKey) {
+        by = 'ルール';
         kind = 'ask';
-        reason = 'AIキー未設定';
+        reason = 'ルールに当たらない（AIなし）';
       } else {
+        by = 'AI';
         aiCalls++;
         const r = classifyWithAI_(apiKey, fromRaw, subject, body.slice(0, CONFIG.ai.bodyChars));
         kind = r.confident ? r.category : 'ask';
@@ -169,6 +173,10 @@ function applyKind_(thread, kind, L, log, item) {
     case 'notice':
       thread.addLabel(L.notice).markRead();
       log.counts.notice++;
+      break;
+    case 'trash':
+      thread.markRead().moveToTrash();
+      log.counts.trash++;
       break;
     case 'check':
       thread.addLabel(L.check);
@@ -231,6 +239,7 @@ function classify_(from, subject, text, learned) {
   const has = (list, s) => list.some(k => s.includes(k));
 
   if (subject.startsWith('[Gmail要約]')) return 'summary';
+  if (fromHas(CONFIG.trashSenders)) return 'trash';
   const addr = senderAddress_(from);
   if (learned && learned[addr]) return learned[addr];
   if (fromHas(CONFIG.jobSenders)) {
@@ -315,7 +324,8 @@ function classifyWithAI_(apiKey, from, subject, body) {
 // ===== 判定結果の記録（スプレッドシート） =====
 
 function logRow_(by, kind, reason, from, subject, thread) {
-  return [new Date(), by, CONFIG.labels[kind] || kind, reason, from, subject || '',
+  const name = kind === 'trash' ? '削除' : (CONFIG.labels[kind] || kind);
+  return [new Date(), by, name, reason, from, subject || '',
     'https://mail.google.com/mail/u/0/#all/' + thread.getId()];
 }
 
@@ -367,6 +377,7 @@ function sendSummary() {
     '- 転職/その他：' + c.jobOther + '件（既読・アーカイブ）',
     '- 広告：' + c.ad + '件（既読・アーカイブ）',
     '- 通知：' + c.notice + '件（既読）',
+    '- 削除：' + c.trash + '件（既読・ゴミ箱）',
     '- 残す：' + c.keep + '件（受信箱に未読のまま）',
     '- 未判定：' + c.other + '件（AIの上限超え。次回に判定）');
 
@@ -395,7 +406,7 @@ function shortFrom_(from) {
 }
 
 function emptyLog_() {
-  return { pick: [], check: [], reply: [], ask: [], counts: { jobOther: 0, ad: 0, notice: 0, keep: 0, other: 0 } };
+  return { pick: [], check: [], reply: [], ask: [], counts: { jobOther: 0, ad: 0, notice: 0, trash: 0, keep: 0, other: 0 } };
 }
 
 // 要約用の記録は一覧ごとに別のプロパティへ保存する（1つあたり9KBの上限を超えないように）
