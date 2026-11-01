@@ -761,6 +761,7 @@ const PET_DEFS = `
     <radialGradient id="muscleG" cx="45%" cy="35%" r="70%">
       <stop offset="0%" stop-color="#f0ffe6" stop-opacity=".8"/><stop offset="70%" stop-color="#b9e3a8" stop-opacity=".4"/><stop offset="100%" stop-color="#4f8a55" stop-opacity=".7"/>
     </radialGradient>
+    <linearGradient id="axHorn" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#e3b5ff"/><stop offset="1" stop-color="#8a3dd6"/></linearGradient>
     <radialGradient id="axSkin" cx="38%" cy="30%" r="78%">
       <stop offset="0%" stop-color="#ffe9f0"/><stop offset="50%" stop-color="#ffb3c9"/><stop offset="100%" stop-color="#d9708f"/>
     </radialGradient>
@@ -771,14 +772,8 @@ const PET_DEFS = `
     <radialGradient id="axEyeG" cx="45%" cy="40%" r="60%">
       <stop offset="0%" stop-color="#4a3048"/><stop offset="60%" stop-color="#140a12"/><stop offset="100%" stop-color="#000"/>
     </radialGradient>
-    <radialGradient id="axJelly" cx="40%" cy="35%" r="70%">
-      <stop offset="0%" stop-color="#ffd6e4" stop-opacity=".18"/><stop offset="80%" stop-color="#ff9cc0" stop-opacity=".22"/><stop offset="100%" stop-color="#ff6fa3" stop-opacity=".45"/>
-    </radialGradient>
     <radialGradient id="muscleP" cx="45%" cy="35%" r="70%">
       <stop offset="0%" stop-color="#ffffff" stop-opacity=".85"/><stop offset="70%" stop-color="#ffd3e0" stop-opacity=".45"/><stop offset="100%" stop-color="#e07a9a" stop-opacity=".7"/>
-    </radialGradient>
-    <radialGradient id="egg" cx="38%" cy="30%" r="80%">
-      <stop offset="0%" stop-color="#ffffff"/><stop offset="60%" stop-color="#e6e6ee"/><stop offset="100%" stop-color="#9c9cae"/>
     </radialGradient>
   </defs>`;
 
@@ -870,8 +865,43 @@ const auraOf = P => P.k >= 4 ? `<ellipse cx="100" cy="112" rx="${96 + P.stamina 
 const zzz = (x, y) => `<text x="${x}" y="${y}" font-size="14" fill="${NEON}" filter="url(#glow)" font-weight="700">z</text>
   <text x="${x + 11}" y="${y - 12}" font-size="10" fill="${NEON}" filter="url(#glow)" font-weight="700">z</text>`;
 const tearDrop = (x, y) => `<path d="M${x} ${y} q3.5 7 0 10.5 q-3.5 -3.5 0 -10.5" fill="${NEON}" filter="url(#glow)"/>`;
-// たまご・ひとだまの成長度（0〜）
+// たまごの成長度（0〜）
 const eggProgress = st => st.rest / st.need + (st.lv - 1);
+// たまご：つるんとした形に、キャラごとの柄を入れる
+const EGG_PATH = 'M100 52 C126 52 148 94 148 126 C148 160 126 180 100 180 C74 180 52 160 52 126 C52 94 74 52 100 52 Z';
+const EGG_STYLE = {
+  wolf: { colors: ['#f4f7fd', '#c3cce0', '#7d88a3'], crack: '#5a6480',
+    pattern: `<path d="M118 88 A20 20 0 1 0 118 128 A26 26 0 0 1 118 88 Z" fill="#ffd84d"/>
+      <path d="M86 104 l2 5 l5 0 l-4 3 l2 5 l-5 -3 l-5 3 l2 -5 l-4 -3 l5 0 Z" fill="#ffd84d"/>
+      <circle cx="104" cy="82" r="2.2" fill="#ffd84d"/><circle cx="80" cy="140" r="2" fill="#ffd84d"/>
+      <path d="M52 150 Q100 136 148 150 L148 190 L52 190 Z" fill="#8a96b5"/>` },
+  franken: { colors: ['#f1fcea', '#b2e0a2', '#679f62'], crack: '#3f6b4a',
+    pattern: `<path d="M52 122 L148 122 L148 140 L52 140 Z" fill="#3b2a66"/>
+      <path d="M60 131 h80" stroke="#9fd38f" stroke-width="2" stroke-dasharray="6 5"/>
+      <path d="M108 70 l-10 18 h9 l-7 16 l16 -21 h-9 l7 -13 Z" fill="#ffe066"/>` },
+  axolotl: { colors: ['#fff3f7', '#ffbdd2', '#dd7a9b'], crack: '#b5476d',
+    pattern: [[80, 90, 7], [118, 80, 5], [126, 118, 8], [86, 132, 6], [108, 156, 7], [70, 158, 4], [136, 150, 4]].map(([x, y, r], i) =>
+      `<circle cx="${x}" cy="${y}" r="${r}" fill="${i % 2 ? '#c77dff' : '#ff6fa3'}"/>`).join('') },
+};
+function cuteEgg(st, style) {
+  const p = eggProgress(st);
+  const [c1, c2, c3] = style.colors;
+  const crack = `stroke="${style.crack}" stroke-width="2.6" fill="none" stroke-linejoin="round" stroke-linecap="round"`;
+  return `
+    <defs>
+      <radialGradient id="eggG" cx="38%" cy="30%" r="80%"><stop offset="0%" stop-color="${c1}"/><stop offset="60%" stop-color="${c2}"/><stop offset="100%" stop-color="${c3}"/></radialGradient>
+      <clipPath id="eggClip"><path d="${EGG_PATH}"/></clipPath>
+    </defs>
+    <ellipse cx="100" cy="182" rx="40" ry="6" fill="#000" opacity=".6"/>
+    <g transform="${p > 1.2 ? 'rotate(-5 100 180)' : ''}">
+      <path d="${EGG_PATH}" fill="url(#eggG)"/>
+      <g clip-path="url(#eggClip)" opacity=".9">${style.pattern}</g>
+      <path d="${EGG_PATH}" fill="url(#rimLight)"/>
+      <ellipse cx="76" cy="96" rx="5" ry="10" fill="#fff" opacity=".85" transform="rotate(25 76 96)"/>
+      ${p > 0.5 ? `<path d="M88 58 l5 8 l-4 6 l7 6" ${crack}/>` : ''}
+      ${p > 1.2 ? `<path d="M118 66 l-4 9 l6 5 l-3 9" ${crack}/>` : ''}
+    </g>`;
+}
 
 // ---- 人型ボディ（ウルフ・フランケン共通）：逆三角形の胴、力こぶポーズの腕、脚 ----
 function humanoid(P, { skin, limb = skin, foot = limb, belly = null, muscle = 'url(#muscle)', muscleLine = '#8e8ea0', id }) {
@@ -929,20 +959,8 @@ const sweatOf = (P, mood, x = 146, y = 78) =>
 function drawWolf(st, mood, P) {
   const { k, S, A, Hp } = P;
   const fur = 'url(#wolfFur)', light = 'url(#wolfLight)';
-  if (k === 0) {
-    const p = eggProgress(st);
-    const cs = `stroke="#3a3f4e" stroke-width="2.4" fill="none" stroke-linejoin="round" stroke-linecap="round"`;
-    return `
-      <ellipse cx="100" cy="183" rx="62" ry="9" fill="url(#floor)"/>
-      <g filter="url(#fur)">
-        <path d="M66 70 L72 38 L90 58 Z M134 70 L128 38 L110 58 Z" fill="${fur}"/>
-        <ellipse cx="100" cy="114" rx="52" ry="65" fill="url(#egg)"/>
-        <path d="M60 140 Q100 120 140 140 L148 160 Q100 190 52 160 Z" fill="${fur}" opacity=".9"/>
-      </g>
-      <ellipse cx="82" cy="80" rx="14" ry="20" fill="#fff" opacity=".6" filter="url(#soft)" transform="rotate(20 82 80)"/>
-      ${p > 0.3 ? `<path d="M66 100 l9 9 l8 -9 l10 11 l9 -8 l10 9 l11 -8" ${cs}/>` : ''}
-      ${p > 1.0 ? `<circle cx="88" cy="118" r="3" fill="#ffd23f" filter="url(#glow)"/><circle cx="112" cy="118" r="3" fill="#ffd23f" filter="url(#glow)"/>` : ''}`;
-  }
+  if (k === 0) return cuteEgg(st, EGG_STYLE.wolf);
+
   const B = humanoid(P, { skin: fur, belly: light, id: 'wolfTorso' });
   const tail = `M${100 + Hp - 6} 160 C${138 + Hp * 0.3} 172 ${160} 150 ${164} 124 C${168} 108 ${158} 98 ${152} 108 C${156} 130 ${140} 148 ${100 + Hp - 8} 148 Z`;
   const E = 5.4;
@@ -1007,19 +1025,8 @@ function drawFranken(st, mood, P) {
   const glowBolt = mood.face === 'happy' || mood.face === 'normal';
   const bolt = (x, y, d) => `<rect x="${x - (d < 0 ? 9 : 0)}" y="${y - 4}" width="9" height="8" rx="2" fill="url(#metal)"/>
     <circle cx="${x + d * 10}" cy="${y}" r="3.2" fill="${glowBolt ? NEON : '#7a8494'}" ${glowBolt ? 'filter="url(#glow)"' : ''}/>`;
-  if (k === 0) {
-    const p = eggProgress(st);
-    return `
-      <ellipse cx="100" cy="183" rx="62" ry="9" fill="url(#floor)"/>
-      <g filter="url(#rim)">
-        <ellipse cx="100" cy="114" rx="52" ry="65" fill="${skin}"/>
-        <path d="M52 92 Q100 62 148 92 L148 74 Q100 40 52 74 Z" fill="url(#frHair)"/>
-      </g>
-      ${bolt(48, 128, -1)}${bolt(152, 128, 1)}
-      ${stitch(70, 108, 102, 100, 5)}${p > 0.6 ? stitch(98, 140, 128, 148, 4) : ''}
-      <ellipse cx="82" cy="96" rx="12" ry="16" fill="#fff" opacity=".35" filter="url(#soft)" transform="rotate(20 82 96)"/>
-      ${p > 1.0 ? `<path d="M128 48 l-8 14 h8 l-6 14" stroke="${NEON}" stroke-width="2" fill="none" filter="url(#glow)"/>` : ''}`;
-  }
+  if (k === 0) return cuteEgg(st, EGG_STYLE.franken);
+
   const B = humanoid(P, { skin, limb: skin, foot: 'url(#boot)', muscle: 'url(#muscleG)', muscleLine: '#3f6b4a', id: 'frTorso' });
   // 半ズボン＋ブーツ
   const shorts = `<path d="M${100 - Wt - 2} 154 L${100 + Wt + 2} 154 L${100 + Hp + 3} 172 L${100 + 4} 174 L100 166 L${100 - 4} 174 L${100 - Hp - 3} 172 Z" fill="url(#frPants)"/>
@@ -1083,29 +1090,15 @@ function drawAxolotl(st, mood, P) {
     const x0 = 100 + d * bx, y0 = by + j * 9;
     const cx = x0 + d * Math.cos(ang) * len, cy = y0 + Math.sin(ang) * len;
     const rot = d > 0 ? ang * 180 / Math.PI : 180 - ang * 180 / Math.PI;
+    // 先端が光る（モンスターっぽい発光器官）
+    const tx = x0 + d * Math.cos(ang) * len * 2, ty = y0 + Math.sin(ang) * len * 2;
     return `<ellipse cx="${cx}" cy="${cy}" rx="${len + 2}" ry="${len * 0.42}" fill="none" stroke="#ff6aa8" stroke-width="2.6" stroke-dasharray=".1 3.1" stroke-linecap="round" transform="rotate(${rot} ${cx} ${cy})"/>
-            <ellipse cx="${cx}" cy="${cy}" rx="${len}" ry="${len * 0.3}" fill="url(#axGill)" transform="rotate(${rot} ${cx} ${cy})"/>`;
+            <ellipse cx="${cx}" cy="${cy}" rx="${len}" ry="${len * 0.3}" fill="url(#axGill)" transform="rotate(${rot} ${cx} ${cy})"/>
+            <circle cx="${tx}" cy="${ty}" r="${len * 0.24}" fill="${NEON}"/>`;
   }).join('')).join('');
 
-  if (k === 0) {
-    // ゼリー状のたまごの中で、ちびウーパーが育つ
-    const p = Math.min(eggProgress(st), 2);
-    const es = 0.7 + p * 0.15;
-    return `
-      <ellipse cx="100" cy="183" rx="62" ry="9" fill="url(#floor)"/>
-      <circle cx="100" cy="118" r="56" fill="url(#axJelly)" stroke="rgba(255,170,200,.55)" stroke-width="2" filter="url(#rim)"/>
-      <g transform="translate(100 122) scale(${es}) translate(-100 -122)">
-        <path d="M112 132 C135 140 140 118 128 108 C134 124 124 130 110 124 Z" fill="${skin}"/>
-        <circle cx="100" cy="122" r="22" fill="${skin}"/>
-        ${gills(18, 112, 8)}
-        <circle cx="92" cy="118" r="2.6" fill="#2a1a24"/><circle cx="108" cy="118" r="2.6" fill="#2a1a24"/>
-        <path d="M94 126 q6 4 12 0" stroke="${line}" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-      </g>
-      <ellipse cx="80" cy="88" rx="14" ry="8" fill="#fff" opacity=".7" filter="url(#soft)" transform="rotate(-30 80 88)"/>
-      <circle cx="76" cy="84" r="3" fill="#fff" opacity=".9"/>
-      <circle cx="146" cy="76" r="5" fill="none" stroke="${NEON}" stroke-width="1.5" opacity=".7"/>
-      <circle cx="156" cy="58" r="3" fill="none" stroke="${NEON}" stroke-width="1.2" opacity=".6"/>`;
-  }
+  if (k === 0) return cuteEgg(st, EGG_STYLE.axolotl);
+
 
   const torso = `M${100 - S} 124 C${100 - S} 112 ${100 - S * 0.5} 104 100 104 C${100 + S * 0.5} 104 ${100 + S} 112 ${100 + S} 124
     C${100 + S} 138 ${100 + Wt} 144 ${100 + Wt} 152 C${100 + Wt} 160 ${100 + Hp} 161 ${100 + Hp} 168
@@ -1141,22 +1134,41 @@ function drawAxolotl(st, mood, P) {
     <ellipse cx="${100 + d * 15}" cy="168" rx="${L}" ry="17" fill="${skin}"/>
     <ellipse cx="${100 + d * 16}" cy="182" rx="${L + 3}" ry="6.5" fill="${skin}"/>
     ${[-1, 0, 1].map(j => `<circle cx="${100 + d * 16 + j * 4.5}" cy="186" r="2.4" fill="${skin}"/>`).join('')}`).join('');
-  // そばかす
-  const dots = [[84, 58], [116, 60], [96, 52], [70, 70], [130, 68], [108, 50]].map(([x, y]) =>
-    `<circle cx="${x}" cy="${y}" r="1.3" fill="#d76b8d" opacity=".55"/>`).join('');
+  // 光る斑点
+  const dots = [[88, 58], [112, 58], [100, 52], [70, 70], [130, 70]].map(([x, y]) =>
+    `<circle cx="${x}" cy="${y}" r="1.8" fill="${NEON}"/>`).join('');
+  // 小さなツノ
+  const horns = [-1, 1].map(d =>
+    `<path d="M${100 + d * 14} 50 Q${100 + d * 18} 34 ${100 + d * 28} 30 Q${100 + d * 22} 40 ${100 + d * 24} 50 Z" fill="url(#axHorn)"/>`).join('');
+  // 背びれのトゲ（しっぽ）
+  const x0 = 100 + Hp - 6, xt = 160 + Hp * 0.3;
+  const spikes = [0.3, 0.5, 0.7, 0.88].map(t => {
+    const x = x0 + (xt - x0) * t, y = 158 + (124 - 158) * t - 8 * Math.sin(Math.PI * t);
+    return `<path d="M${x - 5} ${y + 3} L${x + 1} ${y - 9} L${x + 5} ${y + 3} Z" fill="url(#axHorn)"/>`;
+  }).join('');
+  const tailDots = [0.4, 0.62, 0.82].map(t =>
+    `<circle cx="${x0 + (xt - x0) * t}" cy="${158 + (124 - 158) * t + 8}" r="1.8" fill="${NEON}"/>`).join('');
+  // 爪
+  const claws = [-1, 1].map(d => [-1, 0, 1].map(j => {
+    const cx = 100 + d * (S + 20) + j * 3.4, cy = 86 - A * 0.4 + Math.abs(j) - 2;
+    return `<path d="M${cx - 1.3} ${cy} L${cx} ${cy - 4} L${cx + 1.3} ${cy} Z" fill="#fff6fb"/>`;
+  }).join('')).join('');
 
-  const E = 4.8;
+  // 大きなうるうるの目＋小さなキバ
+  const E = 7;
+  const fang = (x, y) => `<path d="M${x - 2} ${y} L${x} ${y + 5} L${x + 2} ${y} Z" fill="#fff"/>`;
   const faces = {
-    happy:  `<path d="M69 79 q5 -6 10 0 M121 79 q5 -6 10 0" stroke="#3a1a2a" stroke-width="2.4" fill="none" stroke-linecap="round"/>
-             <path d="M86 90 Q100 104 114 90 Z" fill="#7a2a45"/><ellipse cx="100" cy="96" rx="5" ry="2.5" fill="#ff8fb3"/>`,
-    normal: `${eye(74, 78, E, 'axEyeG')}${eye(126, 78, E, 'axEyeG')}
-             <path d="M80 90 Q100 101 120 90" stroke="${line}" stroke-width="1.8" fill="none" stroke-linecap="round"/>`,
-    sad:    `${eye(74, 80, E * 0.9, 'axEyeG')}${eye(126, 80, E * 0.9, 'axEyeG')}
-             <path d="M86 96 Q100 89 114 96" stroke="${line}" stroke-width="1.8" fill="none" stroke-linecap="round"/>${tearDrop(130, 86)}`,
-    tired:  `${eye(74, 79, E * 0.85, 'axEyeG')}${eye(126, 79, E * 0.85, 'axEyeG')}
-             <path d="M69.5 79 A4.5 4.5 0 0 1 78.5 79 Z M121.5 79 A4.5 4.5 0 0 1 130.5 79 Z" fill="#f2a0ba"/>
-             <path d="M69.5 79 h9 M121.5 79 h9" stroke="${line}" stroke-width="1.2"/>
-             <ellipse cx="100" cy="94" rx="3" ry="2.2" fill="#7a2a45"/>${zzz(140, 52)}`,
+    happy:  `<path d="M71 79 q7 -8 14 0 M115 79 q7 -8 14 0" stroke="#3a1a2a" stroke-width="3" fill="none" stroke-linecap="round"/>
+             <path d="M86 90 Q100 104 114 90 Z" fill="#7a2a45"/><ellipse cx="100" cy="96" rx="5" ry="2.5" fill="#ff8fb3"/>
+             ${fang(91, 90)}${fang(109, 90)}`,
+    normal: `${eye(78, 77, E, 'axEyeG')}${eye(122, 77, E, 'axEyeG')}
+             <path d="M84 91 Q100 100 116 91" stroke="${line}" stroke-width="2" fill="none" stroke-linecap="round"/>${fang(108, 94.5)}`,
+    sad:    `${eye(78, 79, E * 0.92, 'axEyeG')}${eye(122, 79, E * 0.92, 'axEyeG')}
+             <path d="M88 97 Q100 90 112 97" stroke="${line}" stroke-width="2" fill="none" stroke-linecap="round"/>${tearDrop(128, 86)}`,
+    tired:  `${eye(78, 78, E * 0.85, 'axEyeG')}${eye(122, 78, E * 0.85, 'axEyeG')}
+             <path d="M72 78 A6 6 0 0 1 84 78 Z M116 78 A6 6 0 0 1 128 78 Z" fill="#f2a0ba"/>
+             <path d="M72 78 h12 M116 78 h12" stroke="${line}" stroke-width="1.4"/>
+             <ellipse cx="100" cy="95" rx="3" ry="2.2" fill="#7a2a45"/>${zzz(140, 52)}`,
   };
 
   let acc = '';
@@ -1177,6 +1189,7 @@ function drawAxolotl(st, mood, P) {
       <ellipse cx="100" cy="186" rx="${34 + S * 0.4}" ry="5" fill="#000" opacity=".55" filter="url(#soft)"/>
       ${bubbles}
       <g filter="url(#rim)">
+        ${spikes}
         <path d="${tail}" fill="${skin}"/>
         <path d="${tail}" fill="none" stroke="rgba(255,215,228,.7)" stroke-width="3"/>
         ${legs}
@@ -1187,10 +1200,12 @@ function drawAxolotl(st, mood, P) {
         <path d="${torso}" fill="url(#rimLight)"/>
       </g>
       <g clip-path="url(#axTorso)">${pecs}${abs}</g>
+      ${tailDots}${claws}
       ${armShine}
       ${wrist}
       <g transform="${headT}">
         <g filter="url(#rim)">
+          ${horns}
           ${gills(36, 72, 13)}
           <ellipse cx="100" cy="76" rx="44" ry="31" fill="${skin}"/>
           <ellipse cx="100" cy="80" rx="44" ry="27" fill="url(#rimLight)"/>
