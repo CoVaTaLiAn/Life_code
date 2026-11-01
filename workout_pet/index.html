@@ -180,6 +180,19 @@
     opacity: 0; pointer-events: none; transition: opacity .3s; z-index: 10; text-align: center; max-width: 90%;
   }
   #toast.show { opacity: 1; }
+
+  /* ダイアログ */
+  #modal {
+    position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center;
+    background: rgba(0, 0, 0, .65); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); padding: 24px;
+  }
+  #modal .box {
+    width: 100%; max-width: 340px; background: var(--card2); border: 1px solid rgba(0, 240, 255, .4);
+    border-radius: 16px; padding: 20px; box-shadow: 0 0 30px rgba(0, 240, 255, .18);
+  }
+  #modal p { margin: 0 0 4px; font-size: 14px; line-height: 1.6; }
+  #modal .actions { display: flex; gap: 8px; margin-top: 16px; }
+  #modal .actions .btn { margin-top: 0; padding: 11px; font-size: 14px; }
 </style>
 </head>
 <body>
@@ -263,6 +276,7 @@
     <div class="card">
       <h2>データ管理</h2>
       <button class="btn sub" id="exportBtn">バックアップを保存（JSON）</button>
+      <button class="btn sub" id="copyBtn">バックアップをコピー</button>
       <button class="btn sub" id="importBtn">バックアップから復元</button>
       <input type="file" id="importFile" accept="application/json" class="hidden">
       <button class="btn sub danger" id="resetBtn">すべてのデータを削除</button>
@@ -277,6 +291,17 @@
 </nav>
 
 <div id="toast"></div>
+
+<div id="modal" class="hidden">
+  <div class="box">
+    <p id="modalMsg"></p>
+    <input id="modalInput" class="hidden" maxlength="20" style="margin-top:10px">
+    <div class="actions">
+      <button class="btn sub" id="modalCancel">キャンセル</button>
+      <button class="btn" id="modalOk">OK</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ===== 定義 =====
@@ -311,7 +336,35 @@ function load() {
   } catch (e) {}
   return { petName: DEFAULT_NAME, records: [] };
 }
-function save() { localStorage.setItem(STORE_KEY, JSON.stringify(data)); }
+function save() {
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(data)); }
+  catch (e) { toast('この環境では記録を保存できません'); }
+}
+
+// ===== ダイアログ（ブラウザ標準の confirm / prompt の代わり） =====
+function dialog(msg, { input = null, danger = false } = {}) {
+  const m = document.getElementById('modal');
+  const inp = document.getElementById('modalInput');
+  const ok = document.getElementById('modalOk');
+  document.getElementById('modalMsg').textContent = msg;
+  inp.classList.toggle('hidden', input === null);
+  inp.value = input ?? '';
+  ok.classList.toggle('danger', danger);
+  m.classList.remove('hidden');
+  if (input !== null) setTimeout(() => inp.focus(), 50);
+  return new Promise(resolve => {
+    const close = v => {
+      m.classList.add('hidden');
+      ok.onclick = cancel.onclick = inp.onkeydown = m.onclick = null;
+      resolve(v);
+    };
+    const cancel = document.getElementById('modalCancel');
+    ok.onclick = () => close(input === null ? true : inp.value);
+    cancel.onclick = () => close(input === null ? false : null);
+    inp.onkeydown = e => { if (e.key === 'Enter') ok.onclick(); };
+    m.onclick = e => { if (e.target === m) cancel.onclick(); };
+  });
+}
 let data = load();
 
 // ===== 日付ユーティリティ =====
@@ -766,16 +819,16 @@ document.getElementById('saveBtn').addEventListener('click', () => {
   document.getElementById('fReps').value = '';
 });
 
-document.body.addEventListener('click', e => {
+document.body.addEventListener('click', async e => {
   const id = e.target.dataset.del;
   if (!id) return;
-  if (!confirm('この記録を削除しますか？')) return;
+  if (!await dialog('この記録を削除しますか？', { danger: true })) return;
   data.records = data.records.filter(r => String(r.id) !== id);
   save(); lastLv = null; render();
 });
 
-document.getElementById('renameBtn').addEventListener('click', () => {
-  const n = prompt('キャラの名前', data.petName);
+document.getElementById('renameBtn').addEventListener('click', async () => {
+  const n = await dialog('パンダの名前', { input: data.petName });
   if (n && n.trim()) { data.petName = n.trim().slice(0, 20); save(); render(); }
 });
 
@@ -786,7 +839,13 @@ document.getElementById('exportBtn').addEventListener('click', () => {
   a.href = URL.createObjectURL(blob);
   a.download = `muscle-pet-${today()}.json`;
   a.click();
-  URL.revokeObjectURL(a.href);
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+document.getElementById('copyBtn').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(JSON.stringify(data));
+    toast('コピーしました');
+  } catch { toast('コピーできませんでした'); }
 });
 document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
 document.getElementById('importFile').addEventListener('change', async e => {
@@ -794,14 +853,14 @@ document.getElementById('importFile').addEventListener('change', async e => {
   try {
     const d = JSON.parse(await f.text());
     if (!Array.isArray(d.records)) throw new Error();
-    if (!confirm(`${d.records.length}件の記録で上書きします。よろしいですか？`)) return;
+    if (!await dialog(`${d.records.length}件の記録で上書きします。よろしいですか？`)) { e.target.value = ''; return; }
     data = { petName: d.petName || DEFAULT_NAME, records: d.records };
     save(); lastLv = null; render(); toast('復元しました');
   } catch { toast('ファイルを読み込めませんでした'); }
   e.target.value = '';
 });
-document.getElementById('resetBtn').addEventListener('click', () => {
-  if (!confirm('すべての記録とキャラが消えます。本当に削除しますか？')) return;
+document.getElementById('resetBtn').addEventListener('click', async () => {
+  if (!await dialog('すべての記録とパンダが消えます。本当に削除しますか？', { danger: true })) return;
   data = { petName: data.petName, records: [] };
   save(); lastLv = null; render(); toast('リセットしました');
 });
