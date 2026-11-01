@@ -133,6 +133,20 @@
     border-radius: 999px; padding: 6px 14px; font-size: 13px; cursor: pointer;
   }
   .chip.on { color: var(--c); border-color: var(--c); box-shadow: 0 0 10px var(--c), inset 0 0 8px rgba(255,255,255,.04); text-shadow: 0 0 6px var(--c); }
+  .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
+  .btn-row .btn { margin-top: 0; font-size: 14px; letter-spacing: .06em; padding: 13px 8px; }
+  .btn.ghost { background: transparent; box-shadow: none; text-shadow: none; }
+  .btn.pink {
+    border-color: var(--pink); color: var(--pink); background: rgba(255, 43, 214, .08);
+    text-shadow: 0 0 8px rgba(255, 43, 214, .7);
+    box-shadow: 0 0 16px rgba(255, 43, 214, .25), inset 0 0 14px rgba(255, 43, 214, .12);
+  }
+  .card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .card-head h2 { margin: 0; }
+  .count {
+    display: inline-block; min-width: 18px; padding: 0 6px; margin-left: 6px; border-radius: 9px;
+    background: var(--pink); color: #fff; font-size: 11px; line-height: 18px; text-align: center; letter-spacing: 0;
+  }
   .xp-preview { color: var(--lime); text-shadow: 0 0 8px rgba(182, 255, 59, .6); font-variant-numeric: tabular-nums; }
 
   /* 履歴 */
@@ -255,7 +269,24 @@
         <label>時間(分)</label><input type="number" id="fMinutes" inputmode="numeric" min="1" placeholder="30">
       </div>
       <div class="row" style="margin-top:10px"><span>獲得予定XP</span><b id="xpPreview" class="xp-preview">0 XP</b></div>
-      <button class="btn" id="saveBtn">記録してパンダを育てる</button>
+      <div class="btn-row">
+        <button class="btn ghost" id="addBtn">リストに追加</button>
+        <button class="btn" id="saveBtn">今すぐ記録</button>
+      </div>
+    </div>
+    <div class="card" id="draftCard">
+      <div class="card-head">
+        <h2>まとめて記録<span class="count" id="draftCount">0</span></h2>
+        <button class="mini" id="loadLastBtn">前回のメニューを読み込む</button>
+      </div>
+      <div id="draftList"></div>
+      <div id="draftFoot" class="hidden">
+        <div class="row" style="margin-top:12px"><span>合計XP</span><b id="draftXp" class="xp-preview">0 XP</b></div>
+        <div class="btn-row">
+          <button class="btn sub" id="draftClearBtn" style="margin-top:0">リストを空にする</button>
+          <button class="btn pink" id="draftSaveBtn">まとめて記録する</button>
+        </div>
+      </div>
     </div>
     <div class="card">
       <h2>今日の記録</h2>
@@ -331,10 +362,11 @@ function load() {
     const d = JSON.parse(localStorage.getItem(STORE_KEY));
     if (d && Array.isArray(d.records)) {
       if (d.petName === 'マッスルくん') d.petName = DEFAULT_NAME; // 旧デフォルト名をパンダ用に置き換え
+      if (!Array.isArray(d.draft)) d.draft = [];
       return d;
     }
   } catch (e) {}
-  return { petName: DEFAULT_NAME, records: [] };
+  return { petName: DEFAULT_NAME, records: [], draft: [] };
 }
 function save() {
   try { localStorage.setItem(STORE_KEY, JSON.stringify(data)); }
@@ -693,6 +725,7 @@ function render() {
 
   drawPet(st, mood);
   renderToday(st);
+  renderDraft();
   renderHistory(st);
 
   // レベルアップ・進化の演出
@@ -707,21 +740,35 @@ function render() {
   return leveled;
 }
 
-function entryHtml(r) {
+function entryHtml(r, draftIdx = null) {
   const p = PARTS[r.part];
   const detail = r.part === 'cardio' ? `${r.minutes}分`
     : `${Number(r.weight) ? r.weight + 'kg' : '自重'} × ${r.reps}回 × ${r.sets}セット`;
+  const right = draftIdx === null
+    ? `<span class="xp">+${r._xp}XP</span><button class="mini" data-del="${r.id}">削除</button>`
+    : `<span class="xp">+${baseXp(r)}XP</span><button class="mini" data-draft-del="${draftIdx}">外す</button>`;
   return `<div class="entry">
     <div><span class="tag" style="--c:${p.color}">${p.name}</span>${esc(r.exercise)}
       <div class="meta">${detail}</div></div>
-    <div><span class="xp">+${r._xp}XP</span><button class="mini" data-del="${r.id}">削除</button></div>
+    <div style="white-space:nowrap">${right}</div>
   </div>`;
+}
+function renderDraft() {
+  const list = data.draft;
+  document.getElementById('draftCount').textContent = list.length;
+  document.getElementById('draftCount').classList.toggle('hidden', !list.length);
+  document.getElementById('draftList').innerHTML = list.length
+    ? list.map((r, i) => entryHtml(r, i)).join('')
+    : '<div class="empty">「リストに追加」で種目を貯めて、最後にまとめて記録できます</div>';
+  document.getElementById('draftFoot').classList.toggle('hidden', !list.length);
+  document.getElementById('draftXp').textContent = `${list.reduce((a, r) => a + baseXp(r), 0)} XP〜`;
+  document.getElementById('draftSaveBtn').textContent = `まとめて記録（${list.length}件）`;
 }
 function renderToday(st) {
   const d = document.getElementById('fDate').value || today();
   const list = st.recs.filter(r => r.date === d);
   document.getElementById('todayList').innerHTML = list.length
-    ? list.map(entryHtml).join('') : '<div class="empty">まだ記録がありません</div>';
+    ? list.map(r => entryHtml(r)).join('') : '<div class="empty">まだ記録がありません</div>';
 }
 function renderHistory(st) {
   const byDay = {};
@@ -729,7 +776,7 @@ function renderHistory(st) {
   const days = Object.keys(byDay).sort().reverse();
   document.getElementById('historyList').innerHTML = days.length ? days.map(d => {
     const xp = byDay[d].reduce((a, r) => a + r._xp, 0);
-    return `<div class="day">${d.replace(/-/g, '/')}（+${xp}XP）</div>` + byDay[d].map(entryHtml).join('');
+    return `<div class="day">${d.replace(/-/g, '/')}（+${xp}XP）</div>` + byDay[d].map(r => entryHtml(r)).join('');
   }).join('') : '<div class="empty">記録するとここに表示されます</div>';
 
   // 12週間カレンダー（日曜始まり）
@@ -805,18 +852,64 @@ document.getElementById('fExercise').addEventListener('change', e => {
   document.getElementById(id).addEventListener('input', updatePreview));
 document.getElementById('fDate').addEventListener('change', render);
 
-document.getElementById('saveBtn').addEventListener('click', () => {
-  const r = readForm();
-  const err = validRecord(r);
-  if (err) { toast(err); return; }
-  if (r.date > today()) { toast('未来の日付には記録できません'); return; }
-  r.id = Date.now();
+// 記録をまとめて保存して、獲得XPを表示する
+function commit(items) {
+  const date = document.getElementById('fDate').value || today();
+  if (date > today()) { toast('未来の日付には記録できません'); return false; }
   const before = computeState().total;
-  data.records.push(r);
+  const base = Date.now();
+  items.forEach((r, i) => data.records.push({ ...r, date, id: base + i }));
   save();
   const gained = computeState().total - before;
-  if (!render()) toast(`+${gained} XP`);
-  document.getElementById('fReps').value = '';
+  if (!render()) toast(items.length > 1 ? `${items.length}件記録  +${gained} XP` : `+${gained} XP`);
+  return true;
+}
+function formItem() {
+  const r = readForm();
+  const err = validRecord(r);
+  if (err) { toast(err); return null; }
+  delete r.date;
+  return r;
+}
+document.getElementById('saveBtn').addEventListener('click', () => {
+  const r = formItem();
+  if (r && commit([r])) document.getElementById('fReps').value = '';
+});
+document.getElementById('addBtn').addEventListener('click', () => {
+  const r = formItem();
+  if (!r) return;
+  data.draft.push(r);
+  save(); renderDraft();
+  toast(`リストに追加（${data.draft.length}件）`);
+});
+document.getElementById('draftSaveBtn').addEventListener('click', () => {
+  if (!data.draft.length) return;
+  const items = data.draft;
+  data.draft = [];
+  if (!commit(items)) { data.draft = items; save(); }
+});
+document.getElementById('draftClearBtn').addEventListener('click', async () => {
+  if (!await dialog('リストを空にしますか？')) return;
+  data.draft = []; save(); renderDraft();
+});
+document.getElementById('draftList').addEventListener('click', e => {
+  const i = e.target.dataset.draftDel;
+  if (i === undefined) return;
+  data.draft.splice(Number(i), 1);
+  save(); renderDraft();
+});
+// 直近のトレーニング日のメニューをリストに読み込む
+document.getElementById('loadLastBtn').addEventListener('click', () => {
+  const date = document.getElementById('fDate').value || today();
+  const days = [...new Set(data.records.map(r => r.date))].filter(d => d < date).sort();
+  const last = days[days.length - 1];
+  if (!last) { toast('前回の記録がありません'); return; }
+  const items = data.records.filter(r => r.date === last).sort((a, b) => a.id - b.id)
+    .map(({ part, exercise, weight, reps, sets, minutes }) =>
+      part === 'cardio' ? { part, exercise, minutes } : { part, exercise, weight, reps, sets });
+  data.draft.push(...items);
+  save(); renderDraft();
+  toast(`${last.slice(5).replace('-', '/')} のメニューを${items.length}件追加`);
 });
 
 document.body.addEventListener('click', async e => {
@@ -854,14 +947,14 @@ document.getElementById('importFile').addEventListener('change', async e => {
     const d = JSON.parse(await f.text());
     if (!Array.isArray(d.records)) throw new Error();
     if (!await dialog(`${d.records.length}件の記録で上書きします。よろしいですか？`)) { e.target.value = ''; return; }
-    data = { petName: d.petName || DEFAULT_NAME, records: d.records };
+    data = { petName: d.petName || DEFAULT_NAME, records: d.records, draft: [] };
     save(); lastLv = null; render(); toast('復元しました');
   } catch { toast('ファイルを読み込めませんでした'); }
   e.target.value = '';
 });
 document.getElementById('resetBtn').addEventListener('click', async () => {
   if (!await dialog('すべての記録とパンダが消えます。本当に削除しますか？', { danger: true })) return;
-  data = { petName: data.petName, records: [] };
+  data = { petName: data.petName, records: [], draft: [] };
   save(); lastLv = null; render(); toast('リセットしました');
 });
 
