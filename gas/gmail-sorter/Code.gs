@@ -78,7 +78,7 @@ const CONFIG = {
   trashSenders: ['contract-one.com'],
 
   // 既読だけにして受信箱に残す送信元（領収書・自動タスク通知など）
-  noticeSenders: ['tm.openai.com', 'invoice@', 'mail.anthropic.com', 'linkedin.com'],
+  noticeSenders: ['tm.openai.com', 'invoice@', 'mail.anthropic.com', 'linkedin.com', 'notifications@github.com'],
 
   // 未読のまま残して要約で知らせる（セキュリティ系）
   checkKeywords: [
