@@ -7,7 +7,7 @@
 
 ## 1. clasp を入れてログイン
 
-1. Node.js 20 以上を入れる（https://nodejs.org の LTS 版）
+1. Node.js 22 以上を入れる（https://nodejs.org の LTS 版）
 2. ターミナル（Windows は PowerShell）で：
    ```
    npm install -g @google/clasp@3.1.3
