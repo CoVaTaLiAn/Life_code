@@ -46,7 +46,7 @@
 - [x] リポジトリに Claude 用の許可設定（`.claude/settings.json`：Gmail の閲覧・ラベル・下書き、Drive の読み取り）
 - [ ] GAS に最新コードを貼り付けて `setup` を実行
 - [ ] GitHub から GAS への自動反映（手順：`gas/SETUP_PC.md`。Mac で clasp ログインと GitHub の Secret 登録が必要）
-- [ ] ブランチ `claude/gas-gmail-sorter` を main にマージ（自動反映の設定と同時に。先にマージすると自動反映が失敗する）
+- [x] ブランチ `claude/gas-gmail-sorter` を main にマージ（自動反映は設定が済むまでスキップされる）
 
 ## つまずいた点
 
