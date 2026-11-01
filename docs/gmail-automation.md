@@ -45,8 +45,9 @@
 - [x] Gmail を Claude に接続し、受信箱の未読を一度手動で振り分け
 - [x] GAS のコード作成（ルール → AI → 自分の3段階、判断の記憶、ログ）
 - [x] リポジトリに Claude 用の許可設定（`.claude/settings.json`：Gmail の閲覧・ラベル・下書き、Drive の読み取り）
-- [ ] GAS に最新コードを貼り付けて `setup` を実行
-- [ ] GitHub から GAS への自動反映（手順：`gas/SETUP_PC.md`。Mac で clasp ログインと GitHub の Secret 登録が必要）
+- [x] GAS に最新コードを反映（以後は main 更新で自動反映）
+- [ ] GAS エディタで `setup` を1回実行（トリガー作成。実行済みなら不要）
+- [x] GitHub から GAS への自動反映（2026-11-01 設定完了。手順：`gas/SETUP_PC.md`）
 - [x] ブランチ `claude/gas-gmail-sorter` を main にマージ（自動反映は設定が済むまでスキップされる）
 
 ## つまずいた点
