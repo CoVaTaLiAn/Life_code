@@ -8,6 +8,12 @@ description: 苦悩・しんどかったことの走り書きメモを、note �
 ユーザーの走り書き（箇条書き・愚痴・断片でよい）を、Obsidian テンプレート
 `note/obsidian_templates/note記事.md` と同じ形の Markdown にする。
 
+## 素材の取り方
+- Obsidian の Vault は Google ドライブの `02_Obsidian-Gemini` フォルダに同期されている（iCloud → Drive の一方向）
+- 苦悩メモは主に `02_Obsidian-Gemini/fail_Well/`（ファイル名 `YYYY-MM-DD タイトル.md`）
+- Google Drive の `search_files`（`parentId = '<fail_Well のID>'`）→ `read_file_content` で読む。「今日の」と言われたら最新のファイル
+- **`02_Obsidian-Gemini` には書き込まない**（同期で `--delete` されて消える）。下書きはチャットで返すか、ユーザーが指定した別の場所へ
+
 ## 守ること
 - **本人の言葉を残す**。きれいに言い換えすぎない。口調・言い回しはメモに合わせる
 - 書いていない出来事や感情を**足さない**。足りないところは最後に質問として返す
