@@ -1,0 +1,3 @@
+# 記事の下書きは個人的な内容なので commit しない
+drafts/
+__pycache__/
