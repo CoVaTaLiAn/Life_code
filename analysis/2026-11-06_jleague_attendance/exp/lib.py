@@ -46,6 +46,14 @@ REGION = {
     "徳島県": "四国", "香川県": "四国", "愛媛県": "四国",
     "福岡県": "九州", "佐賀県": "九州", "長崎県": "九州", "熊本県": "九州", "大分県": "九州", "鹿児島県": "九州",
 }
+# 集客力があると考えられる選手（知名度・話題性。2012〜2014年当時）
+STARS = {"フォルラン", "三浦知良", "小野伸二", "中村俊輔", "遠藤保仁", "中村憲剛", "川口能活", "高原直泰",
+         "田中マルクス闘莉王", "大久保嘉人", "柿谷曜一朗", "宇佐美貴史", "楢﨑正剛", "小笠原満男"}
+# 2012〜2014年に日本代表に選ばれた主な国内組
+JAPAN = {"遠藤保仁", "今野泰幸", "中村憲剛", "前田遼一", "柿谷曜一朗", "山口蛍", "大迫勇也", "森重真人", "青山敏弘",
+         "齋藤学", "豊田陽平", "西川周作", "権田修一", "槙野智章", "駒野友一", "栗原勇蔵", "伊野波雅彦", "徳永悠平",
+         "佐藤寿人", "工藤壮人", "高橋秀人", "東慶悟", "水本裕貴", "楢﨑正剛", "大久保嘉人", "高萩洋次郎", "原口元気",
+         "田中順也", "扇原貴宏", "鈴木大輔", "柴崎岳", "林彰洋", "中澤佑二", "田中マルクス闘莉王", "小林悠"}
 CAT_COLS = ["stage", "home", "away", "stadium", "pref", "weekday", "weather_main", "referee"]
 
 
@@ -61,6 +69,22 @@ def load_all():
     df["occ"] = df["y"] / df["capacity"]
     df = df.merge(pd.read_csv(D / "standings.csv"), on="id", how="left")
     return df.sort_values(["date", "id"]).reset_index(drop=True)
+
+
+def player_counts():
+    """先発メンバーに含まれるスター・日本代表クラスの人数（condition の先発11人）。"""
+    import unicodedata
+    c = pd.concat([pd.read_csv(D / "condition.csv"), pd.read_csv(D / "condition_add.csv")])
+    out = pd.DataFrame({"id": c["id"].values})
+    norm = lambda v: unicodedata.normalize("NFKC", v).replace(" ", "").replace("\u3000", "") if isinstance(v, str) else ""
+    for side in ("home", "away"):
+        names = c[[f"{side}_{i:02d}" for i in range(1, 12)]].map(norm)
+        out[f"{side}_stars"] = names.isin(STARS).sum(axis=1).values
+        out[f"{side}_japan"] = names.isin(JAPAN).sum(axis=1).values
+    out["forlan"] = ((c[[f"{s}_{i:02d}" for s in ("home", "away") for i in range(1, 12)]].map(norm) == "フォルラン").any(axis=1)).values.astype(int)
+    out["stars_total"] = out["home_stars"] + out["away_stars"]
+    out["japan_total"] = out["home_japan"] + out["away_japan"]
+    return out
 
 
 def schedule_all():
@@ -142,6 +166,8 @@ DEFAULT_CFG = dict(
     distance=False,      # 本拠地間の距離
     away_fanbase=False,  # アウェイチームのホームでの集客力
     schedule=False,      # 前回ホーム試合からの日数・同じ日の同じ県の試合数
+    combo=False,         # 組み合わせカテゴリ（チーム×ディビジョン、チーム×土日）
+    players=False,       # 先発のスター・日本代表クラスの人数
     calendar=False,      # 連休（GW・お盆・シルバーウィーク）、ナイター
     season_pos=False,    # ホーム開幕戦・ホーム最終戦・何試合目のホーム戦か
     region=False,        # 同じ地方どうし、普段より小さい会場
@@ -261,6 +287,19 @@ def build_features(df, cutoff, cfg=None):
         X["region"] = pd.Categorical(df["pref"].map(REGION).astype(str))
         main_cap = df.groupby("home")["capacity"].agg(lambda s: s.value_counts().idxmax())
         X["cap_ratio_main"] = df["capacity"] / df["home"].map(main_cap)
+    if cfg["combo"]:
+        we = np.where(df["weekday"].isin(["土", "日"]) | (df["holiday"] == 1), "休", "平")
+        X["home_stage"] = pd.Categorical(df["home"].astype(str) + "_" + df["stage"].astype(str))
+        X["away_stage"] = pd.Categorical(df["away"].astype(str) + "_" + df["stage"].astype(str))
+        X["home_daytype"] = pd.Categorical(df["home"].astype(str) + "_" + we)
+        if cfg["combo"] == "full":
+            X["card"] = pd.Categorical(df["home"].astype(str) + "_" + df["away"].astype(str))
+    if cfg["players"]:
+        pl = player_counts()
+        m = df[["id"]].merge(pl, on="id", how="left")
+        for c in pl.columns:
+            if c != "id":
+                X[c] = m[c].values.astype(float)
     for c in cfg["drop"]:
         if c in X:
             X = X.drop(columns=c)
@@ -273,6 +312,9 @@ def t_forward(kind, y, X):
         return y / X["capacity"].values
     if kind == "log":
         return np.log1p(y)
+    if kind == "logit":  # 収容率のロジット
+        o = np.clip(y / X["capacity"].values, 0.01, 0.99)
+        return np.log(o / (1 - o))
     if kind == "sqrt":
         return np.sqrt(y)
     if kind == "ratio_expected":  # 期待観客数に対する倍率
@@ -285,6 +327,8 @@ def t_inverse(kind, p, X):
         return np.clip(p, 0, 1.05) * X["capacity"].values
     if kind == "log":
         return np.expm1(p)
+    if kind == "logit":
+        return X["capacity"].values / (1 + np.exp(-p))
     if kind == "sqrt":
         return np.clip(p, 0, None) ** 2
     if kind == "ratio_expected":
@@ -297,10 +341,29 @@ LGB_PARAMS = dict(n_estimators=5000, learning_rate=0.03, num_leaves=31, min_chil
                   subsample_freq=1, colsample_bytree=0.8, reg_lambda=1.0, verbose=-1, n_jobs=4)
 
 
-def fit_predict(model, Xtr, ytr, Xva, seed, params=None):
+def sample_weights(df_rows, scheme):
+    """学習行の重み。h2: 後半戦（8月以降）を重く、recent: 新しいシーズンほど重く。"""
+    if not scheme:
+        return None
+    w = np.ones(len(df_rows))
+    if "h2" in scheme:
+        w *= np.where(df_rows["date"].dt.month >= 8, 2.0, 1.0)
+    if "recent" in scheme:
+        w *= 1.5 ** (df_rows["year"].values - df_rows["year"].max())
+    # 収容率で学習するとき、観客数の二乗誤差に揃える（誤差 = 収容率の誤差 × 収容人数）
+    if "cap2" in scheme:
+        w *= (df_rows["capacity"].values / df_rows["capacity"].mean()) ** 2
+    elif "cap1" in scheme:
+        w *= df_rows["capacity"].values / df_rows["capacity"].mean()
+    elif "cap05" in scheme:
+        w *= np.sqrt(df_rows["capacity"].values / df_rows["capacity"].mean())
+    return w
+
+
+def fit_predict(model, Xtr, ytr, Xva, seed, params=None, w=None):
     """早期終了には学習データの最後の15%（時間順）を使う。検証データは見ない。
     返り値: (予測, 使った木の本数)"""
-    params = params or {}
+    params = dict(params or {})
     n = len(Xtr)
     order = np.arange(n)  # Xtr は時間順に並んでいる
     cut = int(n * 0.85)
@@ -313,10 +376,10 @@ def fit_predict(model, Xtr, ytr, Xva, seed, params=None):
             m = lgb.LGBMRegressor(**{**p, "n_estimators": r}).fit(Xtr, ytr)
             return m.predict(Xva), r
         m = lgb.LGBMRegressor(**p)
-        m.fit(Xtr.iloc[fit], ytr[fit], eval_set=[(Xtr.iloc[es], ytr[es])],
+        m.fit(Xtr.iloc[fit], ytr[fit], sample_weight=None if w is None else w[fit], eval_set=[(Xtr.iloc[es], ytr[es])],
               callbacks=[lgb.early_stopping(200, verbose=False)])
         best = m.best_iteration_
-        m2 = lgb.LGBMRegressor(**{**p, "n_estimators": int(best * 1.1) + 1}).fit(Xtr, ytr)  # 全データで学習し直す
+        m2 = lgb.LGBMRegressor(**{**p, "n_estimators": int(best * 1.1) + 1}).fit(Xtr, ytr, sample_weight=w)  # 全データで学習し直す
         return m2.predict(Xva), best
     if model == "cat":
         from catboost import CatBoostRegressor
@@ -329,10 +392,11 @@ def fit_predict(model, Xtr, ytr, Xva, seed, params=None):
                  thread_count=4)
         p.update(params)
         m = CatBoostRegressor(**p, cat_features=cats)
-        m.fit(A.iloc[fit], ytr[fit], eval_set=(A.iloc[es], ytr[es]), early_stopping_rounds=200)
+        m.fit(A.iloc[fit], ytr[fit], sample_weight=None if w is None else w[fit], eval_set=(A.iloc[es], ytr[es]),
+              early_stopping_rounds=200)
         best = m.get_best_iteration() + 1
         p2 = {**p, "iterations": int(best * 1.1) + 1}
-        m2 = CatBoostRegressor(**p2, cat_features=cats).fit(A, ytr)
+        m2 = CatBoostRegressor(**p2, cat_features=cats).fit(A, ytr, sample_weight=w)
         return m2.predict(B), best
     if model == "xgb":
         import xgboost as xgb
@@ -361,8 +425,18 @@ def fit_predict(model, Xtr, ytr, Xva, seed, params=None):
             ("n", make_pipeline(SimpleImputer(strategy="median", add_indicator=True, keep_empty_features=True),
                                 StandardScaler()), nums),
             ("c", OneHotEncoder(handle_unknown="ignore", min_frequency=3), cats)])
-        m = make_pipeline(pre, Ridge(alpha=params.get("alpha", 3.0))).fit(A, ytr)
+        m = make_pipeline(pre, Ridge(alpha=params.get("alpha", 3.0))).fit(A, ytr, ridge__sample_weight=w)
         return m.predict(B), 0
+    if model in ("rf", "et"):
+        from sklearn.ensemble import ExtraTreesRegressor, RandomForestRegressor
+        cats = [c for c in Xtr.columns if str(Xtr[c].dtype) == "category"]
+        A = pd.get_dummies(pd.concat([Xtr, Xva]), columns=cats, dtype=float).fillna(-1)
+        A.columns = [str(c) for c in A.columns]
+        Cls = RandomForestRegressor if model == "rf" else ExtraTreesRegressor
+        m = Cls(n_estimators=params.get("n_estimators", 500), min_samples_leaf=params.get("min_samples_leaf", 3),
+                max_features=params.get("max_features", 0.5), random_state=seed, n_jobs=params.get("n_jobs", 2))
+        m.fit(A.iloc[:len(Xtr)], ytr, sample_weight=w)
+        return m.predict(A.iloc[len(Xtr):]), 0
     raise ValueError(model)
 
 
@@ -377,7 +451,8 @@ def features_for(df, cutoff, cfg):
     return _FEAT_CACHE[key]
 
 
-def evaluate(df, cfg=None, model="lgb", target="occ", params=None, seeds=(0, 1, 2), return_preds=False, by_stage=False):
+def evaluate(df, cfg=None, model="lgb", target="occ", params=None, seeds=(0, 1, 2), return_preds=False, by_stage=False,
+             weight=None):
     """各 fold で学習→後半戦を予測し、RMSE を返す。seeds の平均予測で評価。"""
     out, preds = {}, {}
     for fold, cutoff in FOLDS.items():
@@ -386,6 +461,7 @@ def evaluate(df, cfg=None, model="lgb", target="occ", params=None, seeds=(0, 1, 
         va = (df["y"].notna() & (df["date"] >= cutoff) & (df["year"] == cutoff.year)).values
         Xtr, Xva = X[tr], X[va]
         ytr = t_forward(target, df.loc[tr, "y"].values, Xtr)
+        w = sample_weights(df.loc[tr], weight)
         ps = []
         for s in seeds:
             if by_stage:  # J1 と J2 で別々に学習
@@ -395,7 +471,7 @@ def evaluate(df, cfg=None, model="lgb", target="occ", params=None, seeds=(0, 1, 
                     mv = (df.loc[va, "stage"] == st).values
                     p[mv], _ = fit_predict(model, Xtr[mt], ytr[mt], Xva[mv], s, params)
             else:
-                p, _ = fit_predict(model, Xtr, ytr, Xva, s, params)
+                p, _ = fit_predict(model, Xtr, ytr, Xva, s, params, w)
             ps.append(t_inverse(target, p, Xva))
         p = np.mean(ps, axis=0)
         yva = df.loc[va, "y"].values
@@ -416,10 +492,11 @@ def log(exp_id, group, name, desc, res, cfg=None, model="lgb", target="occ", par
     return row
 
 
-def predict_test(df, cfg=None, model="lgb", target="occ", params=None, seeds=(0, 1, 2)):
+def predict_test(df, cfg=None, model="lgb", target="occ", params=None, seeds=(0, 1, 2), weight=None):
     X = features_for(df, TEST_CUTOFF, cfg)
     tr = df["y"].notna().values
     te = df["y"].isna().values
     ytr = t_forward(target, df.loc[tr, "y"].values, X[tr])
-    ps = [t_inverse(target, fit_predict(model, X[tr], ytr, X[te], s, params)[0], X[te]) for s in seeds]
+    w = sample_weights(df.loc[tr], weight)
+    ps = [t_inverse(target, fit_predict(model, X[tr], ytr, X[te], s, params, w)[0], X[te]) for s in seeds]
     return pd.Series(np.mean(ps, axis=0), index=df.index[te])
