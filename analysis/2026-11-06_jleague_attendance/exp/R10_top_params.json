@@ -1,0 +1,26 @@
+[
+ {
+  "depth": 7,
+  "learning_rate": 0.026088081225889848,
+  "l2_leaf_reg": 9.631092663880047,
+  "random_strength": 6.762784724916903,
+  "bagging_temperature": 1.87238342689367,
+  "one_hot_max_size": 2
+ },
+ {
+  "depth": 7,
+  "learning_rate": 0.029283750009867982,
+  "l2_leaf_reg": 17.15028562546502,
+  "random_strength": 3.9016315591475714,
+  "bagging_temperature": 1.878000373854451,
+  "one_hot_max_size": 2
+ },
+ {
+  "depth": 6,
+  "learning_rate": 0.022326940343447805,
+  "l2_leaf_reg": 5.826454020407909,
+  "random_strength": 2.8951100506095937,
+  "bagging_temperature": 1.8443716865925954,
+  "one_hot_max_size": 2
+ }
+]
