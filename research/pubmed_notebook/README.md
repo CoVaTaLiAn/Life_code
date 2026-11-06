@@ -2,7 +2,7 @@
 
 Google Colab の無料枠で動く、PubMed の一括検索ツール。検索式はAI（無料版でよい）に作らせ、検索・論文収集はこのノートブックでする。
 
-- Ver3 からの変更点と検証結果：[REPORT.md](REPORT.md)
+- Ver3 からの変更点：[REPORT.md](REPORT.md)
 - 検索式を作らせるプロンプト：[query_prompt.md](query_prompt.md)
 
 ## 流れ
@@ -17,8 +17,8 @@ Google Colab の無料枠で動く、PubMed の一括検索ツール。検索式
 | 列 | 必須 | 内容 |
 |---|---|---|
 | No | | 検索式の番号（なければ行番号） |
-| Target | | 対象（例：miR-126-3p） |
-| Category | | 分類（例：Biomarker） |
+| Target | | 対象 |
+| Category | | 分類 |
 | PubMed Query | ○ | 検索式 |
 | Query Intent | | 何を調べる検索式か |
 
@@ -50,6 +50,4 @@ Google Colab の無料枠で動く、PubMed の一括検索ツール。検索式
 |---|---|
 | `pubmed_research_v4.ipynb` | 最新版ノートブック |
 | `pubmed_search_v4.py` | 同じ中身のスクリプト（`python3 pubmed_search_v4.py` でも動く） |
-| `pubmed_inputdata_sample_v4.xlsx` | 改良した検索式のサンプル（子宮頸がん×体液miRNA、17本） |
-| `example_output/` | サンプルを実行した結果（2026-11-06） |
 | `pubmed_research_v1-3.ipynb`, `pubmed_inputdata_original.xlsx` | 元のノートブックと入力 |
