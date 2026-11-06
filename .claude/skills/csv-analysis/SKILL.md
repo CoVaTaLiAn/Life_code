@@ -23,6 +23,13 @@ python3 -c "import pandas, sklearn, scipy, matplotlib, lightgbm" 2>/dev/null || 
 - **課題**: 「何を予測したいか」「評価指標」「予測に使える情報の時点」。課題文から読み取る。
 - train / test の2ファイルがあれば両方使う。Excel なら CSV に変換してから。
 
+### ファイルが複数あるとき（マスタ・付帯情報・追加分など）
+`$D/prepare.py` を書いて **1つの学習用 CSV と1つのテスト用 CSV に結合**してから 3. に進む。
+- 結合キー（id・名前など）で全行が結合できたかを assert で確かめる
+- **課題に固有の分解**はここで行う（例: 「08/02(土)」→ 日付・曜日・祝日、「第18節」→ 数値、複数値が入った文字列 → 件数やフラグ）。汎用のクレンジング（全角→半角、% の数値化など）はスクリプトがやるので不要
+- 試合後・結果確定後の情報（スコアなど）は使わない。理由のある行の除外（例: 特殊な事情の外れ値）はここで行い、理由をコメントとレポートに書く
+- pandas 3 では文字列列の dtype が object ではない。判定は `pd.api.types.is_string_dtype` を使う
+
 ## 2. 中身をざっと見て、設定を決める
 ```bash
 head -5 $D/data/train.csv; wc -l $D/data/train.csv
@@ -66,7 +73,9 @@ cp .claude/skills/csv-analysis/templates/baseline_model.py $D/
 ```bash
 python3 $D/baseline_model.py
 ```
-追加前後のスコアを同じ分割で比べる。効かなかった特徴量も「効かなかった」と記録する（判断材料になる）。結果は `model_scores.csv` / `model_importance.csv` / `submission.csv`。
+目的変数の変換（log、`人数 ÷ 定員` のような率など）が効きそうなら `target_forward()` / `target_inverse()` を書く（評価は元の単位で行われる）。
+過去の実績（チームの過去の平均など目的変数を使う特徴量）は、**その行の日付より前のデータだけ**で計算する（`merge_asof(..., allow_exact_matches=False)`）。
+追加前後のスコアを同じ分割で比べる。どの工夫が効いたかは、1つずつ外して比べる（アブレーション）と考察に書ける。効かなかった特徴量も「効かなかった」と記録する（判断材料になる）。結果は `model_scores.csv` / `model_importance.csv` / `submission.csv`。
 
 ## 6. 考察を書く → `$D/insights.md` → レポートに反映
 ```markdown
@@ -89,6 +98,7 @@ python3 $S render --out $D
 `insights.md` が「0. まとめと考察」に入った `report.md` と `report.html` が作られる。
 
 ## 7. 渡す
+- 提出形式の指定（`sample_submit.csv` など）があれば、ヘッダー・列順・行の並びを合わせた提出ファイルを作り、行数と id の一致を確かめてから送る
 - `report.html` を SendUserFile で送る（スマホでも図付きで読める）。共有したい場合は Artifact での公開を1行で提案する
-- コミットするのは `report.md` `report.html` `insights.md` `figs/` `baseline_model.py` `model_scores.csv`。データ（CSV）は `.gitignore` で除外済み
+- コミットするのは `report.md` `report.html` `insights.md` `figs/` `prepare.py` `baseline_model.py` `results.json` `model_scores.csv`。データ（CSV）は `.gitignore` で除外済み
 - 最後の返答は、結論3行・主要スコア・特徴量案の上位3つ・ユーザーに確認したいこと

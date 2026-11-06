@@ -631,6 +631,14 @@ def plot_num_vs_target(df, cols, y, task, out):
         d = pd.DataFrame({"x": s, "y": y.values}).dropna()
         if len(d) == 0:
             continue
+        if d["x"].nunique() <= 10:
+            g = d.groupby("x").agg(y=("y", "mean"), n=("y", "size")).reset_index()
+            ax.bar(g["x"].astype(str), g["y"], color="#4C72B0")
+            for i, (yv, nv) in enumerate(zip(g["y"], g["n"])):
+                ax.text(i, yv, f"n={nv:,}", ha="center", va="bottom", fontsize=7)
+            ax.set_title(short(c, 28) + "（値ごとの平均）", fontsize=9)
+            ax.tick_params(labelsize=7)
+            continue
         try:
             d["bin"] = pd.qcut(d["x"], q=min(10, d["x"].nunique()), duplicates="drop")
         except ValueError:
@@ -645,7 +653,7 @@ def plot_num_vs_target(df, cols, y, task, out):
         ax.tick_params(labelsize=7)
     for ax in axes[len(cols):]:
         ax.axis("off")
-    fig.suptitle("上位の数値特徴量と目的変数（10分位ごとの平均。赤線）", fontsize=10)
+    fig.suptitle("上位の数値特徴量と目的変数（10分位ごとの平均＝赤線。値の種類が少ない列は値ごとの平均）", fontsize=10)
     return savefig(fig, out, "num_vs_target.png")
 
 
@@ -733,6 +741,8 @@ def fe_suggestions(prof, u, kinds, feats, mvt, pairs, task, y_raw, tcols, imb):
     for c in feats:
         k = kinds[c]
         r = P.loc[c]
+        if k == "numeric" and r.get("ユニーク数", 99) <= 2:
+            continue
         if k == "numeric":
             sk = r.get("歪度", np.nan)
             if pd.notna(sk) and abs(sk) > 2:
@@ -1217,7 +1227,9 @@ def cmd_run(a):
     adv = None
     if test_df is not None:
         Xte, _ = model_frame(test_df, kinds, feats, cat_levels=levels)
-        adv = adversarial_auc(X, Xte[X.columns])
+        tcols_x = [c for c in X.columns if "__" in c and c.split("__")[0] in tcols] + [c for c in ("year",) if c in X.columns]
+        keep = [c for c in X.columns if c not in tcols_x]
+        adv = adversarial_auc(X[keep], Xte[keep]) if keep else None
         if lgb is not None:
             n_est = int(max(50, (g["best_iter"] or 300) * 1.1))
             params = dict(n_estimators=n_est, learning_rate=0.03, num_leaves=31, min_child_samples=int(max(5, min(20, len(X) // 100))),
@@ -1375,7 +1387,7 @@ def render(out):
         w(f"## {sec}. train と test の違い\n")
         if R.get("adv"):
             auc, top = R["adv"]
-            w(f"- train と test を見分けるモデルの AUC = **{auc:.3f}**（0.5 に近いほど同じ分布。0.7 を超えると要注意）")
+            w(f"- train と test を見分けるモデルの AUC = **{auc:.3f}**（日時・年の列を除いて計算。0.5 に近いほど同じ分布。0.7 を超えると要注意）")
             w("- 見分けに効いている列: " + ", ".join(f"`{c}`({v:.0%})" for c, v in top) + "\n")
         d = T(R["drift"])
         for c in ("欠損率(train)", "欠損率(test)"):
@@ -1404,8 +1416,8 @@ def render(out):
     g = R["models"]["gbdt"]
     p = R["primary"]
     if p in g["cv_mean"] and p in g["train_mean"]:
-        gap = g["train_mean"][p] - g["cv_mean"][p]
-        w(f"- 勾配ブースティングの {p}: 学習 {fmt(g['train_mean'][p])} / 検証 {fmt(g['cv_mean'][p])}（差 {fmt(gap)}）。差が大きいほど過学習気味。")
+        gap = abs(g["train_mean"][p] - g["cv_mean"][p])
+        w(f"- 勾配ブースティングの {p}: 学習 {fmt(g['train_mean'][p])} / 検証 {fmt(g['cv_mean'][p])}（検証の方が {fmt(gap)} 悪い）。差が大きいほど過学習気味。")
     if g.get("best_iter"):
         w(f"- 早期終了で選ばれた木の本数（平均）: {g['best_iter']:.0f}\n")
     if R["figs"].get("importance"):
@@ -1423,7 +1435,7 @@ def render(out):
     ms = out / "model_scores.csv"
     if ms.exists():
         w(f"## {sec}. 初期モデル（特徴量エンジニアリング込み）\n")
-        w("`baseline_model.py` の `add_features()` で特徴量を足し、上と同じ分割の交差検証で LightGBM を比べた結果。\n")
+        w("`baseline_model.py` の `add_features()` で特徴量を足し（目的変数の変換を設定した場合はそれも含む）、上と同じ分割の交差検証で LightGBM を比べた結果。\n")
         sc = pd.read_csv(ms, index_col=0)
         sc["差"] = sc["追加後"] - sc["追加前"]
         w(md_table(sc.reset_index().rename(columns={sc.index.name or "index": "指標"})))

@@ -1,0 +1,259 @@
+#!/usr/bin/env python3
+"""初期モデル（特徴量エンジニアリング込み）。
+
+eda_baseline.py の出力（cleaned_train.csv, y.csv, results.json, cleaned_test.csv）と同じフォルダに置いて実行する:
+    python3 baseline_model.py
+
+やっていること:
+  1. クレンジング済みデータを読む
+  2. add_features() で特徴量を足す（← ここを育てていく）
+  3. 「特徴量を足す前」と「足した後」を同じ交差検証の分割で比べる
+  4. 重要度を model_importance.csv に、テストがあれば予測を submission.csv に保存する
+
+必要: pandas numpy scikit-learn lightgbm
+"""
+import json
+import warnings
+from pathlib import Path
+
+import lightgbm as lgb
+import numpy as np
+import pandas as pd
+from sklearn import metrics as skm
+from sklearn.model_selection import GroupKFold, KFold, StratifiedGroupKFold, StratifiedKFold, TimeSeriesSplit, train_test_split
+
+warnings.filterwarnings("ignore")
+HERE = Path(__file__).resolve().parent
+R = json.loads((HERE / "results.json").read_text())
+TARGET, TASK, KINDS, PRIMARY = R["target"], R["task"], R["kinds"], R["primary"]
+SEED, N_SPLITS = 42, 5
+DROP = set(R["ids"]) | {TARGET} | ({R["group"]} if R.get("group") else set())
+
+PARAMS = dict(n_estimators=5000, learning_rate=0.03, num_leaves=31, min_child_samples=20,
+              subsample=0.8, subsample_freq=1, colsample_bytree=0.8, reg_lambda=1.0,
+              random_state=SEED, verbose=-1)
+
+
+# ------------------------------------------------------------------ 過去の実績（試合日より前のデータだけを使う）
+def _load_history():
+    h = pd.read_csv(HERE / "cleaned_train.csv", parse_dates=["date"])
+    h["y"] = pd.read_csv(HERE / "y.csv")["y"].values
+    h["occ"] = h["y"] / h["capacity"]
+    return h.sort_values("date")
+
+
+HIST = _load_history()
+
+
+def past_mean(df, keys, val, name):
+    """keys が同じ過去の試合（試合日より前）の val の平均と件数。
+    test（2014年8月〜）では 2014年7月までの全試合が「過去」になる。"""
+    h = HIST[keys + ["date", val]].copy()
+    g = h.groupby(keys)[val]
+    h[name] = g.cumsum() / (g.cumcount() + 1)
+    h[name + "_n"] = h.groupby(keys).cumcount() + 1
+    left = df[keys + ["date"]].reset_index().sort_values("date")
+    for k in keys:  # 文字列の型を揃える
+        left[k], h[k] = left[k].astype(str), h[k].astype(str)
+    m = pd.merge_asof(left, h[keys + ["date", name, name + "_n"]].sort_values("date"),
+                      on="date", by=keys, allow_exact_matches=False)
+    return m.set_index("index").reindex(df.index)[[name, name + "_n"]]
+
+
+# ------------------------------------------------------------------ 特徴量
+def add_features(df: pd.DataFrame) -> pd.DataFrame:
+    """特徴量エンジニアリング。train と test の両方に同じ処理がかかる。
+
+    - 目的変数を使う処理（target encoding など）はここに書かない（リークする）。
+    - 日時の列は datetime 型、カテゴリは文字列で入ってくる。
+    - 新しく作った列は自動でモデルに入る（数値はそのまま、文字列はカテゴリ扱い）。
+    """
+    df = df.copy()
+    # 1. ホームチームの過去の集客力（同じディビジョンでの平均観客数・平均収容率）
+    #    J1 と J2 で同じチームでも集客が大きく違うため stage も揃える
+    df[["home_past_y", "home_past_n"]] = past_mean(df, ["home", "stage"], "y", "home_past_y").values
+    df["home_past_occ"] = past_mean(df, ["home", "stage"], "occ", "home_past_occ")["home_past_occ"].values
+    # 2. アウェイチームが連れてくる観客（アウェイとしての過去の平均観客数）
+    df["away_past_y"] = past_mean(df, ["away", "stage"], "y", "away_past_y")["away_past_y"].values
+    # 3. 同じカード（ホーム×アウェイ）の過去の観客数
+    df["card_past_y"] = past_mean(df, ["home", "away"], "y", "card_past_y")["card_past_y"].values
+    # 4. このスタジアムでの過去の平均収容率
+    df["stadium_past_occ"] = past_mean(df, ["stadium"], "occ", "stadium_past_occ")["stadium_past_occ"].values
+    # 5. 期待観客数 = 収容人数 × ホームチームの過去の平均収容率
+    df["expected_y"] = df["capacity"] * df["home_past_occ"]
+    # 6. 週末・祝日（土 14,498人 / 日 7,459人 / 平日 8,000〜10,000人）
+    df["is_saturday"] = (df["weekday"] == "土").astype(int)
+    df["weekend_or_holiday"] = (df["weekday"].isin(["土", "日"]) | (df["holiday"] == 1)).astype(int)
+    # 7. 生の文字列で種類が多すぎる列は分解済みの列に任せて外す
+    df = df.drop(columns=["tv", "weather"])
+    return df
+
+
+# ------------------------------------------------------------------ 目的変数の変換（任意）
+# 学習は変換後の値で行い、評価・提出は元の単位に戻して行う。
+# 例: 回帰で右に裾が長い → np.log1p / np.expm1。人数 ÷ 定員 のような「率」で学ぶ → y / df["定員"] と p * df["定員"]
+# 観客数そのものではなく「収容率（観客数 ÷ 収容人数）」を学習し、予測時に収容人数を掛けて戻す。
+# スタジアムの大きさの違いをモデルが学ばなくてよくなる。
+def target_forward(y: np.ndarray, df: pd.DataFrame) -> np.ndarray:
+    return y / df["capacity"].values
+
+
+def target_inverse(p: np.ndarray, df: pd.DataFrame) -> np.ndarray:
+    return np.clip(p, 0, 1) * df["capacity"].values
+
+
+# ------------------------------------------------------------------ 以下は通常いじらなくてよい
+def load(name):
+    df = pd.read_csv(HERE / name, low_memory=False)
+    for c, k in KINDS.items():
+        if c not in df:
+            continue
+        if k == "datetime":
+            df[c] = pd.to_datetime(df[c], errors="coerce")
+        elif k in ("category", "text"):
+            df[c] = df[c].astype("string")
+    return df
+
+
+def to_matrix(df, levels=None):
+    """モデルに入れる行列を作る。日時は分解、文字列はカテゴリ型、テキストは文字数。"""
+    X = pd.DataFrame(index=df.index)
+    fit = levels is None
+    levels = {} if fit else levels
+    for c in df.columns:
+        if c in DROP:
+            continue
+        s = df[c]
+        if pd.api.types.is_datetime64_any_dtype(s):
+            X[f"{c}__year"], X[f"{c}__month"], X[f"{c}__dow"] = s.dt.year, s.dt.month, s.dt.dayofweek
+            X[f"{c}__days"] = (s - pd.Timestamp("1970-01-01")).dt.days
+            if (s.dropna().dt.hour != 0).mean() > 0.05:
+                X[f"{c}__hour"] = s.dt.hour
+        elif KINDS.get(c) == "text":
+            X[f"{c}__len"] = s.str.len()
+        elif pd.api.types.is_numeric_dtype(s) or pd.api.types.is_bool_dtype(s):
+            X[c] = s.astype(float)
+        else:
+            if fit:
+                levels[c] = list(s.value_counts().index[:200])
+            v = s.where(s.isin(levels[c]) | s.isna(), "__other__")
+            X[c] = pd.Categorical(v, categories=levels[c] + ["__other__"])
+    num = X.select_dtypes(exclude="category").columns
+    X[num] = X[num].astype(float).replace([np.inf, -np.inf], np.nan)
+    return X, levels
+
+
+def splits(df, y):
+    idx = np.arange(len(df))
+    if R.get("time_col"):
+        order = np.argsort(df[R["time_col"]].values, kind="stable")
+        return [(order[a], order[b]) for a, b in TimeSeriesSplit(N_SPLITS).split(order)]
+    if R.get("group"):
+        g = df[R["group"]].astype(str).values
+        sp = StratifiedGroupKFold(N_SPLITS, shuffle=True, random_state=SEED) if TASK != "regression" else GroupKFold(N_SPLITS)
+        return list(sp.split(idx, y, g))
+    if TASK != "regression" and np.bincount(y).min() >= 2:
+        k = min(N_SPLITS, np.bincount(y).min())
+        return list(StratifiedKFold(k, shuffle=True, random_state=SEED).split(idx, y))
+    return list(KFold(N_SPLITS, shuffle=True, random_state=SEED).split(idx))
+
+
+def predict(m, X):
+    if TASK == "regression":
+        return m.predict(X)
+    p = m.predict_proba(X)
+    return p[:, 1] if TASK == "binary" else p
+
+
+def score(y, p):
+    if TASK == "binary":
+        return {"auc": skm.roc_auc_score(y, p), "pr_auc": skm.average_precision_score(y, p),
+                "logloss": skm.log_loss(y, np.clip(p, 1e-7, 1 - 1e-7)), "accuracy": skm.accuracy_score(y, p >= .5),
+                "f1": skm.f1_score(y, p >= .5)}
+    if TASK == "multiclass":
+        return {"accuracy": skm.accuracy_score(y, p.argmax(1)), "macro_f1": skm.f1_score(y, p.argmax(1), average="macro"),
+                "logloss": skm.log_loss(y, np.clip(p, 1e-7, 1), labels=list(range(p.shape[1])))}
+    out = {"rmse": skm.mean_squared_error(y, p) ** .5, "mae": skm.mean_absolute_error(y, p), "r2": skm.r2_score(y, p)}
+    if y.min() >= 0:
+        out["rmsle"] = skm.mean_squared_error(np.log1p(y), np.log1p(np.clip(p, 0, None))) ** .5
+    return out
+
+
+def cv(df, y, sp, name, raw=False):
+    """raw=True のときは目的変数の変換をしない（eda_baseline.py の LightGBM と同じ条件）。"""
+    global target_forward, target_inverse
+    saved = (target_forward, target_inverse)
+    if raw:
+        target_forward, target_inverse = (lambda v, d: v), (lambda v, d: v)
+    try:
+        return _cv(df, y, sp, name)
+    finally:
+        target_forward, target_inverse = saved
+
+
+def _cv(df, y, sp, name):
+    X, _ = to_matrix(df)
+    Model = lgb.LGBMRegressor if TASK == "regression" else lgb.LGBMClassifier
+    folds, imps, iters = [], [], []
+    params = {**PARAMS, "min_child_samples": int(max(5, min(20, len(X) // 100)))}  # eda_baseline.py と同じ設定
+    yt = target_forward(y, df) if TASK == "regression" else y
+    for tr, va in sp:
+        # 早期終了用に学習foldの15%を取り分ける（検証foldは使わない）
+        strat = y[tr] if TASK != "regression" and np.bincount(y[tr]).min() >= 2 else None
+        fit, es = train_test_split(tr, test_size=0.15, random_state=SEED, stratify=strat)
+        m = Model(**params)
+        m.fit(X.iloc[fit], yt[fit], eval_set=[(X.iloc[es], yt[es])],
+              callbacks=[lgb.early_stopping(100, verbose=False)])
+        p = predict(m, X.iloc[va])
+        if TASK == "regression":
+            p = target_inverse(p, df.iloc[va])
+        folds.append(score(y[va], p))
+        imps.append(pd.Series(m.booster_.feature_importance("gain"), index=X.columns))
+        iters.append(m.best_iteration_)
+    f = pd.DataFrame(folds)
+    imp = pd.concat(imps, axis=1).mean(axis=1)
+    print(f"[{name}] 特徴量 {X.shape[1]}列  " + "  ".join(f"{k}={f[k].mean():.4f}±{f[k].std():.4f}" for k in f))
+    return f.mean(), (imp / imp.sum()).sort_values(ascending=False), int(np.mean(iters))
+
+
+def main():
+    df = load("cleaned_train.csv")
+    y = pd.read_csv(HERE / "y.csv")["y"].values
+    if TASK != "regression":
+        y = y.astype(int)
+    sp = splits(df, y)
+    base, _, _ = cv(df, y, sp, "特徴量追加前", raw=True)
+    dfe = add_features(df)
+    new_cols = [c for c in dfe.columns if c not in df.columns]
+    after, imp, n_iter = cv(dfe, y, sp, "特徴量追加後")
+    d = after[PRIMARY] - base[PRIMARY]
+    better = d > 0 if PRIMARY in ("auc", "pr_auc", "accuracy", "f1", "macro_f1", "r2") else d < 0
+    print(f"\n{PRIMARY}: {base[PRIMARY]:.4f} → {after[PRIMARY]:.4f}（{d:+.4f}, {'変化なし' if abs(d) < 1e-9 else ('改善' if better else '悪化')}）")
+    if new_cols:
+        print("追加した列の重要度: " + ", ".join(f"{c}={imp.get(c, 0):.1%}" for c in new_cols))
+    imp.rename("importance").to_csv(HERE / "model_importance.csv")
+    pd.DataFrame({"追加前": base, "追加後": after}).to_csv(HERE / "model_scores.csv")
+
+    if (HERE / "cleaned_test.csv").exists():
+        te = add_features(load("cleaned_test.csv"))
+        X, lv = to_matrix(dfe)
+        Xt, _ = to_matrix(te, lv)
+        Model = lgb.LGBMRegressor if TASK == "regression" else lgb.LGBMClassifier
+        yt = target_forward(y, dfe) if TASK == "regression" else y
+        m = Model(**{**PARAMS, "min_child_samples": int(max(5, min(20, len(X) // 100))),
+                     "n_estimators": int(max(50, n_iter * 1.1))}).fit(X, yt)
+        p = predict(m, Xt[X.columns])
+        if TASK == "regression":
+            p = target_inverse(p, te)
+        sub = te[[c for c in R["ids"] if c in te]].copy()
+        if TASK == "multiclass":
+            for i, c in enumerate(R["classes"]):
+                sub[f"prob_{c}"] = p[:, i]
+        else:
+            sub[TARGET if TASK == "regression" else f"prob_{R['positive']}"] = p
+        sub.to_csv(HERE / "submission.csv", index=False)
+        print(f"テスト予測を保存: {HERE / 'submission.csv'}")
+
+
+if __name__ == "__main__":
+    main()

@@ -50,6 +50,17 @@ def add_features(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+# ------------------------------------------------------------------ 目的変数の変換（任意）
+# 学習は変換後の値で行い、評価・提出は元の単位に戻して行う。
+# 例: 回帰で右に裾が長い → np.log1p / np.expm1。人数 ÷ 定員 のような「率」で学ぶ → y / df["定員"] と p * df["定員"]
+def target_forward(y: np.ndarray, df: pd.DataFrame) -> np.ndarray:
+    return y
+
+
+def target_inverse(p: np.ndarray, df: pd.DataFrame) -> np.ndarray:
+    return p
+
+
 # ------------------------------------------------------------------ 以下は通常いじらなくてよい
 def load(name):
     df = pd.read_csv(HERE / name, low_memory=False)
@@ -127,19 +138,35 @@ def score(y, p):
     return out
 
 
-def cv(df, y, sp, name):
+def cv(df, y, sp, name, raw=False):
+    """raw=True のときは目的変数の変換をしない（eda_baseline.py の LightGBM と同じ条件）。"""
+    global target_forward, target_inverse
+    saved = (target_forward, target_inverse)
+    if raw:
+        target_forward, target_inverse = (lambda v, d: v), (lambda v, d: v)
+    try:
+        return _cv(df, y, sp, name)
+    finally:
+        target_forward, target_inverse = saved
+
+
+def _cv(df, y, sp, name):
     X, _ = to_matrix(df)
     Model = lgb.LGBMRegressor if TASK == "regression" else lgb.LGBMClassifier
     folds, imps, iters = [], [], []
     params = {**PARAMS, "min_child_samples": int(max(5, min(20, len(X) // 100)))}  # eda_baseline.py と同じ設定
+    yt = target_forward(y, df) if TASK == "regression" else y
     for tr, va in sp:
         # 早期終了用に学習foldの15%を取り分ける（検証foldは使わない）
         strat = y[tr] if TASK != "regression" and np.bincount(y[tr]).min() >= 2 else None
         fit, es = train_test_split(tr, test_size=0.15, random_state=SEED, stratify=strat)
         m = Model(**params)
-        m.fit(X.iloc[fit], y[fit], eval_set=[(X.iloc[es], y[es])],
+        m.fit(X.iloc[fit], yt[fit], eval_set=[(X.iloc[es], yt[es])],
               callbacks=[lgb.early_stopping(100, verbose=False)])
-        folds.append(score(y[va], predict(m, X.iloc[va])))
+        p = predict(m, X.iloc[va])
+        if TASK == "regression":
+            p = target_inverse(p, df.iloc[va])
+        folds.append(score(y[va], p))
         imps.append(pd.Series(m.booster_.feature_importance("gain"), index=X.columns))
         iters.append(m.best_iteration_)
     f = pd.DataFrame(folds)
@@ -154,7 +181,7 @@ def main():
     if TASK != "regression":
         y = y.astype(int)
     sp = splits(df, y)
-    base, _, _ = cv(df, y, sp, "特徴量追加前")
+    base, _, _ = cv(df, y, sp, "特徴量追加前", raw=True)
     dfe = add_features(df)
     new_cols = [c for c in dfe.columns if c not in df.columns]
     after, imp, n_iter = cv(dfe, y, sp, "特徴量追加後")
@@ -171,9 +198,12 @@ def main():
         X, lv = to_matrix(dfe)
         Xt, _ = to_matrix(te, lv)
         Model = lgb.LGBMRegressor if TASK == "regression" else lgb.LGBMClassifier
+        yt = target_forward(y, dfe) if TASK == "regression" else y
         m = Model(**{**PARAMS, "min_child_samples": int(max(5, min(20, len(X) // 100))),
-                     "n_estimators": int(max(50, n_iter * 1.1))}).fit(X, y)
+                     "n_estimators": int(max(50, n_iter * 1.1))}).fit(X, yt)
         p = predict(m, Xt[X.columns])
+        if TASK == "regression":
+            p = target_inverse(p, te)
         sub = te[[c for c in R["ids"] if c in te]].copy()
         if TASK == "multiclass":
             for i, c in enumerate(R["classes"]):
