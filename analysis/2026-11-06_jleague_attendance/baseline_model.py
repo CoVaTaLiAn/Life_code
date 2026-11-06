@@ -84,6 +84,13 @@ def add_features(df: pd.DataFrame) -> pd.DataFrame:
     # 6. 週末・祝日（土 14,498人 / 日 7,459人 / 平日 8,000〜10,000人）
     df["is_saturday"] = (df["weekday"] == "土").astype(int)
     df["weekend_or_holiday"] = (df["weekday"].isin(["土", "日"]) | (df["holiday"] == 1)).astype(int)
+    # 8. 試合日時点の順位・勝ち点（standings.py で作成。その日より前の試合結果だけを使う）
+    st = pd.read_csv(HERE / "data" / "standings.csv")
+    df = df.merge(st, on="id", how="left").set_index(df.index)
+    # 優勝・昇格・残留がかかった試合（残り試合が少ない時期ほど意味が大きい）
+    late = df["remaining_games"] <= 8
+    df["title_race"] = ((df["home_title_alive"] == 1) | (df["away_title_alive"] == 1)).astype(int) * late
+    df["late_season"] = late.astype(int)
     # 7. 生の文字列で種類が多すぎる列は分解済みの列に任せて外す
     df = df.drop(columns=["tv", "weather"])
     return df
