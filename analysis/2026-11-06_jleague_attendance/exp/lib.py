@@ -23,6 +23,8 @@ LOG_CSV = HERE / "experiments.csv"
 
 FOLDS = {"H2_2012": pd.Timestamp("2012-08-01"), "H2_2013": pd.Timestamp("2013-08-01")}
 TEST_CUTOFF = pd.Timestamp("2014-08-01")
+# 選択の合わせ込みを確かめるための、選択に使っていない検証（前半戦を予測）
+CHECK_FOLDS = {"H1_2013": pd.Timestamp("2013-01-01"), "H1_2014": pd.Timestamp("2014-01-01")}
 
 # 都道府県庁所在地のおおよその緯度経度（移動距離の目安）
 PREF_LL = {
@@ -452,13 +454,15 @@ def features_for(df, cutoff, cfg):
 
 
 def evaluate(df, cfg=None, model="lgb", target="occ", params=None, seeds=(0, 1, 2), return_preds=False, by_stage=False,
-             weight=None):
-    """各 fold で学習→後半戦を予測し、RMSE を返す。seeds の平均予測で評価。"""
+             weight=None, folds=None):
+    """各 fold で学習→その年の cutoff 以降（前半戦の検証では 7月まで）を予測し、RMSE を返す。seeds の平均予測で評価。"""
     out, preds = {}, {}
-    for fold, cutoff in FOLDS.items():
+    folds = folds or FOLDS
+    for fold, cutoff in folds.items():
         X = features_for(df, cutoff, cfg)
         tr = (df["y"].notna() & (df["date"] < cutoff)).values
-        va = (df["y"].notna() & (df["date"] >= cutoff) & (df["year"] == cutoff.year)).values
+        end = pd.Timestamp(f"{cutoff.year}-08-01") if fold.startswith("H1") else pd.Timestamp(f"{cutoff.year + 1}-01-01")
+        va = (df["y"].notna() & (df["date"] >= cutoff) & (df["date"] < end)).values
         Xtr, Xva = X[tr], X[va]
         ytr = t_forward(target, df.loc[tr, "y"].values, Xtr)
         w = sample_weights(df.loc[tr], weight)
@@ -477,7 +481,7 @@ def evaluate(df, cfg=None, model="lgb", target="occ", params=None, seeds=(0, 1, 
         yva = df.loc[va, "y"].values
         out[fold] = float(np.sqrt(np.mean((yva - p) ** 2)))
         preds[fold] = pd.Series(p, index=df.index[va])
-    out["mean"] = float(np.mean([out[f] for f in FOLDS]))
+    out["mean"] = float(np.mean([out[f] for f in folds]))
     return (out, preds) if return_preds else out
 
 
