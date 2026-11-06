@@ -1,0 +1,5 @@
+# 個別の調査結果は公開リポジトリに入れない（pubmed-survey スキルの出力先）
+research/20*_*/
+
+__pycache__/
+*.pyc
