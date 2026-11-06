@@ -50,4 +50,3 @@ Google Colab の無料枠で動く、PubMed の一括検索ツール。検索式
 |---|---|
 | `pubmed_research_v4.ipynb` | 最新版ノートブック |
 | `pubmed_search_v4.py` | 同じ中身のスクリプト（`python3 pubmed_search_v4.py` でも動く） |
-| `pubmed_research_v1-3.ipynb`, `pubmed_inputdata_original.xlsx` | 元のノートブックと入力 |
