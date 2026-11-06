@@ -37,7 +37,7 @@ def main():
     # 試合当日の条件のうち、試合前に分かるものだけ使う。
     # スコアは試合後の情報、先発選手名は22列の固有名詞なので今回は除く。
     cond = cond[["id", "weather", "temperature", "humidity", "referee"]]
-    st["pref"] = st["address"].str.extract(r"^(.+?[都道府県])")
+    st["pref"] = st["address"].str.extract(r"^(東京都|北海道|京都府|大阪府|.{2,3}?県)")[0]
     st = st.rename(columns={"name": "stadium", "capa": "capacity"})[["stadium", "capacity", "pref"]]
 
     tr["is_test"] = 0

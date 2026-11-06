@@ -2,4 +2,6 @@
 analysis/**/data/
 analysis/**/*.csv
 !analysis/**/model_scores.csv
+!analysis/**/experiments.csv
 __pycache__/
+catboost_info/
