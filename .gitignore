@@ -1,0 +1,5 @@
+# データ分析: 元データ・中間CSVはコミットしない（レポートと図だけ残す）
+analysis/**/data/
+analysis/**/*.csv
+!analysis/**/model_scores.csv
+__pycache__/
