@@ -8,6 +8,7 @@ description: CSV の表データと課題（何を予測・分析したいか）
 - 分析スクリプト: `.claude/skills/csv-analysis/scripts/eda_baseline.py`
 - 初期モデルの雛形: `.claude/skills/csv-analysis/templates/baseline_model.py`
 - 以下 `S=.claude/skills/csv-analysis/scripts/eda_baseline.py`、`D=analysis/<YYYY-MM-DD>_<課題の英語スラッグ>`
+- **Kaggle・SIGNATE などのコンペの場合は、リポジトリ `CoVaTaLiAn/kaggle-signate_solution` の `<signate|kaggle>/<コンペ名>/` を `D` にする**（例: `signate/jleague_attendance`）。スクリプトは同リポジトリの `tools/eda_baseline.py` を使い、ルートの README のコンペ一覧に1行足す
 
 ゴールは「ユーザーが傾向を掴み、どの特徴量エンジニアリングをやるか自分で判断できる」こと。
 数字は必ずスクリプトの出力から引用し、推測は推測と書く。
