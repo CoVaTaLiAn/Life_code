@@ -83,14 +83,14 @@ python3 $S merge --out $D           # missing=[] extra=[] を確認。漏れが�
 python3 $S render --out $D          # report.md（全件・アブスト付き）, top.md（4点以上の一覧だけの軽量版）
 ```
 `unscored` が 0 でなければ 3 に戻る。
-`$D` を git に commit・push する（`chunks/` も含めてよい）。
+**`$D` は git に commit・push しない。** このリポジトリは公開なので、調査内容は `.gitignore` で除外している（`research/20*_*/`）。結果はメール（手順7）で受け取る。
 
 ### 6. ユーザーへの報告
-結論（似た研究の有無、ハードルの要点、差別化の方向）を短く伝え、`report.md` のパスを示す。
+結論（似た研究の有無、ハードルの要点、差別化の方向）を短く伝える。クラウドのセッションでは `$D` は終了後に消えるので、残したい場合はメール送付（手順7）を勧める。
 
 ### 7.（頼まれたら）メール送付
 ```bash
 python3 $S email --out $D --min-score 5    # $D/email.html: まとめ＋5点の論文一覧（リンク付き）
 ```
-`email.html` の中身を Gmail の `send_message` の `htmlBody` に入れて送る。report.md は大きいので添付しない。全文の置き場所（リポジトリのパス）を本文の最後に書く。
+`email.html` の中身を Gmail の `send_message` の `htmlBody` に入れて送る。report.md は大きいので添付しない。リポジトリには保存しないので、本文の最後に PMID 一覧へのリンク（PubMed）を入れておく。
 件名の例: `【論文調査】<テーマ>`
