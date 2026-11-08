@@ -10,3 +10,9 @@ CSV と課題（何を予測したいか）を渡すと、クレンジング →
 - 見本（架空データ）: [`analysis/example_churn_sample/report.md`](analysis/example_churn_sample/report.md)
 - 元データと中間 CSV は `.gitignore` でコミット対象外
 - コンペ（Kaggle・SIGNATE）の解法は別リポジトリ [kaggle-signate_solution](https://github.com/CoVaTaLiAn/kaggle-signate_solution) に置く（例: Jリーグ観客動員数予測）
+
+## 本文だけ抜き出し（Chrome 拡張機能）
+
+表示中のページから本文だけを取り出し、テキスト / Markdown（Obsidian 向け）でコピー・保存する。権限は `activeTab` と `scripting` のみ・外部通信なし。
+
+- 場所・インストール方法・セキュリティ方針: [`chrome-extension/main-text-extractor/README.md`](chrome-extension/main-text-extractor/README.md)
