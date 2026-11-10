@@ -373,11 +373,19 @@ function scoreWithJev_(apiKey, from, subject, body) {
     questions: {
       spam: {
         type: 'noul',
-        instructions: 'このメールは詐欺・フィッシング・出会い系・怪しい儲け話・無差別の迷惑メールなど、明らかなスパムである。',
+        instructions: 'このメールは明らかなスパムか？',
+        criteria: {
+          true: '詐欺・フィッシング・出会い系・怪しい儲け話・無差別に送られた迷惑メール',
+          false: '実在の会社・サービス・人から受信者に届いた正規のメール（宣伝でも正規なら偽）',
+        },
       },
       readOnly: {
         type: 'noul',
-        instructions: CONFIG.profile + '\nこのメールは、この受信者にとって読まずに既読にしてよい広告・宣伝・関係ないお知らせである（本人の確認・返信・対応が要るものは偽）。',
+        instructions: CONFIG.profile + '\nこのメールは、この受信者にとって読まずに既読にしてよいか？',
+        criteria: {
+          true: '広告・宣伝・メルマガ・関係ないお知らせ・読むだけで済む自動通知',
+          false: '本人の確認・返信・手続き・支払い・予約などの対応が要るもの、人から届いたもの、条件に合う求人',
+        },
       },
     },
   };
@@ -394,9 +402,12 @@ function scoreWithJev_(apiKey, from, subject, body) {
       console.warn('Jevエラー ' + res.getResponseCode() + ': ' + text.slice(0, 300));
       return null;
     }
+    // 返答は { answers: { spam: { type: 'noul', noul: 0.93 }, ... } }（公式資料 docs.typesafe.ai/primitives/noul）
     const data = JSON.parse(text);
-    const spam = findProb_(data, 'spam');
-    const readOnly = findProb_(data, 'readOnly');
+    const ans = data.answers || {};
+    const noul = k => (ans[k] && typeof ans[k].noul === 'number' ? ans[k].noul : findProb_(data, k));
+    const spam = noul('spam');
+    const readOnly = noul('readOnly');
     if (spam === null || readOnly === null) {
       console.warn('Jevの返答から確率を読めない: ' + text.slice(0, 500));
       return null;
@@ -408,7 +419,7 @@ function scoreWithJev_(apiKey, from, subject, body) {
   }
 }
 
-// 返答の中から、質問名 key の確率（0〜1の数）を探す。返答の形が多少違っても読めるようにしている
+// 予備：返答の形が将来変わっても、質問名 key の確率（0〜1の数）を探して読めるようにしている
 function findProb_(obj, key) {
   const isP = v => typeof v === 'number' && v >= 0 && v <= 1;
   const firstP = o => {

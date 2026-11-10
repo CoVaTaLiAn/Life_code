@@ -38,7 +38,7 @@
 
 - **トークン（費用）を抑える**：Claude Code に毎回振り分けさせるのではなく、GAS でルール中心に動かす
 - **Claude API の自動判定はやめた**（2026-11-10）：迷ったものは Claude Code で頼んだときだけ Claude が提案し、決めるのは自分
-- **Jev（TypeSafe AI の判断特化モデル）で確率を出す**（2026-11-10）：呼び出し先 `api.typesafe.ai/v1/systemone`・質問の型 `noul` は解説記事で確認。返答の形は未確認のため、キー登録後に `testJev` で確かめる。キーがなければ簡易計算で代わりに確率を出す
+- **Jev（TypeSafe AI の判断特化モデル）で確率を出す**（2026-11-10）：呼び出し先 `api.typesafe.ai/v1/systemone`・`Authorization: Bearer`・返答 `answers.<質問名>.noul` を公式資料（docs.typesafe.ai）で確認。キーがなければ簡易計算で代わりに確率を出す
 - **Gmail フィルタ**：Claude から作るツールが使えなかったため未作成。必要なら Gmail の設定画面で手動作成する（条件は `gas/gmail-sorter/README.md` のルールを参考）
 
 ## 状態（2026-11-01 時点）
