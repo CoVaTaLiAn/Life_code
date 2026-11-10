@@ -1,13 +1,19 @@
 /**
  * Gmail 自動振り分け + 毎朝の要約メール（Google Apps Script）
  *
- * 判定は4段階（トークンを使うのは迷ったものだけ）：
+ * 振り分けは3つだけ：
+ *   既読       … ただの通知・宣伝。既読にして受信箱に残す（ラベル「既読」）
+ *   残す       … 読むべきもの。未読のまま受信箱に残す（ラベル「残す」）
+ *   迷惑メール … 明らかなスパム。Gmail の迷惑メールへ
+ * どれか決まらないものは「要判断」にして、あなたに聞く。
+ *
+ * 判定の順番（トークンを使うのは迷ったものだけ）：
  *   1. ルール（送信元・キーワード、あなたが過去に決めた送信元）… 無料
- *   2. ルールで決まらないものは確率を出す（Jev。キー未設定なら過去の判定から学ぶ簡易計算）
+ *   2. ルールで決まらないものは確率を出す（Jev。キー未設定・エラー時は過去の判定から学ぶ簡易計算）
  *      スパム・既読でよい確率がとても高いものだけ自動で処理する
  *   3. 残りは「要判断」ラベルを付け、シート「判断待ち」に載せる。
  *      Claude Code で「Gmailの判断待ちを見て」と頼むと、Claude が提案を書き込む
- *   4. あなたが決める（シートの「あなたの判断」列、または Gmail でラベルを付ける）
+ *   4. あなたが決める（シートの「あなたの判断」列、または Gmail で「既読」か「残す」のラベルを付ける）
  *      → 1時間以内に処理し、その送信元を覚えて次からルールで自動処理する
  * 判定結果はすべてスプレッドシート「Gmail振り分けログ」に残る。
  * 使い方は同じフォルダの README.md を参照。
@@ -24,12 +30,7 @@ const CONFIG = {
   maxThreads: 100,
 
   labels: {
-    pick: '転職/注目',
-    jobOther: '転職/その他',
-    ad: '広告',
-    notice: '通知',
-    check: '要確認',
-    reply: '要返信',
+    read: '既読',
     keep: '残す',
     ask: '要判断',
   },
@@ -49,81 +50,62 @@ const CONFIG = {
     bodyChars: 300, // Jev に渡す本文の文字数
   },
 
-  // Jev・Claude に伝える判断基準（Obsidian「輝く環境.md」より）
+  // Jev・Claude に伝える、受信者の事情（何を読むべきかの判断に使う）
   profile: [
     '受信者はデータサイエンティスト志望の転職活動中の人。',
-    '注目すべき求人：データサイエンス・データ分析・ヘルスケアIT・医療・ゲノム領域、年収480万円以上、横浜から通勤90分以内、事業に嘘がない会社。',
-    '避けたい求人：営業職、未経験歓迎の大量採用、根性論の社風、事業内容が怪しいもの。',
+    '読むべきもの：人から届いた連絡、面談・予約・手続き・支払い・アカウント関係、条件に合う求人（データサイエンス・データ分析・ヘルスケアIT・医療・ゲノム領域、年収480万円以上）。',
+    'ただの通知でよいもの：広告・宣伝・メルマガ・イベント案内、条件に合わない求人、領収書、自動のお知らせ。',
   ].join('\n'),
 
-  // 転職サイト・エージェント（このどれかから来たら転職メール）
-  jobSenders: [
-    'bizreach.co.jp', 'doda.jp', 'direct-doda.jp', 'dm-doda.jp', 'persol.co.jp',
-    'jac-recruitment.jp', 'openwork.jp', 'signate.jp', 'green-japan.com',
-    'en-japan.com', 'r-agent.com', 'mynavi.jp', 'type.jp', 'wantedly.com',
-  ],
-
-  // 転職メールのうち、件名か本文冒頭にこれがあれば「注目」
-  pickKeywords: [
-    'データサイエンティスト', 'データサイエンス', 'データ分析', 'データアナリスト',
-    '機械学習', 'AI', 'ヘルスケア', '医療', 'メディカル', 'ライフサイエンス',
-    'ゲノム', '臨床', '面談確約', '公募',
-    '野村総合研究所', 'SOMPO', 'メディア情報システム', 'GenMine', 'ビー・エム・エル',
-    'エムスリー', 'シンクデータ',
-  ],
-
-  // 注目キーワードがあってもこれがあれば「その他」に落とす
-  dropKeywords: [
-    '未経験', '同期10名', '看護師', '医療事務', '営業職', '医療機器営業',
-    '職務経歴書の書き方', '求人の探し方', '面談で話すべきこと', 'アンケート',
-  ],
-
-  // 広告として既読アーカイブする送信元
-  adSenders: [
-    'audible.co.jp', 'amazon.co.jp', 'amazonmusic.com', 'xmind.ai',
-    'marketing.', 'newsletter', 'news@', 'store-news@',
-  ],
-
-  // 明らかなスパム：件名にこれがあれば迷惑メールへ
+  // ===== 迷惑メール =====
+  // 件名にこれがあれば迷惑メールへ
   spamKeywords: [
     '当選しました', '当選のお知らせ', '高額当選', '受け取り待ち', '未受取の',
     '副業で月', '誰でも稼げる', '高収入確定', 'お金配り', '必ず儲かる', '元本保証',
     '出会い', 'セフレ', '人妻', 'バイアグラ',
     'アカウントが停止されました', 'アカウントを一時停止', 'お支払い情報を更新してください',
   ],
-  // 明らかなスパム：送信元にこれが含まれれば迷惑メールへ（怪しいドメイン）
+  // 送信元にこれが含まれれば迷惑メールへ（怪しいドメイン）
   spamSenders: ['.xyz>', '.top>', '.click>', '.icu>', '.buzz>', '.rest>', '.cfd>', '.sbs>'],
 
-  // 既読にしてゴミ箱へ移す送信元（30日でGmailが完全に削除する）
-  trashSenders: ['contract-one.com'],
-
-  // 既読だけにして受信箱に残す送信元（領収書・自動タスク通知など）
-  noticeSenders: ['tm.openai.com', 'invoice@', 'mail.anthropic.com', 'linkedin.com', 'notifications@github.com'],
-
-  // 件名にこれがあれば関係ないお知らせとして既読（受信箱に残す）。送信元を覚えたもの・セキュリティ系が優先
-  noticeKeywords: [
+  // ===== 既読（ただの通知） =====
+  // この送信元は既読
+  readSenders: [
+    'audible.co.jp', 'amazon.co.jp', 'amazonmusic.com', 'xmind.ai',
+    'marketing.', 'newsletter', 'news@', 'store-news@',
+    'tm.openai.com', 'invoice@', 'invoice+', 'mail.anthropic.com', 'linkedin.com', 'notifications@github.com',
+  ],
+  // 件名にこれがあれば既読
+  readKeywords: [
     '利用規約', 'プライバシーポリシー', '規約改定', '規約の改定', 'メンテナンスのお知らせ',
     'サービス終了', '仕様変更', 'ポイント失効', 'ポイントのお知らせ', 'ご利用明細',
-    'Terms of Service', 'Privacy Policy', 'policy update',
+    'Terms of Service', 'Privacy Policy', 'policy update', 'Your receipt',
   ],
 
-  // 未読のまま残して要約で知らせる（セキュリティ系）
-  checkKeywords: [
+  // ===== 残す（未読のまま） =====
+  // 件名にこれがあれば未読で残す（セキュリティ系。既読ルールより優先）
+  keepKeywords: [
     'Security alert', 'セキュリティ', 'new device', 'ログイン', 'shared some Google Account data',
     'パスワード', '不正',
   ],
+
+  // 既読にしてゴミ箱へ移す送信元（30日でGmailが完全に削除する）
+  trashSenders: ['contract-one.com'],
 };
 
-// あなたが付けられるカテゴリ（「要判断」以外）。spam・trash はシートでだけ選べる
-const KINDS = ['pick', 'jobOther', 'ad', 'notice', 'check', 'reply', 'keep'];
+// あなたが選べる答え（シートの「あなたの判断」列・Gmail のラベル）
 const SPAM_NAME = '迷惑メール';
-const TRASH_NAME = '削除';
+const CHOICES = [CONFIG.labels.read, CONFIG.labels.keep, SPAM_NAME];
 
-// 確率の3グループ（カテゴリ名 → グループ）
+// 以前の版との互換（前のカテゴリ・ラベル → 今の3つ）
+const OLD_KINDS = { notice: 'read', ad: 'read', jobOther: 'read', pick: 'keep', check: 'keep', reply: 'keep' };
+const OLD_LABELS = { 通知: 'read', 広告: 'read', '転職/その他': 'read', '転職/注目': 'keep', 要確認: 'keep', 要返信: 'keep' };
+
+// 確率の3グループ（ログのカテゴリ名 → グループ）。前の版のカテゴリ名も学習に使う
 const GROUP_OF = {
   迷惑メール: 'spam',
-  '転職/その他': 'readOnly', 広告: 'readOnly', 通知: 'readOnly', 削除: 'readOnly',
-  '転職/注目': 'important', 要確認: 'important', 要返信: 'important', 残す: 'important',
+  既読: 'readOnly', 通知: 'readOnly', 広告: 'readOnly', '転職/その他': 'readOnly', 削除: 'readOnly',
+  残す: 'important', '転職/注目': 'important', 要確認: 'important', 要返信: 'important',
 };
 
 // 判断待ちシートの列
@@ -156,7 +138,7 @@ function sortInbox() {
   const rows = [];
 
   // 先にあなたの判断を反映する（Gmail のラベル → シートの「あなたの判断」列）
-  const answered = learnFromUser_(L, learned, state, log, rows);
+  const answered = learnFromLabels_(L, learned, state, log, rows);
   applySheetDecisions_(ss, L, learned, state, log, rows, answered);
   if (state.changed) props.setProperty('LEARNED', JSON.stringify(learned));
 
@@ -172,12 +154,12 @@ function sortInbox() {
     const fromRaw = msg.getFrom();
     const subject = msg.getSubject() || '';
     const body = msg.getPlainBody();
-    let kind = classify_(fromRaw.toLowerCase(), subject, subject + ' ' + body.slice(0, 1500), learned);
+    let kind = classify_(fromRaw.toLowerCase(), subject, learned);
     let by = 'ルール';
     let reason = '';
 
     if (kind === 'summary') {
-      thread.addLabel(L.notice); // 自分の要約メールは未読のまま「通知」に入れるだけ
+      thread.addLabel(L.keep); // 自分の要約メールは未読のまま残す
       return;
     }
 
@@ -197,8 +179,8 @@ function sortInbox() {
       if (p.trusted.spam && p.spam >= t) {
         kind = 'spam';
         reason = 'スパム確率 ' + pct(p.spam);
-      } else if (p.trusted.readOnly && p.readOnly >= t) {
-        kind = 'notice';
+      } else if (p.trusted.readOnly && p.readOnly >= t && p.spam < 0.5) {
+        kind = 'read';
         reason = '既読でよい確率 ' + pct(p.readOnly);
       } else {
         kind = 'ask';
@@ -217,24 +199,12 @@ function sortInbox() {
   saveLog_(log);
 }
 
-// 決まったカテゴリに応じてラベル付け・既読・アーカイブする
+// 決まった振り分けに応じてラベル付け・既読・移動する
 function applyKind_(thread, kind, L, log, item) {
   switch (kind) {
-    case 'pick':
-      thread.addLabel(L.pick);
-      log.pick.push(item);
-      break;
-    case 'jobOther':
-      thread.addLabel(L.jobOther).markRead().moveToArchive();
-      log.counts.jobOther++;
-      break;
-    case 'ad':
-      thread.addLabel(L.ad).markRead().moveToArchive();
-      log.counts.ad++;
-      break;
-    case 'notice':
-      thread.addLabel(L.notice).markRead();
-      log.counts.notice++;
+    case 'read':
+      thread.addLabel(L.read).markRead();
+      log.counts.read++;
       break;
     case 'spam':
       thread.markRead().moveToSpam(); // Gmail の迷惑メールへ（30日で自動削除。間違いなら「迷惑メールではない」で戻せる）
@@ -244,34 +214,32 @@ function applyKind_(thread, kind, L, log, item) {
       thread.markRead().moveToTrash();
       log.counts.trash++;
       break;
-    case 'check':
-      thread.addLabel(L.check);
-      log.check.push(item);
-      break;
-    case 'reply':
-      thread.addLabel(L.reply);
-      log.reply.push(item);
-      break;
     case 'ask':
       thread.addLabel(L.ask); // 未読のまま受信箱に残し、あなたに聞く
       log.ask.push(item);
       break;
-    default: // keep：受信箱に未読のまま残す。再判定しないようラベルだけ付ける
+    default: // keep：未読のまま受信箱に残す。再判定しないようラベルだけ付ける
       thread.addLabel(L.keep);
-      log.counts.keep++;
+      log.keep.push(item);
   }
 }
 
 // ===== あなたの判断を反映して覚える =====
 
-// 「要判断」のメールにあなたが Gmail でカテゴリのラベルを付けていたら処理する。処理したスレッドIDを返す
-function learnFromUser_(L, learned, state, log, rows) {
+// 「要判断」のメールにあなたが Gmail で「既読」か「残す」のラベルを付けていたら処理する。処理したスレッドIDを返す
+function learnFromLabels_(L, learned, state, log, rows) {
   const threads = GmailApp.search('label:' + CONFIG.labels.ask, 0, CONFIG.maxThreads);
   const done = new Set();
 
   threads.forEach(thread => {
     const names = thread.getLabels().map(l => l.getName());
-    const kind = KINDS.find(k => names.includes(CONFIG.labels[k]));
+    let kind = null;
+    if (names.includes(CONFIG.labels.keep)) kind = 'keep';
+    else if (names.includes(CONFIG.labels.read)) kind = 'read';
+    else {
+      const old = names.find(n => OLD_LABELS[n]);
+      if (old) kind = OLD_LABELS[old];
+    }
     if (!kind) return; // まだ答えていない
     rememberAndApply_(thread, kind, 'Gmailで判断', L, learned, state, log, rows);
     done.add(thread.getId());
@@ -313,20 +281,21 @@ function rememberAndApply_(thread, kind, how, L, learned, state, log, rows) {
   learned[addr] = kind;
   state.changed = true;
   thread.removeLabel(L.ask);
-  rows.push(logRow_('あなた', kind, how + '。次から ' + addr + ' は自動でこのカテゴリ', msg.getFrom(), msg.getSubject(), thread));
+  rows.push(logRow_('あなた', kind, how + '。次から ' + addr + ' は自動でこの振り分け', msg.getFrom(), msg.getSubject(), thread));
   applyKind_(thread, kind, L, log, { s: msg.getSubject() || '', f: shortFrom_(msg.getFrom()), id: thread.getId() });
 }
 
-// カテゴリ名（ラベル名・迷惑メール・削除）→ 内部の種類
+// 答えの名前 → 内部の種類（read / keep / spam）
 function kindFromName_(name) {
   if (name === SPAM_NAME) return 'spam';
-  if (name === TRASH_NAME) return 'trash';
-  return KINDS.find(k => CONFIG.labels[k] === name) || null;
+  if (name === CONFIG.labels.read) return 'read';
+  if (name === CONFIG.labels.keep) return 'keep';
+  return OLD_LABELS[name] || null;
 }
 
 function kindName_(kind) {
   if (kind === 'spam') return SPAM_NAME;
-  if (kind === 'trash') return TRASH_NAME;
+  if (kind === 'trash') return '削除';
   return CONFIG.labels[kind] || kind;
 }
 
@@ -342,30 +311,25 @@ function senderAddress_(from) {
 
 // ===== ルール判定 =====
 
-function classify_(from, subject, text, learned) {
-  // 送信元は小文字で比較、キーワードは大文字小文字を区別（"AI" が "mail" に当たらないように）
+function classify_(from, subject, learned) {
+  // 送信元は小文字で比較、キーワードは大文字小文字を区別
   const fromHas = list => list.some(k => from.includes(k.toLowerCase()));
-  const has = (list, s) => list.some(k => s.includes(k));
+  const has = list => list.some(k => subject.includes(k));
 
   if (subject.startsWith('[Gmail要約]')) return 'summary';
   if (fromHas(CONFIG.trashSenders)) return 'trash';
   const addr = senderAddress_(from);
-  if (learned && learned[addr]) return learned[addr];
-  if (fromHas(CONFIG.spamSenders) || has(CONFIG.spamKeywords, subject)) return 'spam';
-  if (fromHas(CONFIG.jobSenders)) {
-    if (has(CONFIG.pickKeywords, text) && !has(CONFIG.dropKeywords, text)) return 'pick';
-    return 'jobOther';
-  }
-  if (fromHas(CONFIG.noticeSenders)) return 'notice';
-  if (has(CONFIG.checkKeywords, subject)) return 'check';
-  if (fromHas(CONFIG.adSenders)) return 'ad';
-  if (has(CONFIG.noticeKeywords, subject)) return 'notice';
+  if (learned && learned[addr]) return OLD_KINDS[learned[addr]] || learned[addr];
+  if (fromHas(CONFIG.spamSenders) || has(CONFIG.spamKeywords)) return 'spam';
+  if (has(CONFIG.keepKeywords)) return 'keep';
+  if (fromHas(CONFIG.readSenders) || has(CONFIG.readKeywords)) return 'read';
   return 'none';
 }
 
 // ===== 確率判定（ルールに当たらないメールだけ） =====
 
 // Jev（TypeSafe AI）に「スパムか」「既読でよいか」の確率を聞く。失敗したら null（簡易計算に切り替わる）
+// 形式は公式資料 https://docs.typesafe.ai/primitives/noul
 function scoreWithJev_(apiKey, from, subject, body) {
   const payload = {
     model: CONFIG.jev.model,
@@ -381,9 +345,9 @@ function scoreWithJev_(apiKey, from, subject, body) {
       },
       readOnly: {
         type: 'noul',
-        instructions: CONFIG.profile + '\nこのメールは、この受信者にとって読まずに既読にしてよいか？',
+        instructions: CONFIG.profile + '\nこのメールは、この受信者にとってただの通知で、読まずに既読にしてよいか？',
         criteria: {
-          true: '広告・宣伝・メルマガ・関係ないお知らせ・読むだけで済む自動通知',
+          true: '広告・宣伝・メルマガ・イベント案内・関係ないお知らせ・読むだけで済む自動通知',
           false: '本人の確認・返信・手続き・支払い・予約などの対応が要るもの、人から届いたもの、条件に合う求人',
         },
       },
@@ -402,10 +366,9 @@ function scoreWithJev_(apiKey, from, subject, body) {
       console.warn('Jevエラー ' + res.getResponseCode() + ': ' + text.slice(0, 300));
       return null;
     }
-    // 返答は { answers: { spam: { type: 'noul', noul: 0.93 }, ... } }（公式資料 docs.typesafe.ai/primitives/noul）
-    const data = JSON.parse(text);
-    const ans = data.answers || {};
-    const noul = k => (ans[k] && typeof ans[k].noul === 'number' ? ans[k].noul : findProb_(data, k));
+    // 返答は { answers: { spam: { type: 'noul', noul: 0.93 }, ... } }
+    const ans = JSON.parse(text).answers || {};
+    const noul = k => (ans[k] && typeof ans[k].noul === 'number' ? ans[k].noul : null);
     const spam = noul('spam');
     const readOnly = noul('readOnly');
     if (spam === null || readOnly === null) {
@@ -419,38 +382,12 @@ function scoreWithJev_(apiKey, from, subject, body) {
   }
 }
 
-// 予備：返答の形が将来変わっても、質問名 key の確率（0〜1の数）を探して読めるようにしている
-function findProb_(obj, key) {
-  const isP = v => typeof v === 'number' && v >= 0 && v <= 1;
-  const firstP = o => {
-    if (isP(o)) return o;
-    if (!o || typeof o !== 'object') return null;
-    for (const f of ['probability', 'prob', 'p', 'value', 'true', 'score']) if (isP(o[f])) return o[f];
-    for (const v of Object.values(o)) { const x = firstP(v); if (x !== null) return x; }
-    return null;
-  };
-  const search = o => {
-    if (!o || typeof o !== 'object') return null;
-    if (Array.isArray(o)) {
-      for (const v of o) {
-        if (v && typeof v === 'object' && (v.name === key || v.id === key || v.question === key)) return firstP(v);
-        const x = search(v); if (x !== null) return x;
-      }
-      return null;
-    }
-    if (key in o) return firstP(o[key]);
-    for (const v of Object.values(o)) { const x = search(v); if (x !== null) return x; }
-    return null;
-  };
-  return search(obj);
-}
-
-// Jev の動作確認用。GAS エディタでこの関数を実行し、「実行ログ」で返答を見る
+// Jev の動作確認用。GAS エディタでこの関数を実行し、「実行ログ」で結果を見る
 function testJev() {
   const key = PropertiesService.getScriptProperties().getProperty('TYPESAFE_API_KEY');
   if (!key) throw new Error('スクリプト プロパティ TYPESAFE_API_KEY が未設定');
   const r = scoreWithJev_(key, '"Prize Center" <win@lucky-prize.xyz>', '【当選】iPhone が当たりました', '今すぐ受け取りはこちら。期限は本日中です。');
-  console.log(r ? 'OK: ' + JSON.stringify(r) : '失敗。上のログの返答を見て findProb_ を直す');
+  console.log(r ? 'OK: ' + JSON.stringify(r) : '失敗。上のログのエラー内容を Claude に見せる');
 }
 
 // 簡易計算：ログに残った「ルール」と「あなた」の判定から学ぶ（ナイーブベイズ）。無料
@@ -554,9 +491,8 @@ function appendAskRows_(ss, rows) {
   }
   const start = sh.getLastRow() + 1;
   sh.getRange(start, 1, rows.length, ASK_HEADER.length).setValues(rows);
-  // 「あなたの判断」は選択式にする
-  const choices = KINDS.map(k => CONFIG.labels[k]).concat([SPAM_NAME, TRASH_NAME]);
-  const rule = SpreadsheetApp.newDataValidation().requireValueInList(choices, true).setAllowInvalid(false).build();
+  // 「あなたの判断」は選択式（既読 / 残す / 迷惑メール）
+  const rule = SpreadsheetApp.newDataValidation().requireValueInList(CHOICES, true).setAllowInvalid(false).build();
   sh.getRange(start, COL.decision + 1, rows.length, 1).setDataValidation(rule);
 }
 
@@ -578,30 +514,25 @@ function sendSummary() {
   const ask = log.ask.filter(m => pending.includes(m.id));
   const sheetId = PropertiesService.getScriptProperties().getProperty('SHEET_ID');
 
-  section('あなたの判断待ち', ask, true);
+  section('あなたの判断待ち（既読にする？残す？）', ask, true);
   if (ask.length) {
     lines.push('→ Claude Code で「Gmailの判断待ちを見て」と頼むと、Claude が提案を付けます。');
-    lines.push('→ 決め方はどちらでも：シート「判断待ち」の「あなたの判断」列で選ぶ／Gmail でラベルを付ける');
-    lines.push('  ' + KINDS.map(k => CONFIG.labels[k]).join(' / ') + '（シートでは ' + SPAM_NAME + ' / ' + TRASH_NAME + ' も選べる）');
+    lines.push('→ 決め方はどちらでも：シート「判断待ち」の「あなたの判断」列で選ぶ／Gmail で「' +
+      CONFIG.labels.read + '」か「' + CONFIG.labels.keep + '」のラベルを付ける');
     lines.push('  1時間以内に処理し、同じ送信元は次から自動で振り分けます。', '');
   }
-  section('転職/注目', log.pick, false);
-  section('要返信', log.reply, true);
-  section('要確認', log.check, false);
+  section('未読で残したもの', log.keep, false);
 
   lines.push('【自動処理】',
-    '- 転職/その他：' + c.jobOther + '件（既読・アーカイブ）',
-    '- 広告：' + c.ad + '件（既読・アーカイブ）',
-    '- 通知：' + c.notice + '件（既読）',
-    '- 迷惑メール：' + c.spam + '件（既読・迷惑メールへ）',
-    '- 削除：' + c.trash + '件（既読・ゴミ箱）',
-    '- 残す：' + c.keep + '件（受信箱に未読のまま）');
+    '- 既読：' + c.read + '件',
+    '- 迷惑メール：' + c.spam + '件',
+    '- 削除：' + c.trash + '件（ゴミ箱）');
 
   if (sheetId) lines.push('', '判定ログ・判断待ち: https://docs.google.com/spreadsheets/d/' + sheetId);
 
   const to = CONFIG.summaryTo || Session.getActiveUser().getEmail();
   const date = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'M/d');
-  GmailApp.sendEmail(to, '[Gmail要約] ' + date + ' 判断待ち' + ask.length + '件・注目' + log.pick.length + '件',
+  GmailApp.sendEmail(to, '[Gmail要約] ' + date + ' 判断待ち' + ask.length + '件・未読で残した' + log.keep.length + '件',
     lines.join('\n'));
 
   // 判断待ちは答えが出るまで翌日の要約にも載せる
@@ -629,11 +560,11 @@ function shortFrom_(from) {
 }
 
 function emptyLog_() {
-  return { pick: [], check: [], reply: [], ask: [], counts: { jobOther: 0, ad: 0, notice: 0, spam: 0, trash: 0, keep: 0 } };
+  return { keep: [], ask: [], counts: { read: 0, spam: 0, trash: 0 } };
 }
 
 // 要約用の記録は一覧ごとに別のプロパティへ保存する（1つあたり9KBの上限を超えないように）
-const LOG_LISTS = ['pick', 'check', 'reply', 'ask'];
+const LOG_LISTS = ['keep', 'ask'];
 
 function loadLog_() {
   const props = PropertiesService.getScriptProperties();
@@ -643,7 +574,10 @@ function loadLog_() {
     if (raw) log[k] = JSON.parse(raw);
   });
   const counts = props.getProperty('log_counts');
-  if (counts) Object.assign(log.counts, JSON.parse(counts));
+  if (counts) {
+    const old = JSON.parse(counts); // 前の版の件数（広告・通知など）は読まない
+    ['read', 'spam', 'trash'].forEach(k => { log.counts[k] = old[k] || 0; });
+  }
   return log;
 }
 
