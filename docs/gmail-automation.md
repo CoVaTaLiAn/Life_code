@@ -51,6 +51,7 @@
 - [x] GitHub から GAS への自動反映（2026-11-01 設定完了。手順：`gas/SETUP_PC.md`）
 - [x] ブランチ `claude/gas-gmail-sorter` を main にマージ（自動反映は設定が済むまでスキップされる）
 
+- [ ] サブの Gmail にも同じ GAS を設置（2026-11-10 に対応コード追加。手順：`gas/gmail-sorter/README.md`「サブの Gmail でも使う」）
 - [ ] Jev の API キーを登録して `testJev` で返答を確認（未）
 - [ ] Claude 用の許可設定に Google スプレッドシートの読み書き（`mcp__Google_Sheets__get_values`・`update_values`）を追加（未。追加しないと毎回確認が出る）
 

@@ -1,4 +1,5 @@
 # main の gas/gmail-sorter が更新されたら、Google Apps Script に自動で反映する
+# main：メインの Gmail（Variable: GAS_SCRIPT_ID）／sub：サブの Gmail（Variable: GAS_SCRIPT_ID_SUB。未設定ならスキップ）
 name: Deploy GAS
 
 on:
@@ -11,6 +12,14 @@ on:
 jobs:
   push:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: main
+            id_var: GAS_SCRIPT_ID
+          - target: sub
+            id_var: GAS_SCRIPT_ID_SUB
     defaults:
       run:
         working-directory: gas/gmail-sorter
@@ -28,11 +37,12 @@ jobs:
         id: creds
         env:
           CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
-          GAS_SCRIPT_ID: ${{ vars.GAS_SCRIPT_ID }}
+          GAS_SCRIPT_ID: ${{ vars[matrix.id_var] }}
+          ID_NAME: ${{ matrix.id_var }}
         run: |
           missing=""
           [ -z "$CLASPRC_JSON" ] && missing="$missing Secret:CLASPRC_JSON"
-          [ -z "$GAS_SCRIPT_ID" ] && missing="$missing Variable:GAS_SCRIPT_ID"
+          [ -z "$GAS_SCRIPT_ID" ] && missing="$missing Variable:$ID_NAME"
           if [ -n "$missing" ]; then
             echo "::warning::GASへの反映をスキップしました。未設定:${missing}（Settings → Secrets and variables → Actions に登録。手順: gas/SETUP_PC.md）"
             echo "ready=false" >> "$GITHUB_OUTPUT"

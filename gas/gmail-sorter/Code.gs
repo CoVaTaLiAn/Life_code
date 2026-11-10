@@ -136,6 +136,7 @@ const COL = { id: 0, suggest: 8, reason: 9, decision: 10, done: 11 };
 
 function setup() {
   Object.values(CONFIG.labels).forEach(getOrCreateLabel_);
+  shareSheet_(getSpreadsheet_());
   ScriptApp.getProjectTriggers().forEach(t => ScriptApp.deleteTrigger(t));
   ScriptApp.newTrigger('sortInbox').timeBased().everyHours(1).create();
   ScriptApp.newTrigger('sendSummary').timeBased().everyDays(1).atHour(CONFIG.summaryHour).create();
@@ -506,10 +507,20 @@ function getSpreadsheet_() {
   const props = PropertiesService.getScriptProperties();
   const id = props.getProperty('SHEET_ID');
   if (id) return SpreadsheetApp.openById(id);
-  const ss = SpreadsheetApp.create('Gmail振り分けログ');
+  // 名前にアカウントを入れる（複数の Gmail で使っても、Claude がどのシートか分かるように）
+  const ss = SpreadsheetApp.create('Gmail振り分けログ（' + Session.getEffectiveUser().getEmail() + '）');
   ss.getSheets()[0].appendRow(['日時', '判定者', 'カテゴリ', '理由', '差出人', '件名', 'リンク']);
   props.setProperty('SHEET_ID', ss.getId());
+  shareSheet_(ss);
   return ss;
+}
+
+// スクリプト プロパティ SHARE_WITH にメールアドレスがあれば、ログのシートを編集者として共有する
+// （サブの Gmail で動かすとき、Claude をつないだメインのアカウントから判断待ちを読み書きできるように）
+function shareSheet_(ss) {
+  const to = PropertiesService.getScriptProperties().getProperty('SHARE_WITH');
+  if (!to) return;
+  if (!ss.getEditors().some(u => u.getEmail() === to)) ss.addEditor(to);
 }
 
 function logRow_(by, kind, reason, from, subject, thread) {
