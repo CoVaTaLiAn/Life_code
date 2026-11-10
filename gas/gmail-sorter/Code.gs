@@ -492,14 +492,21 @@ function logRow_(by, kind, reason, from, subject, thread) {
   return [new Date(), by, kindName_(kind), reason, from, subject || '', threadLink_(thread.getId())];
 }
 
+// 「=」「+」「-」「@」で始まる文字はシートが数式と見なして #ERROR! になるので、先頭に ' を付けて文字のまま入れる
+function asText_(rows) {
+  return rows.map(r => r.map(v => (typeof v === 'string' && /^[=+\-@]/.test(v) ? "'" + v : v)));
+}
+
 function appendToSheet_(ss, rows) {
   if (!rows.length) return;
+  rows = asText_(rows);
   const sh = ss.getSheets()[0];
   sh.getRange(sh.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
 }
 
 function appendAskRows_(ss, rows) {
   if (!rows.length) return;
+  rows = asText_(rows);
   let sh = ss.getSheetByName(ASK_SHEET);
   if (!sh) {
     sh = ss.insertSheet(ASK_SHEET, ss.getSheets().length); // 判定ログ（1枚目）の後ろに作る
