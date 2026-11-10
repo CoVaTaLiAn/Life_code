@@ -108,6 +108,9 @@ const GROUP_OF = {
   残す: 'important', '転職/注目': 'important', 要確認: 'important', 要返信: 'important',
 };
 
+// この実行での Jev の結果（要約メールに載せる）
+const JEV_STATE = { error: '' };
+
 // 判断待ちシートの列
 const ASK_SHEET = '判断待ち';
 const ASK_HEADER = ['ID', '受信日時', '差出人', '件名', '冒頭', 'スパム確率', '既読でよい確率', '確率の出どころ',
@@ -120,14 +123,23 @@ function setup() {
   Object.values(CONFIG.labels).forEach(getOrCreateLabel_);
   shareSheet_(getSpreadsheet_());
   ScriptApp.getProjectTriggers().forEach(t => ScriptApp.deleteTrigger(t));
-  ScriptApp.newTrigger('sortInbox').timeBased().everyHours(1).create();
-  ScriptApp.newTrigger('sendSummary').timeBased().everyDays(1).atHour(CONFIG.summaryHour).create();
+  ensureTriggers_();
   sortInbox();
+}
+
+// 振り分け（毎時）と要約（毎朝）のトリガーが無ければ作る。コード更新のたびに setup を実行しなくて済むように
+function ensureTriggers_() {
+  const names = ScriptApp.getProjectTriggers().map(t => t.getHandlerFunction());
+  if (!names.includes('sortInbox')) ScriptApp.newTrigger('sortInbox').timeBased().everyHours(1).create();
+  if (!names.includes('sendSummary')) {
+    ScriptApp.newTrigger('sendSummary').timeBased().everyDays(1).atHour(CONFIG.summaryHour).create();
+  }
 }
 
 // ===== 1時間ごと：振り分け =====
 
 function sortInbox() {
+  ensureTriggers_();
   const L = {};
   Object.entries(CONFIG.labels).forEach(([k, name]) => (L[k] = getOrCreateLabel_(name)));
   const props = PropertiesService.getScriptProperties();
@@ -169,6 +181,8 @@ function sortInbox() {
       if (jevKey && jevCalls < CONFIG.jev.maxPerRun) {
         jevCalls++;
         p = scoreWithJev_(jevKey, fromRaw, subject, body);
+        if (p) log.counts.jevOk++;
+        else { log.counts.jevErr++; log.jevError = JEV_STATE.error; }
       }
       if (!p) {
         model = model || buildModel_(ss);
@@ -363,8 +377,7 @@ function scoreWithJev_(apiKey, from, subject, body) {
     });
     const text = res.getContentText();
     if (res.getResponseCode() !== 200) {
-      console.warn('Jevエラー ' + res.getResponseCode() + ': ' + text.slice(0, 300));
-      return null;
+      return jevFail_('エラー ' + res.getResponseCode() + ': ' + text.slice(0, 200));
     }
     // 返答は { answers: { spam: { type: 'noul', noul: 0.93 }, ... } }
     const ans = JSON.parse(text).answers || {};
@@ -372,22 +385,26 @@ function scoreWithJev_(apiKey, from, subject, body) {
     const spam = noul('spam');
     const readOnly = noul('readOnly');
     if (spam === null || readOnly === null) {
-      console.warn('Jevの返答から確率を読めない: ' + text.slice(0, 500));
-      return null;
+      return jevFail_('返答から確率を読めない: ' + text.slice(0, 200));
     }
     return { spam: spam, readOnly: readOnly, source: 'Jev', trusted: { spam: true, readOnly: true } };
   } catch (e) {
-    console.warn('Jev呼び出し失敗: ' + e.message);
-    return null;
+    return jevFail_('呼び出し失敗: ' + e.message);
   }
 }
 
-// Jev の動作確認用。GAS エディタでこの関数を実行し、「実行ログ」で結果を見る
+function jevFail_(why) {
+  console.warn('Jev' + why);
+  JEV_STATE.error = why;
+  return null;
+}
+
+// Jev の動作確認用（任意）。ふだんは毎朝の要約メールに Jev の状態が載るので、実行しなくてよい
 function testJev() {
   const key = PropertiesService.getScriptProperties().getProperty('TYPESAFE_API_KEY');
   if (!key) throw new Error('スクリプト プロパティ TYPESAFE_API_KEY が未設定');
   const r = scoreWithJev_(key, '"Prize Center" <win@lucky-prize.xyz>', '【当選】iPhone が当たりました', '今すぐ受け取りはこちら。期限は本日中です。');
-  console.log(r ? 'OK: ' + JSON.stringify(r) : '失敗。上のログのエラー内容を Claude に見せる');
+  console.log(r ? 'OK: ' + JSON.stringify(r) : '失敗: ' + JEV_STATE.error);
 }
 
 // 簡易計算：ログに残った「ルール」と「あなた」の判定から学ぶ（ナイーブベイズ）。無料
@@ -475,14 +492,21 @@ function logRow_(by, kind, reason, from, subject, thread) {
   return [new Date(), by, kindName_(kind), reason, from, subject || '', threadLink_(thread.getId())];
 }
 
+// 「=」「+」「-」「@」で始まる文字はシートが数式と見なして #ERROR! になるので、先頭に ' を付けて文字のまま入れる
+function asText_(rows) {
+  return rows.map(r => r.map(v => (typeof v === 'string' && /^[=+\-@]/.test(v) ? "'" + v : v)));
+}
+
 function appendToSheet_(ss, rows) {
   if (!rows.length) return;
+  rows = asText_(rows);
   const sh = ss.getSheets()[0];
   sh.getRange(sh.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
 }
 
 function appendAskRows_(ss, rows) {
   if (!rows.length) return;
+  rows = asText_(rows);
   let sh = ss.getSheetByName(ASK_SHEET);
   if (!sh) {
     sh = ss.insertSheet(ASK_SHEET, ss.getSheets().length); // 判定ログ（1枚目）の後ろに作る
@@ -528,6 +552,12 @@ function sendSummary() {
     '- 迷惑メール：' + c.spam + '件',
     '- 削除：' + c.trash + '件（ゴミ箱）');
 
+  // Jev の状態（testJev を手で実行しなくても分かるように）
+  const hasKey = !!PropertiesService.getScriptProperties().getProperty('TYPESAFE_API_KEY');
+  if (!hasKey) lines.push('- Jev：キー未登録（簡易計算で代用）');
+  else if (c.jevErr) lines.push('- Jev：' + c.jevOk + '件判定・エラー' + c.jevErr + '件（最後のエラー：' + log.jevError + '）→ Claude に見せてください');
+  else lines.push('- Jev：' + c.jevOk + '件判定（エラーなし）');
+
   if (sheetId) lines.push('', '判定ログ・判断待ち: https://docs.google.com/spreadsheets/d/' + sheetId);
 
   const to = CONFIG.summaryTo || Session.getActiveUser().getEmail();
@@ -560,7 +590,7 @@ function shortFrom_(from) {
 }
 
 function emptyLog_() {
-  return { keep: [], ask: [], counts: { read: 0, spam: 0, trash: 0 } };
+  return { keep: [], ask: [], jevError: '', counts: { read: 0, spam: 0, trash: 0, jevOk: 0, jevErr: 0 } };
 }
 
 // 要約用の記録は一覧ごとに別のプロパティへ保存する（1つあたり9KBの上限を超えないように）
@@ -576,8 +606,9 @@ function loadLog_() {
   const counts = props.getProperty('log_counts');
   if (counts) {
     const old = JSON.parse(counts); // 前の版の件数（広告・通知など）は読まない
-    ['read', 'spam', 'trash'].forEach(k => { log.counts[k] = old[k] || 0; });
+    ['read', 'spam', 'trash', 'jevOk', 'jevErr'].forEach(k => { log.counts[k] = old[k] || 0; });
   }
+  log.jevError = props.getProperty('log_jevError') || '';
   return log;
 }
 
@@ -589,4 +620,5 @@ function saveLog_(log) {
   }));
   LOG_LISTS.forEach(k => props.setProperty('log_' + k, JSON.stringify(trim(log[k]))));
   props.setProperty('log_counts', JSON.stringify(log.counts));
+  props.setProperty('log_jevError', (log.jevError || '').slice(0, 300));
 }
