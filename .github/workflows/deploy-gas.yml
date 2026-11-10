@@ -37,7 +37,8 @@ jobs:
         id: creds
         env:
           CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
-          GAS_SCRIPT_ID: ${{ vars[matrix.id_var] }}
+          # Variables・Secrets のどちらに登録されていても読む
+          GAS_SCRIPT_ID: ${{ vars[matrix.id_var] || secrets[matrix.id_var] }}
           ID_NAME: ${{ matrix.id_var }}
         run: |
           missing=""
