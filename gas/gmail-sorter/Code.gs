@@ -1,11 +1,14 @@
 /**
  * Gmail 自動振り分け + 毎朝の要約メール（Google Apps Script）
  *
- * 判定は3段階：
+ * 判定は4段階（トークンを使うのは迷ったものだけ）：
  *   1. ルール（送信元・キーワード、あなたが過去に決めた送信元）… 無料
- *   2. ルールで決まらないものだけ AI（Claude）が判定
- *   3. AI も自信がないものは「要判断」ラベルを付けて、あなたに聞く
- * あなたが「要判断」のメールにカテゴリのラベルを付けると、その送信元を覚えて次から自動で振り分ける。
+ *   2. ルールで決まらないものは確率を出す（Jev。キー未設定なら過去の判定から学ぶ簡易計算）
+ *      スパム・既読でよい確率がとても高いものだけ自動で処理する
+ *   3. 残りは「要判断」ラベルを付け、シート「判断待ち」に載せる。
+ *      Claude Code で「Gmailの判断待ちを見て」と頼むと、Claude が提案を書き込む
+ *   4. あなたが決める（シートの「あなたの判断」列、または Gmail でラベルを付ける）
+ *      → 1時間以内に処理し、その送信元を覚えて次からルールで自動処理する
  * 判定結果はすべてスプレッドシート「Gmail振り分けログ」に残る。
  * 使い方は同じフォルダの README.md を参照。
  */
@@ -31,15 +34,22 @@ const CONFIG = {
     ask: '要判断',
   },
 
-  // ルールで決まらないメールだけAIに判定させる（APIキー未設定ならAIは使わず、すべて「要判断」になる）
-  ai: {
-    model: 'claude-opus-5-5', // 安くしたいなら 'claude-haiku-5-5'（約1/40の料金）
-    effort: 'low',
-    maxPerRun: 20, // 1回の実行でAIに回す上限（費用の暴走防止）
-    bodyChars: 800, // AIに渡す本文の文字数
+  // ルールで決まらないメールの確率判定
+  prob: {
+    autoThreshold: 0.95, // これ以上ならあなたに聞かずに処理（スパム→迷惑メール、既読でよい→既読）
+    minExamples: 10, // 簡易計算：この件数以上の学習例がある種類だけ自動処理に使う
+    trainRows: 3000, // 簡易計算：ログの直近何行から学ぶか
   },
 
-  // AIに伝える判断基準（Obsidian「輝く環境.md」より）
+  // Jev（TypeSafe AI）。スクリプト プロパティ TYPESAFE_API_KEY を登録したときだけ使う
+  jev: {
+    url: 'https://api.typesafe.ai/v1/systemone',
+    model: 'jev-latest',
+    maxPerRun: 20, // 1回の実行で Jev に回す上限（費用の暴走防止）
+    bodyChars: 300, // Jev に渡す本文の文字数
+  },
+
+  // Jev・Claude に伝える判断基準（Obsidian「輝く環境.md」より）
   profile: [
     '受信者はデータサイエンティスト志望の転職活動中の人。',
     '注目すべき求人：データサイエンス・データ分析・ヘルスケアIT・医療・ゲノム領域、年収480万円以上、横浜から通勤90分以内、事業に嘘がない会社。',
@@ -74,11 +84,28 @@ const CONFIG = {
     'marketing.', 'newsletter', 'news@', 'store-news@',
   ],
 
+  // 明らかなスパム：件名にこれがあれば迷惑メールへ
+  spamKeywords: [
+    '当選しました', '当選のお知らせ', '高額当選', '受け取り待ち', '未受取の',
+    '副業で月', '誰でも稼げる', '高収入確定', 'お金配り', '必ず儲かる', '元本保証',
+    '出会い', 'セフレ', '人妻', 'バイアグラ',
+    'アカウントが停止されました', 'アカウントを一時停止', 'お支払い情報を更新してください',
+  ],
+  // 明らかなスパム：送信元にこれが含まれれば迷惑メールへ（怪しいドメイン）
+  spamSenders: ['.xyz>', '.top>', '.click>', '.icu>', '.buzz>', '.rest>', '.cfd>', '.sbs>'],
+
   // 既読にしてゴミ箱へ移す送信元（30日でGmailが完全に削除する）
   trashSenders: ['contract-one.com'],
 
   // 既読だけにして受信箱に残す送信元（領収書・自動タスク通知など）
   noticeSenders: ['tm.openai.com', 'invoice@', 'mail.anthropic.com', 'linkedin.com', 'notifications@github.com'],
+
+  // 件名にこれがあれば関係ないお知らせとして既読（受信箱に残す）。送信元を覚えたもの・セキュリティ系が優先
+  noticeKeywords: [
+    '利用規約', 'プライバシーポリシー', '規約改定', '規約の改定', 'メンテナンスのお知らせ',
+    'サービス終了', '仕様変更', 'ポイント失効', 'ポイントのお知らせ', 'ご利用明細',
+    'Terms of Service', 'Privacy Policy', 'policy update',
+  ],
 
   // 未読のまま残して要約で知らせる（セキュリティ系）
   checkKeywords: [
@@ -87,13 +114,29 @@ const CONFIG = {
   ],
 };
 
-// あなたが付けられるカテゴリ（「要判断」以外）
+// あなたが付けられるカテゴリ（「要判断」以外）。spam・trash はシートでだけ選べる
 const KINDS = ['pick', 'jobOther', 'ad', 'notice', 'check', 'reply', 'keep'];
+const SPAM_NAME = '迷惑メール';
+const TRASH_NAME = '削除';
+
+// 確率の3グループ（カテゴリ名 → グループ）
+const GROUP_OF = {
+  迷惑メール: 'spam',
+  '転職/その他': 'readOnly', 広告: 'readOnly', 通知: 'readOnly', 削除: 'readOnly',
+  '転職/注目': 'important', 要確認: 'important', 要返信: 'important', 残す: 'important',
+};
+
+// 判断待ちシートの列
+const ASK_SHEET = '判断待ち';
+const ASK_HEADER = ['ID', '受信日時', '差出人', '件名', '冒頭', 'スパム確率', '既読でよい確率', '確率の出どころ',
+  'Claudeの提案', 'Claudeの理由', 'あなたの判断', '処理済み', 'リンク'];
+const COL = { id: 0, suggest: 8, reason: 9, decision: 10, done: 11 };
 
 // ===== 初回だけ手動で実行する =====
 
 function setup() {
   Object.values(CONFIG.labels).forEach(getOrCreateLabel_);
+  shareSheet_(getSpreadsheet_());
   ScriptApp.getProjectTriggers().forEach(t => ScriptApp.deleteTrigger(t));
   ScriptApp.newTrigger('sortInbox').timeBased().everyHours(1).create();
   ScriptApp.newTrigger('sendSummary').timeBased().everyDays(1).atHour(CONFIG.summaryHour).create();
@@ -105,15 +148,24 @@ function setup() {
 function sortInbox() {
   const L = {};
   Object.entries(CONFIG.labels).forEach(([k, name]) => (L[k] = getOrCreateLabel_(name)));
+  const props = PropertiesService.getScriptProperties();
+  const ss = getSpreadsheet_();
   const log = loadLog_();
   const learned = loadLearned_();
+  const state = { changed: false };
   const rows = [];
 
-  learnFromUser_(L, learned, log, rows);
+  // 先にあなたの判断を反映する（Gmail のラベル → シートの「あなたの判断」列）
+  const answered = learnFromUser_(L, learned, state, log, rows);
+  applySheetDecisions_(ss, L, learned, state, log, rows, answered);
+  if (state.changed) props.setProperty('LEARNED', JSON.stringify(learned));
 
   const threads = GmailApp.search('in:inbox is:unread has:nouserlabels', 0, CONFIG.maxThreads);
-  const apiKey = PropertiesService.getScriptProperties().getProperty('ANTHROPIC_API_KEY');
-  let aiCalls = 0;
+  const jevKey = props.getProperty('TYPESAFE_API_KEY');
+  const pct = x => Math.round(x * 100) + '%';
+  let model = null; // 簡易計算のモデル。必要になったときだけ作る
+  let jevCalls = 0;
+  const askRows = [];
 
   threads.forEach(thread => {
     const msg = thread.getMessages().slice(-1)[0];
@@ -130,20 +182,29 @@ function sortInbox() {
     }
 
     if (kind === 'none') {
-      if (apiKey && aiCalls >= CONFIG.ai.maxPerRun) {
-        log.counts.other++;
-        return; // 上限超え：ラベルを付けずに次の実行に回す
+      // 迷ったものだけ確率を出す。Jev が使えなければ簡易計算
+      let p = null;
+      if (jevKey && jevCalls < CONFIG.jev.maxPerRun) {
+        jevCalls++;
+        p = scoreWithJev_(jevKey, fromRaw, subject, body);
       }
-      if (!apiKey) {
-        by = 'ルール';
-        kind = 'ask';
-        reason = 'ルールに当たらない（AIなし）';
+      if (!p) {
+        model = model || buildModel_(ss);
+        p = scoreLocal_(model, fromRaw, subject);
+      }
+      by = p.source;
+      const t = CONFIG.prob.autoThreshold;
+      if (p.trusted.spam && p.spam >= t) {
+        kind = 'spam';
+        reason = 'スパム確率 ' + pct(p.spam);
+      } else if (p.trusted.readOnly && p.readOnly >= t) {
+        kind = 'notice';
+        reason = '既読でよい確率 ' + pct(p.readOnly);
       } else {
-        by = 'AI';
-        aiCalls++;
-        const r = classifyWithAI_(apiKey, fromRaw, subject, body.slice(0, CONFIG.ai.bodyChars));
-        kind = r.confident ? r.category : 'ask';
-        reason = r.confident ? r.reason : 'AIの候補: ' + (CONFIG.labels[r.category] || '-') + '／' + r.reason;
+        kind = 'ask';
+        reason = 'スパム ' + pct(p.spam) + '・既読でよい ' + pct(p.readOnly) + '（' + p.source + '）';
+        askRows.push([thread.getId(), msg.getDate(), fromRaw, subject, body.replace(/\s+/g, ' ').trim().slice(0, 100),
+          round2_(p.spam), round2_(p.readOnly), p.source, '', '', '', '', threadLink_(thread.getId())]);
       }
     }
 
@@ -151,7 +212,8 @@ function sortInbox() {
     applyKind_(thread, kind, L, log, { s: subject, f: shortFrom_(fromRaw), id: thread.getId(), r: reason });
   });
 
-  appendToSheet_(rows);
+  appendAskRows_(ss, askRows);
+  appendToSheet_(ss, rows);
   saveLog_(log);
 }
 
@@ -174,6 +236,10 @@ function applyKind_(thread, kind, L, log, item) {
       thread.addLabel(L.notice).markRead();
       log.counts.notice++;
       break;
+    case 'spam':
+      thread.markRead().moveToSpam(); // Gmail の迷惑メールへ（30日で自動削除。間違いなら「迷惑メールではない」で戻せる）
+      log.counts.spam++;
+      break;
     case 'trash':
       thread.markRead().moveToTrash();
       log.counts.trash++;
@@ -187,7 +253,7 @@ function applyKind_(thread, kind, L, log, item) {
       log.reply.push(item);
       break;
     case 'ask':
-      thread.addLabel(L.ask); // 未読のまま受信箱に残し、要約であなたに聞く
+      thread.addLabel(L.ask); // 未読のまま受信箱に残し、あなたに聞く
       log.ask.push(item);
       break;
     default: // keep：受信箱に未読のまま残す。再判定しないようラベルだけ付ける
@@ -196,29 +262,72 @@ function applyKind_(thread, kind, L, log, item) {
   }
 }
 
-// ===== あなたの判断を覚える =====
+// ===== あなたの判断を反映して覚える =====
 
-// 「要判断」のメールにあなたがカテゴリのラベルを付けていたら、その送信元を覚えて処理する
-function learnFromUser_(L, learned, log, rows) {
+// 「要判断」のメールにあなたが Gmail でカテゴリのラベルを付けていたら処理する。処理したスレッドIDを返す
+function learnFromUser_(L, learned, state, log, rows) {
   const threads = GmailApp.search('label:' + CONFIG.labels.ask, 0, CONFIG.maxThreads);
-  let changed = false;
+  const done = new Set();
 
   threads.forEach(thread => {
     const names = thread.getLabels().map(l => l.getName());
     const kind = KINDS.find(k => names.includes(CONFIG.labels[k]));
     if (!kind) return; // まだ答えていない
+    rememberAndApply_(thread, kind, 'Gmailで判断', L, learned, state, log, rows);
+    done.add(thread.getId());
+  });
+  return done;
+}
 
-    const msg = thread.getMessages().slice(-1)[0];
-    const addr = senderAddress_(msg.getFrom());
-    learned[addr] = kind;
-    changed = true;
+// シート「判断待ち」の「あなたの判断」列が埋まった行を処理する
+function applySheetDecisions_(ss, L, learned, state, log, rows, answered) {
+  const sh = ss.getSheetByName(ASK_SHEET);
+  if (!sh || sh.getLastRow() < 2) return;
+  const n = sh.getLastRow() - 1;
+  const vals = sh.getRange(2, 1, n, ASK_HEADER.length).getValues();
+  const doneCol = vals.map(r => [r[COL.done]]);
+  let touched = false;
 
-    thread.removeLabel(L.ask);
-    rows.push(logRow_('あなた', kind, '次から ' + addr + ' は自動でこのカテゴリ', msg.getFrom(), msg.getSubject(), thread));
-    applyKind_(thread, kind, L, log, { s: msg.getSubject() || '', f: shortFrom_(msg.getFrom()), id: thread.getId() });
+  vals.forEach((r, i) => {
+    if (r[COL.done]) return;
+    const id = String(r[COL.id]);
+    const mark = v => { doneCol[i][0] = v; touched = true; };
+    if (answered.has(id)) return mark('Gmailで回答');
+    const decision = String(r[COL.decision] || '').trim();
+    if (!decision) return; // まだ答えていない
+    const kind = kindFromName_(decision);
+    if (!kind) return mark('不明な判断: ' + decision);
+    let thread = null;
+    try { thread = GmailApp.getThreadById(id); } catch (e) { /* 削除済みなど */ }
+    if (!thread) return mark('メールが見つからない');
+    rememberAndApply_(thread, kind, 'シートで判断', L, learned, state, log, rows);
+    mark(new Date());
   });
 
-  if (changed) PropertiesService.getScriptProperties().setProperty('LEARNED', JSON.stringify(learned));
+  if (touched) sh.getRange(2, COL.done + 1, n, 1).setValues(doneCol);
+}
+
+function rememberAndApply_(thread, kind, how, L, learned, state, log, rows) {
+  const msg = thread.getMessages().slice(-1)[0];
+  const addr = senderAddress_(msg.getFrom());
+  learned[addr] = kind;
+  state.changed = true;
+  thread.removeLabel(L.ask);
+  rows.push(logRow_('あなた', kind, how + '。次から ' + addr + ' は自動でこのカテゴリ', msg.getFrom(), msg.getSubject(), thread));
+  applyKind_(thread, kind, L, log, { s: msg.getSubject() || '', f: shortFrom_(msg.getFrom()), id: thread.getId() });
+}
+
+// カテゴリ名（ラベル名・迷惑メール・削除）→ 内部の種類
+function kindFromName_(name) {
+  if (name === SPAM_NAME) return 'spam';
+  if (name === TRASH_NAME) return 'trash';
+  return KINDS.find(k => CONFIG.labels[k] === name) || null;
+}
+
+function kindName_(kind) {
+  if (kind === 'spam') return SPAM_NAME;
+  if (kind === 'trash') return TRASH_NAME;
+  return CONFIG.labels[kind] || kind;
 }
 
 function loadLearned_() {
@@ -242,6 +351,7 @@ function classify_(from, subject, text, learned) {
   if (fromHas(CONFIG.trashSenders)) return 'trash';
   const addr = senderAddress_(from);
   if (learned && learned[addr]) return learned[addr];
+  if (fromHas(CONFIG.spamSenders) || has(CONFIG.spamKeywords, subject)) return 'spam';
   if (fromHas(CONFIG.jobSenders)) {
     if (has(CONFIG.pickKeywords, text) && !has(CONFIG.dropKeywords, text)) return 'pick';
     return 'jobOther';
@@ -249,112 +359,216 @@ function classify_(from, subject, text, learned) {
   if (fromHas(CONFIG.noticeSenders)) return 'notice';
   if (has(CONFIG.checkKeywords, subject)) return 'check';
   if (fromHas(CONFIG.adSenders)) return 'ad';
+  if (has(CONFIG.noticeKeywords, subject)) return 'notice';
   return 'none';
 }
 
-// ===== AI判定（ルールに当たらないメールだけ） =====
+// ===== 確率判定（ルールに当たらないメールだけ） =====
 
-function classifyWithAI_(apiKey, from, subject, body) {
-  const prompt = [
-    CONFIG.profile,
-    '',
-    '次のメールを1つのカテゴリに分類し、理由を30字以内の日本語で書いてください。',
-    'pick=条件に合う求人・スカウト / jobOther=条件に合わない転職関連 / ad=広告・宣伝・メルマガ /',
-    'notice=領収書や自動通知など読むだけでよいもの / check=セキュリティ・ログイン・支払い異常など本人確認が要るもの /',
-    'reply=人から届き返信が必要なもの / keep=それ以外で本人が読むべきもの',
-    'confident は、本人に聞かなくても間違いないと言えるときだけ true にしてください。',
-    '迷う、情報が足りない、本人の好みや事情しだいで変わる場合は false にしてください。',
-    '',
-    '差出人: ' + from,
-    '件名: ' + subject,
-    '本文冒頭:',
-    body,
-  ].join('\n');
-
+// Jev（TypeSafe AI）に「スパムか」「既読でよいか」の確率を聞く。失敗したら null（簡易計算に切り替わる）
+function scoreWithJev_(apiKey, from, subject, body) {
   const payload = {
-    model: CONFIG.ai.model,
-    max_tokens: 2048,
-    output_config: {
-      effort: CONFIG.ai.effort,
-      format: {
-        type: 'json_schema',
-        schema: {
-          type: 'object',
-          properties: {
-            category: { type: 'string', enum: KINDS },
-            confident: { type: 'boolean' },
-            reason: { type: 'string' },
-          },
-          required: ['category', 'confident', 'reason'],
-          additionalProperties: false,
+    model: CONFIG.jev.model,
+    state: ['差出人: ' + from, '件名: ' + subject, '本文冒頭: ' + body.replace(/\s+/g, ' ').slice(0, CONFIG.jev.bodyChars)].join('\n'),
+    questions: {
+      spam: {
+        type: 'noul',
+        instructions: 'このメールは明らかなスパムか？',
+        criteria: {
+          true: '詐欺・フィッシング・出会い系・怪しい儲け話・無差別に送られた迷惑メール',
+          false: '実在の会社・サービス・人から受信者に届いた正規のメール（宣伝でも正規なら偽）',
+        },
+      },
+      readOnly: {
+        type: 'noul',
+        instructions: CONFIG.profile + '\nこのメールは、この受信者にとって読まずに既読にしてよいか？',
+        criteria: {
+          true: '広告・宣伝・メルマガ・関係ないお知らせ・読むだけで済む自動通知',
+          false: '本人の確認・返信・手続き・支払い・予約などの対応が要るもの、人から届いたもの、条件に合う求人',
         },
       },
     },
-    messages: [{ role: 'user', content: prompt }],
   };
-  const headers = { 'x-api-key': apiKey, 'anthropic-version': '2026-10-21' };
-  if (CONFIG.ai.model !== 'claude-haiku-5-5') {
-    // 安全側で断られたとき、別モデルで自動再試行する（Haiku は非対応）
-    payload.fallbacks = 'default';
-    headers['anthropic-beta'] = 'server-side-fallback-2026-07-01';
-  }
-
-  // 失敗したときは自信なし扱いにして、あなたに聞く
-  const unsure = why => ({ category: 'keep', confident: false, reason: why });
   try {
-    const res = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', {
+    const res = UrlFetchApp.fetch(CONFIG.jev.url, {
       method: 'post',
       contentType: 'application/json',
-      headers: headers,
+      headers: { Authorization: 'Bearer ' + apiKey },
       payload: JSON.stringify(payload),
       muteHttpExceptions: true,
     });
-    if (res.getResponseCode() !== 200) return unsure('AIエラー ' + res.getResponseCode());
-    const data = JSON.parse(res.getContentText());
-    if (data.stop_reason === 'refusal') return unsure('AIが判定を拒否');
-    const textBlock = (data.content || []).find(b => b.type === 'text');
-    const out = JSON.parse(textBlock.text);
-    if (!KINDS.includes(out.category)) return unsure('不明なカテゴリ');
-    return out;
+    const text = res.getContentText();
+    if (res.getResponseCode() !== 200) {
+      console.warn('Jevエラー ' + res.getResponseCode() + ': ' + text.slice(0, 300));
+      return null;
+    }
+    // 返答は { answers: { spam: { type: 'noul', noul: 0.93 }, ... } }（公式資料 docs.typesafe.ai/primitives/noul）
+    const data = JSON.parse(text);
+    const ans = data.answers || {};
+    const noul = k => (ans[k] && typeof ans[k].noul === 'number' ? ans[k].noul : findProb_(data, k));
+    const spam = noul('spam');
+    const readOnly = noul('readOnly');
+    if (spam === null || readOnly === null) {
+      console.warn('Jevの返答から確率を読めない: ' + text.slice(0, 500));
+      return null;
+    }
+    return { spam: spam, readOnly: readOnly, source: 'Jev', trusted: { spam: true, readOnly: true } };
   } catch (e) {
-    return unsure('AI呼び出し失敗: ' + String(e.message).slice(0, 40));
+    console.warn('Jev呼び出し失敗: ' + e.message);
+    return null;
   }
 }
 
-// ===== 判定結果の記録（スプレッドシート） =====
-
-function logRow_(by, kind, reason, from, subject, thread) {
-  const name = kind === 'trash' ? '削除' : (CONFIG.labels[kind] || kind);
-  return [new Date(), by, name, reason, from, subject || '',
-    'https://mail.google.com/mail/u/0/#all/' + thread.getId()];
+// 予備：返答の形が将来変わっても、質問名 key の確率（0〜1の数）を探して読めるようにしている
+function findProb_(obj, key) {
+  const isP = v => typeof v === 'number' && v >= 0 && v <= 1;
+  const firstP = o => {
+    if (isP(o)) return o;
+    if (!o || typeof o !== 'object') return null;
+    for (const f of ['probability', 'prob', 'p', 'value', 'true', 'score']) if (isP(o[f])) return o[f];
+    for (const v of Object.values(o)) { const x = firstP(v); if (x !== null) return x; }
+    return null;
+  };
+  const search = o => {
+    if (!o || typeof o !== 'object') return null;
+    if (Array.isArray(o)) {
+      for (const v of o) {
+        if (v && typeof v === 'object' && (v.name === key || v.id === key || v.question === key)) return firstP(v);
+        const x = search(v); if (x !== null) return x;
+      }
+      return null;
+    }
+    if (key in o) return firstP(o[key]);
+    for (const v of Object.values(o)) { const x = search(v); if (x !== null) return x; }
+    return null;
+  };
+  return search(obj);
 }
 
-function appendToSheet_(rows) {
-  if (!rows.length) return;
+// Jev の動作確認用。GAS エディタでこの関数を実行し、「実行ログ」で返答を見る
+function testJev() {
+  const key = PropertiesService.getScriptProperties().getProperty('TYPESAFE_API_KEY');
+  if (!key) throw new Error('スクリプト プロパティ TYPESAFE_API_KEY が未設定');
+  const r = scoreWithJev_(key, '"Prize Center" <win@lucky-prize.xyz>', '【当選】iPhone が当たりました', '今すぐ受け取りはこちら。期限は本日中です。');
+  console.log(r ? 'OK: ' + JSON.stringify(r) : '失敗。上のログの返答を見て findProb_ を直す');
+}
+
+// 簡易計算：ログに残った「ルール」と「あなた」の判定から学ぶ（ナイーブベイズ）。無料
+function buildModel_(ss) {
+  const G = ['spam', 'readOnly', 'important'];
+  const m = { n: {}, f: {}, tot: {}, vocab: {}, V: 1 };
+  G.forEach(g => { m.n[g] = 0; m.f[g] = {}; m.tot[g] = 0; });
+  const sh = ss.getSheets()[0];
+  const last = sh.getLastRow();
+  if (last < 2) return m;
+  const k = Math.min(CONFIG.prob.trainRows, last - 1);
+  sh.getRange(last - k + 1, 1, k, 6).getValues().forEach(r => {
+    const g = GROUP_OF[r[2]];
+    if (!g || (r[1] !== 'ルール' && r[1] !== 'あなた')) return; // 確率で決めた行は学ばない（思い込みの強化を防ぐ）
+    m.n[g]++;
+    features_(String(r[4]), String(r[5])).forEach(t => {
+      m.f[g][t] = (m.f[g][t] || 0) + 1;
+      m.tot[g]++;
+      m.vocab[t] = 1;
+    });
+  });
+  m.V = Object.keys(m.vocab).length + 1;
+  return m;
+}
+
+function scoreLocal_(m, from, subject) {
+  const G = ['spam', 'readOnly', 'important'];
+  const total = G.reduce((s, g) => s + m.n[g], 0);
+  const feats = features_(from, subject).filter(t => m.vocab[t]); // どこにも出てこない特徴は無視
+  const lp = {};
+  G.forEach(g => {
+    lp[g] = Math.log((m.n[g] + 1) / (total + 3));
+    feats.forEach(t => { lp[g] += Math.log(((m.f[g][t] || 0) + 1) / (m.tot[g] + m.V)); });
+  });
+  const max = Math.max(...G.map(g => lp[g]));
+  const e = {};
+  let sum = 0;
+  G.forEach(g => { e[g] = Math.exp(lp[g] - max); sum += e[g]; });
+  const enough = g => m.n[g] >= CONFIG.prob.minExamples && m.n.important >= CONFIG.prob.minExamples;
+  // 簡易計算は確率が極端に出やすいので、迷惑メールへの自動移動は過去にスパムだった送信ドメインに限る
+  const dom = 'd:' + (senderAddress_(from).split('@')[1] || '');
+  return {
+    spam: e.spam / sum, readOnly: e.readOnly / sum, source: '簡易計算',
+    trusted: { spam: enough('spam') && (m.f.spam[dom] || 0) > 0, readOnly: enough('readOnly') },
+  };
+}
+
+// 送信元アドレス・ドメイン、件名の英単語と日本語2文字ずつ
+function features_(from, subject) {
+  const addr = senderAddress_(from);
+  const t = ['a:' + addr, 'd:' + (addr.split('@')[1] || '')];
+  const s = subject.toLowerCase();
+  (s.match(/[a-z0-9]{2,}/g) || []).forEach(w => t.push('w:' + w));
+  const ja = s.replace(/[\x00-\x7f]/g, ' ');
+  for (let i = 0; i < ja.length - 1; i++) {
+    const b = ja.substr(i, 2);
+    if (!/\s/.test(b)) t.push('b:' + b);
+  }
+  return [...new Set(t)];
+}
+
+// ===== スプレッドシート（判定ログ・判断待ち） =====
+
+function getSpreadsheet_() {
   const props = PropertiesService.getScriptProperties();
   const id = props.getProperty('SHEET_ID');
-  let ss;
-  if (id) {
-    ss = SpreadsheetApp.openById(id);
-  } else {
-    ss = SpreadsheetApp.create('Gmail振り分けログ');
-    ss.getSheets()[0].appendRow(['日時', '判定者', 'カテゴリ', '理由', '差出人', '件名', 'リンク']);
-    props.setProperty('SHEET_ID', ss.getId());
-  }
+  if (id) return SpreadsheetApp.openById(id);
+  // 名前にアカウントを入れる（複数の Gmail で使っても、Claude がどのシートか分かるように）
+  const ss = SpreadsheetApp.create('Gmail振り分けログ（' + Session.getEffectiveUser().getEmail() + '）');
+  ss.getSheets()[0].appendRow(['日時', '判定者', 'カテゴリ', '理由', '差出人', '件名', 'リンク']);
+  props.setProperty('SHEET_ID', ss.getId());
+  shareSheet_(ss);
+  return ss;
+}
+
+// スクリプト プロパティ SHARE_WITH にメールアドレスがあれば、ログのシートを編集者として共有する
+// （サブの Gmail で動かすとき、Claude をつないだメインのアカウントから判断待ちを読み書きできるように）
+function shareSheet_(ss) {
+  const to = PropertiesService.getScriptProperties().getProperty('SHARE_WITH');
+  if (!to) return;
+  if (!ss.getEditors().some(u => u.getEmail() === to)) ss.addEditor(to);
+}
+
+function logRow_(by, kind, reason, from, subject, thread) {
+  return [new Date(), by, kindName_(kind), reason, from, subject || '', threadLink_(thread.getId())];
+}
+
+function appendToSheet_(ss, rows) {
+  if (!rows.length) return;
   const sh = ss.getSheets()[0];
   sh.getRange(sh.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
+}
+
+function appendAskRows_(ss, rows) {
+  if (!rows.length) return;
+  let sh = ss.getSheetByName(ASK_SHEET);
+  if (!sh) {
+    sh = ss.insertSheet(ASK_SHEET, ss.getSheets().length); // 判定ログ（1枚目）の後ろに作る
+    sh.appendRow(ASK_HEADER);
+    sh.setFrozenRows(1);
+  }
+  const start = sh.getLastRow() + 1;
+  sh.getRange(start, 1, rows.length, ASK_HEADER.length).setValues(rows);
+  // 「あなたの判断」は選択式にする
+  const choices = KINDS.map(k => CONFIG.labels[k]).concat([SPAM_NAME, TRASH_NAME]);
+  const rule = SpreadsheetApp.newDataValidation().requireValueInList(choices, true).setAllowInvalid(false).build();
+  sh.getRange(start, COL.decision + 1, rows.length, 1).setDataValidation(rule);
 }
 
 // ===== 毎朝：要約メール =====
 
 function sendSummary() {
   const log = loadLog_();
-  const link = id => 'https://mail.google.com/mail/u/0/#all/' + id;
   const c = log.counts;
   const lines = [];
   const section = (title, list, withReason) => {
     lines.push('【' + title + '】' + list.length + '件');
-    list.forEach(m => lines.push('- ' + m.s + '（' + m.f + '）' + (withReason && m.r ? '\n  ' + m.r : '') + '\n  ' + link(m.id)));
+    list.forEach(m => lines.push('- ' + m.s + '（' + m.f + '）' + (withReason && m.r ? '\n  ' + m.r : '') + '\n  ' + threadLink_(m.id)));
     if (!list.length) lines.push('- なし');
     lines.push('');
   };
@@ -362,11 +576,13 @@ function sendSummary() {
   // 今も「要判断」のまま残っているものだけを聞く
   const pending = GmailApp.search('label:' + CONFIG.labels.ask, 0, 50).map(t => t.getId());
   const ask = log.ask.filter(m => pending.includes(m.id));
+  const sheetId = PropertiesService.getScriptProperties().getProperty('SHEET_ID');
 
   section('あなたの判断待ち', ask, true);
   if (ask.length) {
-    lines.push('→ Gmailでメールを開き「ラベルを変更」から次のどれかを付けてください。');
-    lines.push('  ' + KINDS.map(k => CONFIG.labels[k]).join(' / '));
+    lines.push('→ Claude Code で「Gmailの判断待ちを見て」と頼むと、Claude が提案を付けます。');
+    lines.push('→ 決め方はどちらでも：シート「判断待ち」の「あなたの判断」列で選ぶ／Gmail でラベルを付ける');
+    lines.push('  ' + KINDS.map(k => CONFIG.labels[k]).join(' / ') + '（シートでは ' + SPAM_NAME + ' / ' + TRASH_NAME + ' も選べる）');
     lines.push('  1時間以内に処理し、同じ送信元は次から自動で振り分けます。', '');
   }
   section('転職/注目', log.pick, false);
@@ -377,12 +593,11 @@ function sendSummary() {
     '- 転職/その他：' + c.jobOther + '件（既読・アーカイブ）',
     '- 広告：' + c.ad + '件（既読・アーカイブ）',
     '- 通知：' + c.notice + '件（既読）',
+    '- 迷惑メール：' + c.spam + '件（既読・迷惑メールへ）',
     '- 削除：' + c.trash + '件（既読・ゴミ箱）',
-    '- 残す：' + c.keep + '件（受信箱に未読のまま）',
-    '- 未判定：' + c.other + '件（AIの上限超え。次回に判定）');
+    '- 残す：' + c.keep + '件（受信箱に未読のまま）');
 
-  const sheetId = PropertiesService.getScriptProperties().getProperty('SHEET_ID');
-  if (sheetId) lines.push('', '判定ログ: https://docs.google.com/spreadsheets/d/' + sheetId);
+  if (sheetId) lines.push('', '判定ログ・判断待ち: https://docs.google.com/spreadsheets/d/' + sheetId);
 
   const to = CONFIG.summaryTo || Session.getActiveUser().getEmail();
   const date = Utilities.formatDate(new Date(), 'Asia/Tokyo', 'M/d');
@@ -401,12 +616,20 @@ function getOrCreateLabel_(name) {
   return GmailApp.getUserLabelByName(name) || GmailApp.createLabel(name);
 }
 
+function threadLink_(id) {
+  return 'https://mail.google.com/mail/u/0/#all/' + id;
+}
+
+function round2_(x) {
+  return Math.round(x * 100) / 100;
+}
+
 function shortFrom_(from) {
   return from.replace(/<.*>/, '').replace(/"/g, '').trim() || from;
 }
 
 function emptyLog_() {
-  return { pick: [], check: [], reply: [], ask: [], counts: { jobOther: 0, ad: 0, notice: 0, trash: 0, keep: 0, other: 0 } };
+  return { pick: [], check: [], reply: [], ask: [], counts: { jobOther: 0, ad: 0, notice: 0, spam: 0, trash: 0, keep: 0 } };
 }
 
 // 要約用の記録は一覧ごとに別のプロパティへ保存する（1つあたり9KBの上限を超えないように）
