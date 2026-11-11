@@ -1,0 +1,50 @@
+#!/bin/bash
+# Yahoo!メール自動振り分けを、Mac で毎日自動実行するための設定。
+# 使い方: bash yahoo_mail/setup_mac.sh
+set -e
+
+SERVICE="yahoo-mail-sorter"
+LABEL="com.life-code.yahoo-mail-sorter"
+DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT="$DIR/sort_yahoo_mail.py"
+PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
+LOG="$HOME/Library/Logs/yahoo-mail-sorter.log"
+PYTHON="$(python3 -c 'import sys; print(sys.executable)')"
+
+echo "== 1/3 ログイン情報をキーチェーンに保存 =="
+read -r -p "Yahoo! JAPAN ID またはメールアドレス: " YID
+security delete-generic-password -s "$SERVICE" >/dev/null 2>&1 || true
+echo "パスワードを2回聞かれます（入力しても表示されません）"
+security add-generic-password -s "$SERVICE" -a "$YID" -T /usr/bin/security -w
+
+echo "== 2/3 毎日 朝7時に自動実行する設定 =="
+mkdir -p "$HOME/Library/LaunchAgents" "$HOME/Library/Logs"
+cat > "$PLIST" <<PL
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>$LABEL</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>$PYTHON</string>
+    <string>$SCRIPT</string>
+    <string>--run</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <dict><key>Hour</key><integer>7</integer><key>Minute</key><integer>0</integer></dict>
+  <key>StandardOutPath</key><string>$LOG</string>
+  <key>StandardErrorPath</key><string>$LOG</string>
+</dict>
+</plist>
+PL
+launchctl unload "$PLIST" 2>/dev/null || true
+launchctl load "$PLIST"
+
+echo "== 3/3 今すぐ1回振り分ける =="
+"$PYTHON" "$SCRIPT" --run </dev/null
+
+echo
+echo "完了しました。これから毎朝7時に自動で振り分けます。"
+echo "記録: $LOG"
+echo "止めたいとき: launchctl unload $PLIST"
