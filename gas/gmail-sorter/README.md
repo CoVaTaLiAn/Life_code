@@ -48,7 +48,7 @@ Claude を使わずに決めてもよい：
 
 ## ルール
 
-`Code.gs` 冒頭の `CONFIG` を書き換えれば変えられる。上から順に当てはめる。
+`src/Code.gs` 冒頭の `CONFIG` を書き換えれば変えられる。上から順に当てはめる。
 
 1. あなたが過去に決めた送信元
 2. 迷惑メール：件名の `spamKeywords`（「高額当選」など）、送信元の `spamSenders`（`.xyz` などの怪しいドメイン）
@@ -74,8 +74,8 @@ Claude を使わずに決めてもよい：
 ## 設置手順
 
 1. https://script.google.com を開き「新しいプロジェクト」
-2. 最初からある `コード.gs` の中身を消し、`Code.gs` の内容を貼り付けて保存
-   （GitHub からの自動反映を設定済みなら不要。手順：`../SETUP_PC.md`）
+2. 最初からある `コード.gs` の中身を消し、`src/Code.gs` の内容を貼り付けて保存
+   （GitHub からの自動反映を設定済みなら不要。手順：[docs/setup-auto-deploy.md](docs/setup-auto-deploy.md)）
 3. Jev を使う場合：左メニューの「プロジェクトの設定」→「スクリプト プロパティ」→「プロパティを追加」
    - プロパティ：`TYPESAFE_API_KEY`
    - 値：TypeSafe AI で発行した API キー
@@ -96,7 +96,7 @@ Gmail ごとに GAS を1つずつ置く（同じコード）。判断はスプ�
    （ログのシートがそのアカウントに編集者として共有され、Claude が「判断待ち」を読み書きできる）
 3. `setup` を実行する。シート名は「Gmail振り分けログ（サブのアドレス）」になる
 4. 自動反映する場合：GAS の「共有」でメインのアカウントを編集者に追加し、
-   GitHub の Variables に `GAS_SCRIPT_ID_SUB` = サブの GAS のスクリプト ID を登録する（手順：`../SETUP_PC.md`）
+   GitHub の Variables に `GAS_SCRIPT_ID_SUB` = サブの GAS のスクリプト ID を登録する（手順：[docs/setup-auto-deploy.md](docs/setup-auto-deploy.md)）
 
 サブのアカウントでは、Claude が Gmail のラベルを直接付けられない。決めるのはシートの「あなたの判断」列（Claude に頼めば Claude が書く）か、サブの Gmail で自分で「既読」「残す」のラベルを付ける。
 
@@ -107,3 +107,12 @@ Gmail ごとに GAS を1つずつ置く（同じコード）。判断はスプ�
 - Claude：Claude Code で頼んだときだけ。シートの短い行だけを読むので、1回あたりのトークンは少ない
 
 以前の Claude API による自動判定（`ANTHROPIC_API_KEY`）は、この仕組みに置き換えたため使わない。
+
+## ファイル
+
+| ファイル | 内容 |
+|---|---|
+| `src/Code.gs` | GAS 本体（`CONFIG` で振り分けルールを変える） |
+| `src/appsscript.json` | GAS の設定（タイムゾーンなど） |
+| `docs/setup-auto-deploy.md` | GitHub から GAS へ自動反映する設定（PCで1回だけ） |
+| `docs/history.md` | 作った経緯と、今の状態・やり残しのメモ |

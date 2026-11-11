@@ -44,12 +44,12 @@ jobs:
           [ -z "$CLASPRC_JSON" ] && missing="$missing Secret:CLASPRC_JSON"
           [ -z "$GAS_SCRIPT_ID" ] && missing="$missing Variable:$ID_NAME"
           if [ -n "$missing" ]; then
-            echo "::warning::GASへの反映をスキップしました。未設定:${missing}（Settings → Secrets and variables → Actions に登録。手順: gas/SETUP_PC.md）"
+            echo "::warning::GASへの反映をスキップしました。未設定:${missing}（Settings → Secrets and variables → Actions に登録。手順: gas/gmail-sorter/docs/setup-auto-deploy.md）"
             echo "ready=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           printf '%s' "$CLASPRC_JSON" > ~/.clasprc.json
-          printf '{"scriptId":"%s","rootDir":"."}' "$GAS_SCRIPT_ID" > .clasp.json
+          printf '{"scriptId":"%s","rootDir":"src"}' "$GAS_SCRIPT_ID" > .clasp.json
           echo "ready=true" >> "$GITHUB_OUTPUT"
 
       - name: Push to Apps Script

@@ -10,7 +10,7 @@
 
 ## 仕組み（GAS）
 
-コード：`gas/gmail-sorter/Code.gs`（使い方は同じフォルダの `README.md`）
+コード：`gas/gmail-sorter/src/Code.gs`（使い方は [`README.md`](../README.md)）
 
 1時間ごとに未読メールを振り分け、毎朝7時に要約メールを自分宛てに送る。
 振り分けは **既読／残す／迷惑メール** の3つだけ（2026-11-10 に単純化）。判定は4段階。
@@ -46,7 +46,7 @@
 - [x] リポジトリに Claude 用の許可設定（`.claude/settings.json`：Gmail の閲覧・ラベル・下書き、Drive の読み取り）
 - [x] GAS に最新コードを反映（以後は main 更新で自動反映）
 - [x] GAS エディタで `setup` を実行（2026-11-01。ラベル作成・トリガー登録・初回の振り分けまで確認済み）
-- [x] GitHub から GAS への自動反映（2026-11-01 設定完了。手順：`gas/SETUP_PC.md`）
+- [x] GitHub から GAS への自動反映（2026-11-01 設定完了。手順：[setup-auto-deploy.md](setup-auto-deploy.md)）
 - [x] ブランチ `claude/gas-gmail-sorter` を main にマージ（自動反映は設定が済むまでスキップされる）
 
 - [ ] サブの Gmail にも同じ GAS を設置（2026-11-10 に対応コード追加。手順：`gas/gmail-sorter/README.md`「サブの Gmail でも使う」）
@@ -57,5 +57,5 @@
 
 - **iPhone の Claude Code から Obsidian が読めない**：iPhone のセッションはクラウドで動くため、Mac の iCloud に届かない。Mac で `claude remote-control` を使えば iPhone から Mac のセッションを操作できる
 - **Remote Control で Mac のフォルダが使えない**：フォルダが `~/Library`（iCloud）の中にある、または Git リポジトリの最上位でないと、クラウドのセッションからは使えない。`~/Projects` などに clone し直して追加する
-- **Google Drive の Obsidian コピーが 10/23 で更新停止**：Mac の同期スクリプト（`Blog/obsidian_icloud_gdrive`）が止まっている可能性あり。未調査
+- **Google Drive の Obsidian コピーが 10/23 で更新停止**：Mac の同期スクリプト（[`Blog/obsidian_icloud_gdrive`](../../../Blog/obsidian_icloud_gdrive/README.md)）が止まっている可能性あり。未調査
 - **GAS の「This application was created by a Google Apps Script user」**：ウェブアプリとして開いたときに Google が出す注意書き。このスクリプトはウェブアプリ不要なので無視してよい

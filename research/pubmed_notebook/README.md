@@ -2,13 +2,13 @@
 
 Google Colab の無料枠で動く、PubMed の一括検索ツール。検索式はAI（無料版でよい）に作らせ、検索・論文収集はこのノートブックでする。
 
-- Ver3 からの変更点：[REPORT.md](REPORT.md)
-- 検索式を作らせるプロンプト：[query_prompt.md](query_prompt.md)
+- Ver3 からの変更点：[docs/changes-v4.md](docs/changes-v4.md)
+- 検索式を作らせるプロンプト：[docs/query_prompt.md](docs/query_prompt.md)
 
 ## 流れ
 
-1. [query_prompt.md](query_prompt.md) を無料のAIチャットに貼り、検索式の CSV を作らせる
-2. `pubmed_research_v4.ipynb` を Colab で開き、CSV（または xlsx）をアップロードして実行
+1. [docs/query_prompt.md](docs/query_prompt.md) を無料のAIチャットに貼り、検索式の CSV を作らせる
+2. `src/pubmed_research_v4.ipynb` を Colab で開き、CSV（または xlsx）をアップロードして実行
 3. 結果の `Summary` シートで警告とヒット数を見る → 必要ならAIに検索式を直させて再実行
 4. `Unique_Papers` シートか `pubmed_papers.md` で論文を読む
 
@@ -48,5 +48,7 @@ Google Colab の無料枠で動く、PubMed の一括検索ツール。検索式
 
 | ファイル | 内容 |
 |---|---|
-| `pubmed_research_v4.ipynb` | 最新版ノートブック |
-| `pubmed_search_v4.py` | 同じ中身のスクリプト（`python3 pubmed_search_v4.py` でも動く） |
+| `src/pubmed_research_v4.ipynb` | 最新版ノートブック |
+| `src/pubmed_search_v4.py` | 同じ中身のスクリプト（`python3 src/pubmed_search_v4.py` でも動く） |
+| `docs/query_prompt.md` | 検索式を作らせるプロンプト |
+| `docs/changes-v4.md` | Ver3 からの変更点 |
