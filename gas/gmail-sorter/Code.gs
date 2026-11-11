@@ -144,6 +144,7 @@ function sortInbox() {
   const L = {};
   Object.entries(CONFIG.labels).forEach(([k, name]) => (L[k] = getOrCreateLabel_(name)));
   const props = PropertiesService.getScriptProperties();
+  migrateOldLabels_(L, props);
   const ss = getSpreadsheet_();
   const log = loadLog_();
   const learned = loadLearned_();
@@ -236,6 +237,25 @@ function applyKind_(thread, kind, L, log, item) {
       thread.addLabel(L.keep);
       log.keep.push(item);
   }
+}
+
+// 前の版のラベル（通知・広告・転職/…・要確認・要返信）を「既読」「残す」に付け替えてから消す。1回だけ動く
+function migrateOldLabels_(L, props) {
+  if (props.getProperty('LABELS_MIGRATED')) return;
+  Object.keys(OLD_LABELS).forEach(name => {
+    const old = GmailApp.getUserLabelByName(name);
+    if (!old) return;
+    const target = OLD_LABELS[name] === 'keep' ? L.keep : L.read;
+    for (let start = 0; ; start += 100) {
+      const threads = old.getThreads(start, 100);
+      if (!threads.length) break;
+      target.addToThreads(threads);
+    }
+    old.deleteLabel();
+  });
+  const parent = GmailApp.getUserLabelByName('転職'); // 「転職/注目」などの親。中身が空になったら消す
+  if (parent && !parent.getThreads(0, 1).length) parent.deleteLabel();
+  props.setProperty('LABELS_MIGRATED', '1');
 }
 
 // ===== あなたの判断を反映して覚える =====
