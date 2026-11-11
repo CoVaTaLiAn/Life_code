@@ -37,7 +37,8 @@ const CONFIG = {
 
   // ルールで決まらないメールの確率判定
   prob: {
-    autoThreshold: 0.95, // これ以上ならあなたに聞かずに処理（スパム→迷惑メール、既読でよい→既読）
+    readThreshold: 0.85, // 既読でよい確率がこれ以上なら、あなたに聞かずに既読
+    spamThreshold: 0.95, // スパム確率がこれ以上なら、あなたに聞かずに迷惑メールへ（間違えると影響が大きいので高め）
     minExamples: 10, // 簡易計算：この件数以上の学習例がある種類だけ自動処理に使う
     trainRows: 3000, // 簡易計算：ログの直近何行から学ぶか
   },
@@ -189,11 +190,10 @@ function sortInbox() {
         p = scoreLocal_(model, fromRaw, subject);
       }
       by = p.source;
-      const t = CONFIG.prob.autoThreshold;
-      if (p.trusted.spam && p.spam >= t) {
+      if (p.trusted.spam && p.spam >= CONFIG.prob.spamThreshold) {
         kind = 'spam';
         reason = 'スパム確率 ' + pct(p.spam);
-      } else if (p.trusted.readOnly && p.readOnly >= t && p.spam < 0.5) {
+      } else if (p.trusted.readOnly && p.readOnly >= CONFIG.prob.readThreshold && p.spam < 0.5) {
         kind = 'read';
         reason = '既読でよい確率 ' + pct(p.readOnly);
       } else {
