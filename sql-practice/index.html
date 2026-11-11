@@ -76,6 +76,11 @@ button:disabled{cursor:default;opacity:.45}
 .legend{font-size:11px;color:var(--muted);display:flex;gap:14px;flex-wrap:wrap;margin-top:2px}
 .legend i{display:inline-block;width:14px;height:11px;border:1px solid var(--muted);border-radius:3px;vertical-align:-1px;margin-right:4px}
 .legend i.d{border-style:dashed}
+.sync{font-size:11px;color:var(--muted);margin:6px 0 0;display:flex;align-items:center;gap:6px}
+.sync::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--muted);flex:none}
+.sync[data-state="cloud"]::before{background:var(--ok)}
+.sync[data-state="error"]{color:var(--warn)}
+.sync[data-state="error"]::before{background:var(--warn)}
 .task{display:flex;flex-direction:column;gap:9px;min-width:0}
 .task .meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:11.5px;color:var(--muted)}
 .tag{border-radius:4px;padding:1px 8px;font-weight:500;border:1px solid currentColor}
@@ -207,6 +212,7 @@ details.schema summary{padding:10px 14px;cursor:pointer;font-weight:500}
     <div>
       <div class="plist" id="plist"></div>
       <p class="legend"><span><i></i>組み立て台で解ける</span><span><i class="d"></i>手書きで解く（部品あり）</span></p>
+      <p class="sync" id="sync" data-state="local" aria-live="polite">進捗はこのブラウザに保存されます</p>
     </div>
     <article class="task" id="task"></article>
   </section>
@@ -355,49 +361,50 @@ INSERT INTO sales(employee_id,product_id,quantity,amount,sold_on) VALUES
 
 /* ================= 練習問題 =================
    lv: 1 初級 / 2 中級 / 3 上級 / 4 実践
-   w: true は手書きで解く問題（部品パレットつき） */
+   w: true は手書きで解く問題（部品パレットつき）
+   id は正解の記録と書きかけの保存に使うので、一度付けたら変えない。問題を足すときは新しい id を付ける */
 const LEVELS = {1:"初級", 2:"中級", 3:"上級", 4:"実践"};
 const LVDESC = {1:"SELECT・WHERE・並べ替え", 2:"集計・結合・パターン検索", 3:"複数結合・関数・ランキング", 4:"業務でよく書くSQL"};
 const PROBLEMS = [
-  {lv:1, tp:"SELECT *", t:"全社員のデータ", q:"社員（employees）表の<b>すべての列</b>を表示してください。", h:"SELECT で列を何も選ばないと * （すべての列）になります。", a:"SELECT * FROM employees;"},
-  {lv:1, tp:"SELECT", t:"名前と勤務地", q:"全社員の<b>名前（name）</b>と<b>勤務地（city）</b>だけを表示してください。", h:"列ボタンを name → city の順に押します。押した順が列の順番になります。", a:"SELECT name, city FROM employees;"},
-  {lv:1, tp:"DISTINCT", t:"勤務地の一覧", q:"社員の勤務地（city）を<b>重複なし</b>で一覧にしてください。", h:"city を選んで DISTINCT にチェック。", a:"SELECT DISTINCT city FROM employees;"},
-  {lv:1, tp:"WHERE =", t:"東京で働く人", q:"勤務地が<b>東京</b>の社員の、名前と年齢（age）を表示してください。", h:"WHERE に「city = 東京」を追加します。", a:"SELECT name, age FROM employees WHERE city = '東京';"},
-  {lv:1, tp:"WHERE >=", t:"月給40万円以上", q:"月給（salary）が<b>400000円以上</b>の社員の、名前と月給を表示してください。", h:"比べ方は >= （以上）。", a:"SELECT name, salary FROM employees WHERE salary >= 400000;"},
-  {lv:1, tp:"ORDER BY", t:"若い順", q:"全社員の名前と年齢を、<b>年齢の若い順</b>に表示してください。", h:"ORDER BY age ASC（ASC は小さい順）。", a:"SELECT name, age FROM employees ORDER BY age ASC;"},
-  {lv:1, tp:"LIMIT", t:"月給トップ3", q:"月給が<b>高い順に3人</b>、名前と月給を表示してください。", h:"ORDER BY salary DESC で大きい順にして、LIMIT 3。", a:"SELECT name, salary FROM employees ORDER BY salary DESC LIMIT 3;"},
-  {lv:1, tp:"別の表", t:"安い商品", q:"商品（products）表から、定価（price）が<b>9000円以下</b>の商品名と定価を表示してください。", h:"FROM の表を products に切り替えます。", a:"SELECT name, price FROM products WHERE price <= 9000;"},
+  {id:"l1-all", lv:1, tp:"SELECT *", t:"全社員のデータ", q:"社員（employees）表の<b>すべての列</b>を表示してください。", h:"SELECT で列を何も選ばないと * （すべての列）になります。", a:"SELECT * FROM employees;"},
+  {id:"l1-name-city", lv:1, tp:"SELECT", t:"名前と勤務地", q:"全社員の<b>名前（name）</b>と<b>勤務地（city）</b>だけを表示してください。", h:"列ボタンを name → city の順に押します。押した順が列の順番になります。", a:"SELECT name, city FROM employees;"},
+  {id:"l1-distinct-city", lv:1, tp:"DISTINCT", t:"勤務地の一覧", q:"社員の勤務地（city）を<b>重複なし</b>で一覧にしてください。", h:"city を選んで DISTINCT にチェック。", a:"SELECT DISTINCT city FROM employees;"},
+  {id:"l1-tokyo", lv:1, tp:"WHERE =", t:"東京で働く人", q:"勤務地が<b>東京</b>の社員の、名前と年齢（age）を表示してください。", h:"WHERE に「city = 東京」を追加します。", a:"SELECT name, age FROM employees WHERE city = '東京';"},
+  {id:"l1-salary400k", lv:1, tp:"WHERE >=", t:"月給40万円以上", q:"月給（salary）が<b>400000円以上</b>の社員の、名前と月給を表示してください。", h:"比べ方は >= （以上）。", a:"SELECT name, salary FROM employees WHERE salary >= 400000;"},
+  {id:"l1-young", lv:1, tp:"ORDER BY", t:"若い順", q:"全社員の名前と年齢を、<b>年齢の若い順</b>に表示してください。", h:"ORDER BY age ASC（ASC は小さい順）。", a:"SELECT name, age FROM employees ORDER BY age ASC;"},
+  {id:"l1-top3", lv:1, tp:"LIMIT", t:"月給トップ3", q:"月給が<b>高い順に3人</b>、名前と月給を表示してください。", h:"ORDER BY salary DESC で大きい順にして、LIMIT 3。", a:"SELECT name, salary FROM employees ORDER BY salary DESC LIMIT 3;"},
+  {id:"l1-cheap", lv:1, tp:"別の表", t:"安い商品", q:"商品（products）表から、定価（price）が<b>9000円以下</b>の商品名と定価を表示してください。", h:"FROM の表を products に切り替えます。", a:"SELECT name, price FROM products WHERE price <= 9000;"},
 
-  {lv:2, tp:"BETWEEN", t:"30代の社員", q:"年齢が<b>30〜39歳</b>の社員の、名前と年齢を表示してください。", h:"BETWEEN 30 AND 39 は「30以上39以下」。", a:"SELECT name, age FROM employees WHERE age BETWEEN 30 AND 39;"},
-  {lv:2, tp:"LIKE", t:"「山」で始まる名前", q:"名前が<b>「山」で始まる</b>社員の名前を表示してください。", h:"LIKE '山%' の % は「何文字でもよい」という意味です。", a:"SELECT name FROM employees WHERE name LIKE '山%';"},
-  {lv:2, tp:"AND", t:"条件を2つ重ねる", q:"勤務地が<b>大阪</b>で、かつ月給が<b>400000円以上</b>の社員の名前を表示してください。", h:"条件を2つ追加し、つなぎ方を AND にします。", a:"SELECT name FROM employees WHERE city = '大阪' AND salary >= 400000;"},
-  {lv:2, tp:"IS NULL", t:"部署が未定の人", q:"部署ID（dept_id）が<b>空（NULL）</b>の社員の名前を表示してください。", h:"NULL は = では比べられません。IS NULL を使います。", a:"SELECT name FROM employees WHERE dept_id IS NULL;"},
-  {lv:2, tp:"GROUP BY", t:"勤務地ごとの人数", q:"<b>勤務地ごと</b>の社員数を、勤務地と人数の2列で表示してください。", h:"SELECT に city と COUNT(*)、GROUP BY に city。", a:"SELECT city, COUNT(*) FROM employees GROUP BY city;"},
-  {lv:2, tp:"AVG + ORDER BY", t:"平均月給ランキング", q:"勤務地ごとの<b>平均月給</b>を、<b>高い順</b>に表示してください（勤務地・平均月給の2列）。", h:"関数で AVG(salary) を追加すると、別名 avg_salary が ORDER BY の候補に出てきます。", a:"SELECT city, AVG(salary) AS avg_salary FROM employees GROUP BY city ORDER BY avg_salary DESC;"},
-  {lv:2, tp:"INNER JOIN", t:"社員と部署名", q:"社員の名前と、所属する<b>部署名</b>を表示してください（部署がない人は出なくてよい）。", h:"JOIN で departments をつなげます。ON は employees.dept_id = departments.id。", a:"SELECT employees.name, departments.name FROM employees INNER JOIN departments ON employees.dept_id = departments.id;"},
-  {lv:2, tp:"JOIN + GROUP BY", t:"部署ごとの人数", q:"<b>部署名ごと</b>の社員数を、部署名と人数の2列で表示してください。", h:"JOIN でつなげてから、GROUP BY departments.name。", a:"SELECT departments.name, COUNT(*) FROM employees INNER JOIN departments ON employees.dept_id = departments.id GROUP BY departments.name;"},
-  {lv:2, tp:"日付で絞る", t:"3月の売上", q:"売上（sales）表から、<b>2026年3月</b>の売上の<b>件数</b>と<b>合計金額</b>を表示してください。", h:"日付は文字なので LIKE '2026-03%'（〜で始まる）で月を絞れます。", a:"SELECT COUNT(*), SUM(amount) FROM sales WHERE sold_on LIKE '2026-03%';"},
+  {id:"l2-thirties", lv:2, tp:"BETWEEN", t:"30代の社員", q:"年齢が<b>30〜39歳</b>の社員の、名前と年齢を表示してください。", h:"BETWEEN 30 AND 39 は「30以上39以下」。", a:"SELECT name, age FROM employees WHERE age BETWEEN 30 AND 39;"},
+  {id:"l2-like-yama", lv:2, tp:"LIKE", t:"「山」で始まる名前", q:"名前が<b>「山」で始まる</b>社員の名前を表示してください。", h:"LIKE '山%' の % は「何文字でもよい」という意味です。", a:"SELECT name FROM employees WHERE name LIKE '山%';"},
+  {id:"l2-and", lv:2, tp:"AND", t:"条件を2つ重ねる", q:"勤務地が<b>大阪</b>で、かつ月給が<b>400000円以上</b>の社員の名前を表示してください。", h:"条件を2つ追加し、つなぎ方を AND にします。", a:"SELECT name FROM employees WHERE city = '大阪' AND salary >= 400000;"},
+  {id:"l2-null-dept", lv:2, tp:"IS NULL", t:"部署が未定の人", q:"部署ID（dept_id）が<b>空（NULL）</b>の社員の名前を表示してください。", h:"NULL は = では比べられません。IS NULL を使います。", a:"SELECT name FROM employees WHERE dept_id IS NULL;"},
+  {id:"l2-count-city", lv:2, tp:"GROUP BY", t:"勤務地ごとの人数", q:"<b>勤務地ごと</b>の社員数を、勤務地と人数の2列で表示してください。", h:"SELECT に city と COUNT(*)、GROUP BY に city。", a:"SELECT city, COUNT(*) FROM employees GROUP BY city;"},
+  {id:"l2-avg-city", lv:2, tp:"AVG + ORDER BY", t:"平均月給ランキング", q:"勤務地ごとの<b>平均月給</b>を、<b>高い順</b>に表示してください（勤務地・平均月給の2列）。", h:"関数で AVG(salary) を追加すると、別名 avg_salary が ORDER BY の候補に出てきます。", a:"SELECT city, AVG(salary) AS avg_salary FROM employees GROUP BY city ORDER BY avg_salary DESC;"},
+  {id:"l2-join-dept", lv:2, tp:"INNER JOIN", t:"社員と部署名", q:"社員の名前と、所属する<b>部署名</b>を表示してください（部署がない人は出なくてよい）。", h:"JOIN で departments をつなげます。ON は employees.dept_id = departments.id。", a:"SELECT employees.name, departments.name FROM employees INNER JOIN departments ON employees.dept_id = departments.id;"},
+  {id:"l2-count-dept", lv:2, tp:"JOIN + GROUP BY", t:"部署ごとの人数", q:"<b>部署名ごと</b>の社員数を、部署名と人数の2列で表示してください。", h:"JOIN でつなげてから、GROUP BY departments.name。", a:"SELECT departments.name, COUNT(*) FROM employees INNER JOIN departments ON employees.dept_id = departments.id GROUP BY departments.name;"},
+  {id:"l2-march", lv:2, tp:"日付で絞る", t:"3月の売上", q:"売上（sales）表から、<b>2026年3月</b>の売上の<b>件数</b>と<b>合計金額</b>を表示してください。", h:"日付は文字なので LIKE '2026-03%'（〜で始まる）で月を絞れます。", a:"SELECT COUNT(*), SUM(amount) FROM sales WHERE sold_on LIKE '2026-03%';"},
 
-  {lv:3, tp:"LEFT JOIN", t:"部署がない人も残す", q:"<b>全社員</b>の名前と部署名を表示してください。部署がない人も、部署名を NULL にして表示します。", h:"INNER JOIN を LEFT JOIN に変えると、FROM の表の行がすべて残ります。", a:"SELECT employees.name, departments.name FROM employees LEFT JOIN departments ON employees.dept_id = departments.id;"},
-  {lv:3, tp:"LEFT JOIN + IS NULL", t:"一度も売れていない商品", q:"売上が<b>1件もない商品</b>の商品名を表示してください。", h:"products に sales を LEFT JOIN すると、売上がない商品は sales 側の列が NULL になります。WHERE sales.id IS NULL。", a:"SELECT products.name FROM products LEFT JOIN sales ON products.id = sales.product_id WHERE sales.id IS NULL;"},
-  {lv:3, tp:"HAVING", t:"売上100万円超え", q:"売上の<b>合計が1000000円を超える</b>社員の、名前と売上合計を表示してください。", h:"sales と employees をつなげ、名前でまとめて、HAVING SUM(sales.amount) > 1000000。", a:"SELECT employees.name, SUM(sales.amount) FROM sales INNER JOIN employees ON sales.employee_id = employees.id GROUP BY employees.name HAVING SUM(sales.amount) > 1000000;"},
-  {lv:3, tp:"日付関数", t:"月別の売上", q:"売上を<b>月ごと</b>に集計し、年月（例: 2026-01）と売上合計を、<b>年月の古い順</b>に表示してください。", h:"関数「strftime 年月にする」で sold_on を年月に変換し、その別名 ym で GROUP BY と ORDER BY をします。", a:"SELECT strftime('%Y-%m', sold_on) AS ym, SUM(amount) FROM sales GROUP BY ym ORDER BY ym ASC;"},
-  {lv:3, tp:"3つの表を結合", t:"部署別の売上", q:"<b>部署ごと</b>の売上合計を、部署名と売上合計の2列で、<b>売上の多い順</b>に表示してください。", h:"sales → employees → departments の順に2回 JOIN します。", a:"SELECT departments.name, SUM(sales.amount) AS sum_amount FROM sales INNER JOIN employees ON sales.employee_id = employees.id INNER JOIN departments ON employees.dept_id = departments.id GROUP BY departments.name ORDER BY sum_amount DESC;"},
-  {lv:3, tp:"JOIN + 集計", t:"カテゴリ別の販売数", q:"商品<b>カテゴリごと</b>の販売数量（quantity）の合計を、<b>多い順</b>に表示してください（カテゴリ・数量合計の2列）。", h:"sales に products をつなげ、products.category でまとめます。", a:"SELECT products.category, SUM(sales.quantity) AS sum_quantity FROM sales INNER JOIN products ON sales.product_id = products.id GROUP BY products.category ORDER BY sum_quantity DESC;"},
-  {lv:3, tp:"CASE", t:"月給で区分する", q:"全社員の名前と、月給が<b>400000円以上なら「高」、それ以外は「標準」</b>と表示する列を出してください。", h:"関数「CASE 条件で2つに分ける」を使います。", a:"SELECT name, CASE WHEN salary >= 400000 THEN '高' ELSE '標準' END FROM employees;"},
-  {lv:3, tp:"RANK", t:"売上ランキング", q:"売上がある社員について、名前・売上合計・<b>売上合計の順位</b>（1位が最も多い）を表示してください。", h:"先に SUM(sales.amount) を追加し、次に RANK を ORDER BY SUM(sales.amount) DESC で追加します。", a:"SELECT employees.name, SUM(sales.amount), RANK() OVER (ORDER BY SUM(sales.amount) DESC) FROM sales INNER JOIN employees ON sales.employee_id = employees.id GROUP BY employees.name;"},
+  {id:"l3-left-join", lv:3, tp:"LEFT JOIN", t:"部署がない人も残す", q:"<b>全社員</b>の名前と部署名を表示してください。部署がない人も、部署名を NULL にして表示します。", h:"INNER JOIN を LEFT JOIN に変えると、FROM の表の行がすべて残ります。", a:"SELECT employees.name, departments.name FROM employees LEFT JOIN departments ON employees.dept_id = departments.id;"},
+  {id:"l3-unsold", lv:3, tp:"LEFT JOIN + IS NULL", t:"一度も売れていない商品", q:"売上が<b>1件もない商品</b>の商品名を表示してください。", h:"products に sales を LEFT JOIN すると、売上がない商品は sales 側の列が NULL になります。WHERE sales.id IS NULL。", a:"SELECT products.name FROM products LEFT JOIN sales ON products.id = sales.product_id WHERE sales.id IS NULL;"},
+  {id:"l3-having", lv:3, tp:"HAVING", t:"売上100万円超え", q:"売上の<b>合計が1000000円を超える</b>社員の、名前と売上合計を表示してください。", h:"sales と employees をつなげ、名前でまとめて、HAVING SUM(sales.amount) > 1000000。", a:"SELECT employees.name, SUM(sales.amount) FROM sales INNER JOIN employees ON sales.employee_id = employees.id GROUP BY employees.name HAVING SUM(sales.amount) > 1000000;"},
+  {id:"l3-monthly", lv:3, tp:"日付関数", t:"月別の売上", q:"売上を<b>月ごと</b>に集計し、年月（例: 2026-01）と売上合計を、<b>年月の古い順</b>に表示してください。", h:"関数「strftime 年月にする」で sold_on を年月に変換し、その別名 ym で GROUP BY と ORDER BY をします。", a:"SELECT strftime('%Y-%m', sold_on) AS ym, SUM(amount) FROM sales GROUP BY ym ORDER BY ym ASC;"},
+  {id:"l3-dept-sales", lv:3, tp:"3つの表を結合", t:"部署別の売上", q:"<b>部署ごと</b>の売上合計を、部署名と売上合計の2列で、<b>売上の多い順</b>に表示してください。", h:"sales → employees → departments の順に2回 JOIN します。", a:"SELECT departments.name, SUM(sales.amount) AS sum_amount FROM sales INNER JOIN employees ON sales.employee_id = employees.id INNER JOIN departments ON employees.dept_id = departments.id GROUP BY departments.name ORDER BY sum_amount DESC;"},
+  {id:"l3-category-qty", lv:3, tp:"JOIN + 集計", t:"カテゴリ別の販売数", q:"商品<b>カテゴリごと</b>の販売数量（quantity）の合計を、<b>多い順</b>に表示してください（カテゴリ・数量合計の2列）。", h:"sales に products をつなげ、products.category でまとめます。", a:"SELECT products.category, SUM(sales.quantity) AS sum_quantity FROM sales INNER JOIN products ON sales.product_id = products.id GROUP BY products.category ORDER BY sum_quantity DESC;"},
+  {id:"l3-case", lv:3, tp:"CASE", t:"月給で区分する", q:"全社員の名前と、月給が<b>400000円以上なら「高」、それ以外は「標準」</b>と表示する列を出してください。", h:"関数「CASE 条件で2つに分ける」を使います。", a:"SELECT name, CASE WHEN salary >= 400000 THEN '高' ELSE '標準' END FROM employees;"},
+  {id:"l3-rank", lv:3, tp:"RANK", t:"売上ランキング", q:"売上がある社員について、名前・売上合計・<b>売上合計の順位</b>（1位が最も多い）を表示してください。", h:"先に SUM(sales.amount) を追加し、次に RANK を ORDER BY SUM(sales.amount) DESC で追加します。", a:"SELECT employees.name, SUM(sales.amount), RANK() OVER (ORDER BY SUM(sales.amount) DESC) FROM sales INNER JOIN employees ON sales.employee_id = employees.id GROUP BY employees.name;"},
 
-  {lv:4, w:true, tp:"サブクエリ", t:"平均より高い月給", scene:"人事から「全社平均より月給が高い人の一覧がほしい」と頼まれました。", q:"月給が<b>全社員の平均月給より高い</b>社員の名前と月給を、<b>月給の高い順</b>に表示してください。", h:"平均の値を直接書かず、WHERE salary > (SELECT AVG(salary) FROM employees) のように SQL の中で計算します。", a:"SELECT name, salary FROM employees WHERE salary > (SELECT AVG(salary) FROM employees) ORDER BY salary DESC;"},
-  {lv:4, w:true, tp:"自己結合", t:"部下と上司", scene:"組織図を作るため、社員と直属の上司の対応表が必要です。", q:"社員の名前と、その<b>上司の名前</b>（manager_id が指す社員）を表示してください。上司がいない人は出さなくてよいです。", h:"同じ employees 表に別名を2つ付けて結合します: FROM employees AS e INNER JOIN employees AS m ON e.manager_id = m.id", a:"SELECT e.name, m.name FROM employees AS e INNER JOIN employees AS m ON e.manager_id = m.id;"},
-  {lv:4, tp:"PARTITION BY", t:"部署内の月給順位", scene:"評価会議用に、部署の中での月給の順位を出します。", q:"部署名・社員名・月給と、<b>部署の中での月給の順位</b>（高い人が1位）を表示してください。部署がない人は出さなくてよいです。", h:"RANK の PARTITION BY に departments.name、ORDER BY に employees.salary DESC。組み立て台でも作れます。", a:"SELECT departments.name, employees.name, employees.salary, RANK() OVER (PARTITION BY departments.name ORDER BY employees.salary DESC) FROM employees INNER JOIN departments ON employees.dept_id = departments.id;"},
-  {lv:4, w:true, tp:"WITH + LAG", t:"前月比レポート", scene:"毎月の経営会議で使う「月次売上と前月差」の表を作ります。", q:"年月・その月の売上合計・<b>前月の売上合計</b>・<b>前月との差</b>の4列を、年月の古い順に表示してください（最初の月の前月は NULL）。", h:"WITH で月別合計を作り、LAG(total) OVER (ORDER BY ym) で1つ前の月の値を取ります。", a:"WITH m AS (SELECT strftime('%Y-%m', sold_on) AS ym, SUM(amount) AS total FROM sales GROUP BY ym)\nSELECT ym, total, LAG(total) OVER (ORDER BY ym) AS prev_total, total - LAG(total) OVER (ORDER BY ym) AS diff\nFROM m ORDER BY ym;"},
-  {lv:4, w:true, tp:"累計", t:"売上の累計", scene:"今期の売上が目標に向かってどう積み上がっているかを確認します。", q:"年月・その月の売上合計・<b>その月までの累計</b>の3列を、年月の古い順に表示してください。", h:"SUM(total) OVER (ORDER BY ym) で上から順に足し上げた値になります。", a:"WITH m AS (SELECT strftime('%Y-%m', sold_on) AS ym, SUM(amount) AS total FROM sales GROUP BY ym)\nSELECT ym, total, SUM(total) OVER (ORDER BY ym) AS running_total FROM m ORDER BY ym;"},
-  {lv:4, w:true, tp:"構成比", t:"カテゴリ別の売上構成比", scene:"どのカテゴリが売上の何%を占めているか、資料にまとめます。", q:"カテゴリ・売上合計・<b>全体に占める割合（%、小数第1位まで）</b>を、売上の多い順に表示してください。", h:"割合 = カテゴリの合計 × 100.0 ÷ 全体の合計。全体の合計はサブクエリ (SELECT SUM(amount) FROM sales) で求め、ROUND(値, 1) で丸めます。100.0 と小数で掛けるのがコツです。", a:"SELECT p.category, SUM(s.amount) AS total, ROUND(SUM(s.amount) * 100.0 / (SELECT SUM(amount) FROM sales), 1) AS pct\nFROM sales AS s INNER JOIN products AS p ON s.product_id = p.id\nGROUP BY p.category ORDER BY total DESC;"},
-  {lv:4, w:true, tp:"グループ内トップ", t:"部署ごとのトップセールス", scene:"各部署で一番売った人を表彰します。", q:"部署名・社員名・売上合計を、<b>部署ごとに売上1位の社員だけ</b>表示してください。", h:"WITH の中で ROW_NUMBER() OVER (PARTITION BY 部署 ORDER BY SUM(s.amount) DESC) AS rn を付け、外側で WHERE rn = 1。", a:"WITH t AS (\n  SELECT d.name AS dept, e.name AS emp, SUM(s.amount) AS total,\n         ROW_NUMBER() OVER (PARTITION BY d.id ORDER BY SUM(s.amount) DESC) AS rn\n  FROM sales AS s\n  INNER JOIN employees AS e ON s.employee_id = e.id\n  INNER JOIN departments AS d ON e.dept_id = d.id\n  GROUP BY d.id, e.id\n)\nSELECT dept, emp, total FROM t WHERE rn = 1;"},
-  {lv:4, tp:"重複チェック", t:"二重登録の売上を探す", scene:"「同じ売上が2回入っているかも」と経理から問い合わせがありました。", q:"社員ID・商品ID・数量・販売日が<b>すべて同じ売上が2件以上ある</b>組み合わせについて、社員ID・商品ID・販売日・件数を表示してください。", h:"4つの列で GROUP BY して、HAVING COUNT(*) > 1。組み立て台でも作れます（数量は GROUP BY だけに入れます）。", a:"SELECT employee_id, product_id, sold_on, COUNT(*) FROM sales GROUP BY employee_id, product_id, quantity, sold_on HAVING COUNT(*) > 1;"},
-  {lv:4, tp:"HAVING + MAX", t:"フォローが必要な担当者", scene:"最近売上が止まっている担当者に声をかけたいと、営業部長から相談がありました。", q:"売上がある社員のうち、<b>最後に売った日が 2026-04-01 より前</b>の人の名前と最終販売日を表示してください。", h:"社員ごとに MAX(sales.sold_on) を出し、HAVING で 2026-04-01 より小さいものに絞ります。", a:"SELECT employees.name, MAX(sales.sold_on) FROM sales INNER JOIN employees ON sales.employee_id = employees.id GROUP BY employees.name HAVING MAX(sales.sold_on) < '2026-04-01';"},
-  {lv:4, w:true, tp:"COALESCE", t:"売れていない商品も0で出す", scene:"商品ごとの販売数の一覧を、売れていない商品も含めて作ります。", q:"<b>全商品</b>の商品名と販売数量の合計を表示してください。売上がない商品は数量を <b>0</b> と表示します。", h:"products から sales を LEFT JOIN し、COALESCE(SUM(s.quantity), 0) で NULL を 0 に置き換えます。", a:"SELECT p.name, COALESCE(SUM(s.quantity), 0) AS qty\nFROM products AS p LEFT JOIN sales AS s ON p.id = s.product_id\nGROUP BY p.id;"},
-  {lv:4, w:true, tp:"計算でまとめる", t:"年代別の人数", scene:"採用計画のために、年代ごとの社員数を出します。", q:"<b>年代</b>（20, 30, 40, 50 のような数値）と、その年代の人数を、年代の小さい順に表示してください。", h:"整数どうしの割り算は小数が切り捨てられます。age / 10 * 10 で 34 → 30 になります。", a:"SELECT age / 10 * 10 AS generation, COUNT(*) FROM employees GROUP BY generation ORDER BY generation;"}
+  {id:"l4-subquery", lv:4, w:true, tp:"サブクエリ", t:"平均より高い月給", scene:"人事から「全社平均より月給が高い人の一覧がほしい」と頼まれました。", q:"月給が<b>全社員の平均月給より高い</b>社員の名前と月給を、<b>月給の高い順</b>に表示してください。", h:"平均の値を直接書かず、WHERE salary > (SELECT AVG(salary) FROM employees) のように SQL の中で計算します。", a:"SELECT name, salary FROM employees WHERE salary > (SELECT AVG(salary) FROM employees) ORDER BY salary DESC;"},
+  {id:"l4-self-join", lv:4, w:true, tp:"自己結合", t:"部下と上司", scene:"組織図を作るため、社員と直属の上司の対応表が必要です。", q:"社員の名前と、その<b>上司の名前</b>（manager_id が指す社員）を表示してください。上司がいない人は出さなくてよいです。", h:"同じ employees 表に別名を2つ付けて結合します: FROM employees AS e INNER JOIN employees AS m ON e.manager_id = m.id", a:"SELECT e.name, m.name FROM employees AS e INNER JOIN employees AS m ON e.manager_id = m.id;"},
+  {id:"l4-partition", lv:4, tp:"PARTITION BY", t:"部署内の月給順位", scene:"評価会議用に、部署の中での月給の順位を出します。", q:"部署名・社員名・月給と、<b>部署の中での月給の順位</b>（高い人が1位）を表示してください。部署がない人は出さなくてよいです。", h:"RANK の PARTITION BY に departments.name、ORDER BY に employees.salary DESC。組み立て台でも作れます。", a:"SELECT departments.name, employees.name, employees.salary, RANK() OVER (PARTITION BY departments.name ORDER BY employees.salary DESC) FROM employees INNER JOIN departments ON employees.dept_id = departments.id;"},
+  {id:"l4-mom", lv:4, w:true, tp:"WITH + LAG", t:"前月比レポート", scene:"毎月の経営会議で使う「月次売上と前月差」の表を作ります。", q:"年月・その月の売上合計・<b>前月の売上合計</b>・<b>前月との差</b>の4列を、年月の古い順に表示してください（最初の月の前月は NULL）。", h:"WITH で月別合計を作り、LAG(total) OVER (ORDER BY ym) で1つ前の月の値を取ります。", a:"WITH m AS (SELECT strftime('%Y-%m', sold_on) AS ym, SUM(amount) AS total FROM sales GROUP BY ym)\nSELECT ym, total, LAG(total) OVER (ORDER BY ym) AS prev_total, total - LAG(total) OVER (ORDER BY ym) AS diff\nFROM m ORDER BY ym;"},
+  {id:"l4-running", lv:4, w:true, tp:"累計", t:"売上の累計", scene:"今期の売上が目標に向かってどう積み上がっているかを確認します。", q:"年月・その月の売上合計・<b>その月までの累計</b>の3列を、年月の古い順に表示してください。", h:"SUM(total) OVER (ORDER BY ym) で上から順に足し上げた値になります。", a:"WITH m AS (SELECT strftime('%Y-%m', sold_on) AS ym, SUM(amount) AS total FROM sales GROUP BY ym)\nSELECT ym, total, SUM(total) OVER (ORDER BY ym) AS running_total FROM m ORDER BY ym;"},
+  {id:"l4-share", lv:4, w:true, tp:"構成比", t:"カテゴリ別の売上構成比", scene:"どのカテゴリが売上の何%を占めているか、資料にまとめます。", q:"カテゴリ・売上合計・<b>全体に占める割合（%、小数第1位まで）</b>を、売上の多い順に表示してください。", h:"割合 = カテゴリの合計 × 100.0 ÷ 全体の合計。全体の合計はサブクエリ (SELECT SUM(amount) FROM sales) で求め、ROUND(値, 1) で丸めます。100.0 と小数で掛けるのがコツです。", a:"SELECT p.category, SUM(s.amount) AS total, ROUND(SUM(s.amount) * 100.0 / (SELECT SUM(amount) FROM sales), 1) AS pct\nFROM sales AS s INNER JOIN products AS p ON s.product_id = p.id\nGROUP BY p.category ORDER BY total DESC;"},
+  {id:"l4-top-per-dept", lv:4, w:true, tp:"グループ内トップ", t:"部署ごとのトップセールス", scene:"各部署で一番売った人を表彰します。", q:"部署名・社員名・売上合計を、<b>部署ごとに売上1位の社員だけ</b>表示してください。", h:"WITH の中で ROW_NUMBER() OVER (PARTITION BY 部署 ORDER BY SUM(s.amount) DESC) AS rn を付け、外側で WHERE rn = 1。", a:"WITH t AS (\n  SELECT d.name AS dept, e.name AS emp, SUM(s.amount) AS total,\n         ROW_NUMBER() OVER (PARTITION BY d.id ORDER BY SUM(s.amount) DESC) AS rn\n  FROM sales AS s\n  INNER JOIN employees AS e ON s.employee_id = e.id\n  INNER JOIN departments AS d ON e.dept_id = d.id\n  GROUP BY d.id, e.id\n)\nSELECT dept, emp, total FROM t WHERE rn = 1;"},
+  {id:"l4-dup", lv:4, tp:"重複チェック", t:"二重登録の売上を探す", scene:"「同じ売上が2回入っているかも」と経理から問い合わせがありました。", q:"社員ID・商品ID・数量・販売日が<b>すべて同じ売上が2件以上ある</b>組み合わせについて、社員ID・商品ID・販売日・件数を表示してください。", h:"4つの列で GROUP BY して、HAVING COUNT(*) > 1。組み立て台でも作れます（数量は GROUP BY だけに入れます）。", a:"SELECT employee_id, product_id, sold_on, COUNT(*) FROM sales GROUP BY employee_id, product_id, quantity, sold_on HAVING COUNT(*) > 1;"},
+  {id:"l4-follow", lv:4, tp:"HAVING + MAX", t:"フォローが必要な担当者", scene:"最近売上が止まっている担当者に声をかけたいと、営業部長から相談がありました。", q:"売上がある社員のうち、<b>最後に売った日が 2026-04-01 より前</b>の人の名前と最終販売日を表示してください。", h:"社員ごとに MAX(sales.sold_on) を出し、HAVING で 2026-04-01 より小さいものに絞ります。", a:"SELECT employees.name, MAX(sales.sold_on) FROM sales INNER JOIN employees ON sales.employee_id = employees.id GROUP BY employees.name HAVING MAX(sales.sold_on) < '2026-04-01';"},
+  {id:"l4-coalesce", lv:4, w:true, tp:"COALESCE", t:"売れていない商品も0で出す", scene:"商品ごとの販売数の一覧を、売れていない商品も含めて作ります。", q:"<b>全商品</b>の商品名と販売数量の合計を表示してください。売上がない商品は数量を <b>0</b> と表示します。", h:"products から sales を LEFT JOIN し、COALESCE(SUM(s.quantity), 0) で NULL を 0 に置き換えます。", a:"SELECT p.name, COALESCE(SUM(s.quantity), 0) AS qty\nFROM products AS p LEFT JOIN sales AS s ON p.id = s.product_id\nGROUP BY p.id;"},
+  {id:"l4-generation", lv:4, w:true, tp:"計算でまとめる", t:"年代別の人数", scene:"採用計画のために、年代ごとの社員数を出します。", q:"<b>年代</b>（20, 30, 40, 50 のような数値）と、その年代の人数を、年代の小さい順に表示してください。", h:"整数どうしの割り算は小数が切り捨てられます。age / 10 * 10 で 34 → 30 になります。", a:"SELECT age / 10 * 10 AS generation, COUNT(*) FROM employees GROUP BY generation ORDER BY generation;"}
 ];
 
 /* ================= 関数の定義 ================= */
@@ -438,9 +445,100 @@ const store = {
   get(k, d){ try{ const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); }catch(e){ return d; } },
   set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
 };
-let solved = new Set(store.get("sqldrill2-solved", []));
-let drafts = store.get("sqldrill2-drafts", {});
-cur = Math.min(Math.max(0, store.get("sqldrill2-cur", 0)), PROBLEMS.length - 1);
+/* 進捗: { solved:[問題id], drafts:{問題id: {t:本文, at:更新時刻}}, cur:問題id }
+   ブラウザに保存し、claude.ai で開いたときはアカウント側（db）にも保存する */
+const PROG_KEY = "sqldrill-progress";
+const V1_IDS = ["l1-all","l1-name-city","l1-distinct-city","l1-tokyo",null,"l2-thirties","l2-like-yama","l2-and","l2-null-dept","l1-young","l1-top3",null,"l2-count-city","l2-avg-city","l2-join-dept","l3-left-join","l2-count-dept","l3-having"];
+function loadProgress(){
+  let p = store.get(PROG_KEY, null);
+  if (p && Array.isArray(p.solved)) return {solved:p.solved, drafts:p.drafts || {}, cur:p.cur || null};
+  // 以前の版（番号で保存していた記録）を引き継ぐ
+  p = {solved:[], drafts:{}, cur:null};
+  store.get("sqldrill2-solved", []).forEach(i => { if (PROBLEMS[i]) p.solved.push(PROBLEMS[i].id); });
+  const d2 = store.get("sqldrill2-drafts", {});
+  for (const k in d2){
+    const m = k.match(/^p(\d+)$/), id = m ? PROBLEMS[+m[1]]?.id : (k === "free" ? "free" : null);
+    if (id && typeof d2[k] === "string") p.drafts[id] = {t:d2[k], at:0};
+  }
+  const c2 = store.get("sqldrill2-cur", null);
+  if (c2 != null && PROBLEMS[c2]) p.cur = PROBLEMS[c2].id;
+  store.get("sqldrill-solved", []).forEach(i => { if (V1_IDS[i]) p.solved.push(V1_IDS[i]); });
+  p.solved = [...new Set(p.solved)];
+  return p;
+}
+const prog = loadProgress();
+const validIds = new Set(PROBLEMS.map(p => p.id));
+let solved = new Set(prog.solved.filter(id => validIds.has(id)));
+const drafts = prog.drafts;
+cur = Math.max(0, PROBLEMS.findIndex(p => p.id === prog.cur));
+const pid = i => PROBLEMS[i].id;
+function saveProgress(){
+  prog.solved = [...solved]; prog.cur = pid(cur);
+  store.set(PROG_KEY, prog);
+  scheduleCloud();
+}
+
+/* アカウント側への保存（claude.ai の db 機能）。使えない場所ではブラウザ保存だけで動く */
+let cloudRef = null, cloudBusy = false, cloudAgain = false, cloudTimer = null, lastPushed = "";
+function setSync(state){
+  const el = $("#sync"); if (!el) return;
+  el.dataset.state = state;
+  el.textContent = {local:"進捗はこのブラウザに保存されます", loading:"進捗を読み込み中…", saving:"進捗を保存中…", cloud:"進捗はあなたのアカウントに保存済み（どの端末でも続きから）", error:"アカウントへの保存に失敗しました。このブラウザには保存されています"}[state];
+}
+function mergeRemote(r){
+  if (!r) return false;
+  let changed = false;
+  (Array.isArray(r.solved) ? r.solved : []).forEach(id => { if (validIds.has(id) && !solved.has(id)){ solved.add(id); changed = true; } });
+  const rd = r.drafts && typeof r.drafts === "object" ? r.drafts : {};
+  for (const k in rd){
+    const v = rd[k];
+    if (v && typeof v.t === "string" && (!drafts[k] || (v.at || 0) > (drafts[k].at || 0))){ drafts[k] = {t:v.t, at:v.at || 0}; changed = true; }
+  }
+  if (!prog.cur && typeof r.cur === "string" && validIds.has(r.cur)){ prog.cur = r.cur; changed = true; }
+  return changed;
+}
+async function pushCloud(){
+  if (!cloudRef) return;
+  if (cloudBusy){ cloudAgain = true; return; }
+  const body = {v:1, solved:[...solved], drafts, cur:pid(cur)};
+  const json = JSON.stringify(body);
+  if (json === lastPushed){ setSync("cloud"); return; }
+  cloudBusy = true; setSync("saving");
+  try { await cloudRef.set({...body, updatedAt:Date.now()}); lastPushed = json; setSync("cloud"); }
+  catch (e) { setSync("error"); }
+  cloudBusy = false;
+  if (cloudAgain){ cloudAgain = false; scheduleCloud(); }
+}
+function scheduleCloud(){
+  if (!cloudRef) return;
+  clearTimeout(cloudTimer); cloudTimer = setTimeout(pushCloud, 1500);
+}
+async function initCloud(){
+  setSync("local");
+  if (!window.claude || typeof window.claude.use !== "function") return;
+  try {
+    const [cdb, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
+    if (!cdb || !user) return;
+    const uid = await user.id();
+    if (!uid) return;
+    setSync("loading");
+    const ref = cdb.doc(`data/users/${uid}/progress`);
+    const snap = await Promise.race([ref.get(), new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 10000))]);
+    const before = manual ? $("#sqledit").value : null;
+    const changed = snap.exists ? mergeRemote(snap.data()) : false;
+    cloudRef = ref;
+    if (changed){
+      store.set(PROG_KEY, prog);
+      renderPList();
+      if (mode === "drill"){
+        renderTask();
+        const d = drafts[draftKey()];
+        if (manual && PROBLEMS[cur].w && d && before === $("#sqledit").value && d.t !== before){ $("#sqledit").value = d.t; update(); }
+      }
+    }
+    await pushCloud();
+  } catch (e) { setSync(cloudRef ? "error" : "local"); }
+}
 
 /* ================= 列のヘルパー ================= */
 const tablesInUse = () => [S.from, ...S.joins.map(j => j.table)];
@@ -956,7 +1054,7 @@ function update(){
   $("#warn").hidden = !w; $("#warn").textContent = w;
   renderResult();
 }
-function draftKey(){ return mode === "drill" ? "p" + cur : "free"; }
+function draftKey(){ return mode === "drill" ? pid(cur) : "free"; }
 function setManual(on, text){
   manual = on;
   $("#sqlview").hidden = on; $("#sqledit").hidden = !on; $("#kbd").hidden = !on; $("#palette").hidden = !on;
@@ -984,7 +1082,11 @@ function insertSnip(s){
   ta.setRangeText(pre + s, st, en, "end");
   ta.focus(); setGutter(ta.value); saveDraft();
 }
-function saveDraft(){ drafts[draftKey()] = $("#sqledit").value; store.set("sqldrill2-drafts", drafts); }
+let draftTimer = null;
+function saveDraft(){
+  drafts[draftKey()] = {t:$("#sqledit").value, at:Date.now()};
+  clearTimeout(draftTimer); draftTimer = setTimeout(saveProgress, 400);
+}
 
 /* ================= 答え合わせ ================= */
 function hideVerdict(){ $("#verdict").hidden = true; }
@@ -1003,7 +1105,7 @@ function check(){
   const sameSet = [...a].sort().join("|") === [...b].sort().join("|");
   const sameSeq = a.join("|") === b.join("|");
   if (ordered ? sameSeq : sameSet){
-    solved.add(cur); store.set("sqldrill2-solved", [...solved]);
+    solved.add(pid(cur)); saveProgress();
     renderPList(); renderTask(true);
     const left = PROBLEMS.length - solved.size;
     verdict(true, left ? `正解です！（残り ${left} 問）` : "正解です！全問クリアしました。");
@@ -1018,9 +1120,9 @@ function check(){
 function renderPList(){
   $("#plist").innerHTML = Object.entries(LEVELS).map(([lv, name]) => {
     const ids = PROBLEMS.map((p, i) => p.lv == lv ? i : -1).filter(i => i >= 0);
-    const done = ids.filter(i => solved.has(i)).length;
+    const done = ids.filter(i => solved.has(pid(i))).length;
     return `<div class="lvrow" data-lv="${lv}"><div class="lvname"><b>Lv.${lv} ${name}</b><small>${LVDESC[lv]}・${done}/${ids.length}</small></div>
-      <div class="pbtns">${ids.map(i => `<button type="button" class="pnum${solved.has(i) ? " done" : ""}${PROBLEMS[i].w ? " w" : ""}" data-p="${i}" aria-current="${i === cur}" aria-label="問題${i + 1} ${esc(PROBLEMS[i].t)}${solved.has(i) ? "（正解済み）" : ""}">${i + 1}</button>`).join("")}</div></div>`;
+      <div class="pbtns">${ids.map(i => `<button type="button" class="pnum${solved.has(pid(i)) ? " done" : ""}${PROBLEMS[i].w ? " w" : ""}" data-p="${i}" aria-current="${i === cur}" aria-label="問題${i + 1} ${esc(PROBLEMS[i].t)}${solved.has(pid(i)) ? "（正解済み）" : ""}">${i + 1}</button>`).join("")}</div></div>`;
   }).join("");
 }
 function renderTask(keepOpen){
@@ -1028,7 +1130,7 @@ function renderTask(keepOpen){
   const hintOpen = keepOpen && !$("#hint")?.hidden, ansOpen = keepOpen && !$("#ans")?.hidden;
   $("#task").dataset.lv = p.lv;
   $("#task").innerHTML = `
-    <div class="meta"><span class="tag lv">Lv.${p.lv} ${LEVELS[p.lv]}</span><span class="tag topic">${esc(p.tp)}</span><span class="tag mode">${p.w ? "手書きで解く" : "組み立て台で解ける"}</span><span>Q${cur + 1} / ${PROBLEMS.length}</span>${solved.has(cur) ? '<span style="color:var(--ok)">● 正解済み</span>' : ""}</div>
+    <div class="meta"><span class="tag lv">Lv.${p.lv} ${LEVELS[p.lv]}</span><span class="tag topic">${esc(p.tp)}</span><span class="tag mode">${p.w ? "手書きで解く" : "組み立て台で解ける"}</span><span>Q${cur + 1} / ${PROBLEMS.length}</span>${solved.has(pid(cur)) ? '<span style="color:var(--ok)">● 正解済み</span>' : ""}</div>
     <h2>${esc(p.t)}</h2>
     ${p.scene ? `<p class="scene">${esc(p.scene)}</p>` : ""}
     <p class="q">${p.q}</p>
@@ -1042,10 +1144,10 @@ function renderTask(keepOpen){
     <pre class="reveal" id="ans"${ansOpen ? "" : " hidden"}>${hl(p.a)}</pre>`;
 }
 function goProblem(i){
-  cur = i; store.set("sqldrill2-cur", cur);
+  cur = i; saveProgress();
   S = fresh();
   const p = PROBLEMS[cur];
-  if (p.w) setManual(true, drafts[draftKey()] ?? `-- ${p.t}\n-- 下の部品を押すと挿入できます\n\n`);
+  if (p.w) setManual(true, drafts[draftKey()]?.t ?? `-- ${p.t}\n-- 下の部品を押すと挿入できます\n\n`);
   else setManual(false);
   normalize(); renderPList(); renderTask(); render(); update(); hideVerdict();
 }
@@ -1117,7 +1219,7 @@ initSqlJs().then(SQL => {
     if (t){ setManual(true, `SELECT * FROM ${t};`); update(); $("#result").scrollIntoView({behavior:"smooth", block:"nearest"}); }
     if (e.target.id === "resetdb"){ initDB(); renderTables(); update(); e.target.textContent = "初期状態に戻しました"; }
   });
-  renderPalette(); renderTables(); setMode("drill");
+  renderPalette(); renderTables(); setMode("drill"); initCloud();
 }).catch(err => {
   $("#builder").innerHTML = `<p class="msg err">データベースを読み込めませんでした。ネットにつながっているか確認して、ページを開き直してください。<code>${esc(err && err.message || err)}</code></p>`;
 });
