@@ -90,6 +90,12 @@ const CONFIG = {
     'パスワード', '不正',
   ],
 
+  // 送信元ごとに振り分けを固定する（あなたが過去に決めた送信元より優先。'read' か 'keep' か 'spam'）
+  // ここで 'read' にした送信元は、「残す」で未読のまま残っているメールも次の振り分けで既読にする
+  senderOverrides: {
+    'noreply-apps-scripts-notifications@google.com': 'read', // GAS の失敗通知
+  },
+
   // 既読にしてゴミ箱へ移す送信元（30日でGmailが完全に削除する）
   trashSenders: ['contract-one.com'],
 };
@@ -145,6 +151,7 @@ function sortInbox() {
   Object.entries(CONFIG.labels).forEach(([k, name]) => (L[k] = getOrCreateLabel_(name)));
   const props = PropertiesService.getScriptProperties();
   migrateOldLabels_(L, props);
+  applyReadOverrides_(L);
   const ss = getSpreadsheet_();
   const log = loadLog_();
   const learned = loadLearned_();
@@ -258,6 +265,16 @@ function migrateOldLabels_(L, props) {
   props.setProperty('LABELS_MIGRATED', '1');
 }
 
+// senderOverrides で 'read' にした送信元のうち、「残す」で未読のまま残っているメールを既読にする
+function applyReadOverrides_(L) {
+  Object.keys(CONFIG.senderOverrides).forEach(addr => {
+    if (CONFIG.senderOverrides[addr] !== 'read') return;
+    GmailApp.search('from:' + addr + ' is:unread label:' + CONFIG.labels.keep, 0, 100).forEach(t => {
+      t.removeLabel(L.keep).addLabel(L.read).markRead();
+    });
+  });
+}
+
 // ===== あなたの判断を反映して覚える =====
 
 // 「要判断」のメールにあなたが Gmail で「既読」か「残す」のラベルを付けていたら処理する。処理したスレッドIDを返す
@@ -353,6 +370,7 @@ function classify_(from, subject, learned) {
   if (subject.startsWith('[Gmail要約]')) return 'summary';
   if (fromHas(CONFIG.trashSenders)) return 'trash';
   const addr = senderAddress_(from);
+  if (CONFIG.senderOverrides[addr]) return CONFIG.senderOverrides[addr];
   if (learned && learned[addr]) return OLD_KINDS[learned[addr]] || learned[addr];
   if (fromHas(CONFIG.spamSenders) || has(CONFIG.spamKeywords)) return 'spam';
   if (has(CONFIG.keepKeywords)) return 'keep';

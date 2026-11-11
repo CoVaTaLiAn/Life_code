@@ -50,10 +50,11 @@ Claude を使わずに決めてもよい：
 
 `src/Code.gs` 冒頭の `CONFIG` を書き換えれば変えられる。上から順に当てはめる。
 
-1. あなたが過去に決めた送信元
-2. 迷惑メール：件名の `spamKeywords`（「高額当選」など）、送信元の `spamSenders`（`.xyz` などの怪しいドメイン）
-3. 残す：件名の `keepKeywords`（Security alert・ログインなど）
-4. 既読：送信元の `readSenders`（Amazon・LinkedIn・GitHub など）、件名の `readKeywords`（規約改定・メンテナンスなど）
+1. `senderOverrides` で固定した送信元（GAS の失敗通知 → 既読 など）
+2. あなたが過去に決めた送信元
+3. 迷惑メール：件名の `spamKeywords`（「高額当選」など）、送信元の `spamSenders`（`.xyz` などの怪しいドメイン）
+4. 残す：件名の `keepKeywords`（Security alert・ログインなど）
+5. 既読：送信元の `readSenders`（Amazon・LinkedIn・GitHub など）、件名の `readKeywords`（規約改定・メンテナンスなど）
 
 間違って迷惑メールに入ったら、Gmail で「迷惑メールではない」を押し、シートか Gmail のラベルで正しい振り分けを教える。
 
