@@ -1,6 +1,6 @@
 # GAS 自動反映のセットアップ（PCで1回だけ）
 
-これを済ませると、リポジトリの `gas/gmail-sorter/` が main に入るたびに GitHub Actions が Apps Script へ自動で反映する。
+これを済ませると、リポジトリの `gas/2026-11-01_gmail-sorter/` が main に入るたびに GitHub Actions が Apps Script へ自動で反映する。
 スマホから Claude にコード修正を頼み、マージするだけで GAS が更新される。
 
 所要時間：15分ほど
