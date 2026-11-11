@@ -1,4 +1,4 @@
-# main の gas/gmail-sorter が更新されたら、Google Apps Script に自動で反映する
+# main の gas/2026-11-01_gmail-sorter が更新されたら、Google Apps Script に自動で反映する
 # main：メインの Gmail（Variable: GAS_SCRIPT_ID）／sub：サブの Gmail（Variable: GAS_SCRIPT_ID_SUB。未設定ならスキップ）
 name: Deploy GAS
 
@@ -6,7 +6,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "gas/gmail-sorter/**"
+      - "gas/2026-11-01_gmail-sorter/**"
   workflow_dispatch:
 
 jobs:
@@ -22,7 +22,7 @@ jobs:
             id_var: GAS_SCRIPT_ID_SUB
     defaults:
       run:
-        working-directory: gas/gmail-sorter
+        working-directory: gas/2026-11-01_gmail-sorter
     steps:
       - uses: actions/checkout@v5
 
@@ -44,12 +44,12 @@ jobs:
           [ -z "$CLASPRC_JSON" ] && missing="$missing Secret:CLASPRC_JSON"
           [ -z "$GAS_SCRIPT_ID" ] && missing="$missing Variable:$ID_NAME"
           if [ -n "$missing" ]; then
-            echo "::warning::GASへの反映をスキップしました。未設定:${missing}（Settings → Secrets and variables → Actions に登録。手順: gas/SETUP_PC.md）"
+            echo "::warning::GASへの反映をスキップしました。未設定:${missing}（Settings → Secrets and variables → Actions に登録。手順: gas/2026-11-01_gmail-sorter/docs/setup-auto-deploy.md）"
             echo "ready=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           printf '%s' "$CLASPRC_JSON" > ~/.clasprc.json
-          printf '{"scriptId":"%s","rootDir":"."}' "$GAS_SCRIPT_ID" > .clasp.json
+          printf '{"scriptId":"%s","rootDir":"src"}' "$GAS_SCRIPT_ID" > .clasp.json
           echo "ready=true" >> "$GITHUB_OUTPUT"
 
       - name: Push to Apps Script

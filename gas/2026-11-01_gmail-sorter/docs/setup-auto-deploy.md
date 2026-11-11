@@ -1,6 +1,6 @@
 # GAS 自動反映のセットアップ（PCで1回だけ）
 
-これを済ませると、リポジトリの `gas/gmail-sorter/` が main に入るたびに GitHub Actions が Apps Script へ自動で反映する。
+これを済ませると、リポジトリの `gas/2026-11-01_gmail-sorter/` が main に入るたびに GitHub Actions が Apps Script へ自動で反映する。
 スマホから Claude にコード修正を頼み、マージするだけで GAS が更新される。
 
 所要時間：15分ほど
@@ -18,7 +18,7 @@
 
 ## 2. GAS プロジェクトの ID を控える
 
-GAS をまだ作っていなければ、先に `gmail-sorter/README.md` の設置手順で作る。
+GAS をまだ作っていなければ、先に [`README.md`](../README.md) の設置手順で作る。
 
 GAS エディタの左メニュー「プロジェクトの設定」→「ID」の **スクリプト ID** をコピーする。
 
