@@ -7,6 +7,9 @@
     python3 sort_yahoo_mail.py --run --delete-old 90
                                           # 振り分け後、メルマガフォルダの90日より古いメールを削除
 
+ログイン情報は、環境変数 YAHOO_USER / YAHOO_PASS → macOS キーチェーン
+（setup_mac.sh で保存）→ 画面での入力、の順に探す。
+
 事前準備:
     Yahoo!メールの「設定 → IMAP/POP/SMTPアクセス」で
     「Yahoo! JAPAN公式サービス以外からのアクセスも有効にする」をオンにする。
@@ -20,8 +23,11 @@ import getpass
 import imaplib
 import os
 import re
+import subprocess
+import sys
 
 HOST = "imap.mail.yahoo.co.jp"
+KEYCHAIN_SERVICE = "yahoo-mail-sorter"
 
 # 上から順に判定し、最初に当たったフォルダへ移動する。
 # "subject" は件名、"from" は差出人（名前・アドレス）に含まれる語。
@@ -91,6 +97,33 @@ def classify(subject, sender):
     return None
 
 
+def keychain_login():
+    """macOS のキーチェーンから ID とパスワードを読む。なければ (None, None)。"""
+    try:
+        info = subprocess.run(["security", "find-generic-password", "-s", KEYCHAIN_SERVICE],
+                              capture_output=True, text=True)
+        pw = subprocess.run(["security", "find-generic-password", "-s", KEYCHAIN_SERVICE, "-w"],
+                            capture_output=True, text=True)
+    except FileNotFoundError:
+        return None, None
+    m = re.search(r'"acct"<blob>="([^"]*)"', info.stdout)
+    if info.returncode or pw.returncode or not m:
+        return None, None
+    return m.group(1), pw.stdout.rstrip("\n")
+
+
+def get_login():
+    user, password = os.environ.get("YAHOO_USER"), os.environ.get("YAHOO_PASS")
+    if user and password:
+        return user, password
+    user, password = keychain_login()
+    if user and password:
+        return user, password
+    if not sys.stdin.isatty():
+        sys.exit("ログイン情報が見つかりません。setup_mac.sh を実行してキーチェーンに保存してください。")
+    return input("Yahoo! JAPAN ID またはメールアドレス: "), getpass.getpass("パスワード: ")
+
+
 def quote(name):
     return '"' + imap_utf7_encode(name).replace("\\", "\\\\").replace('"', '\\"') + '"'
 
@@ -102,8 +135,8 @@ def main():
                     help=f"「{JUNK_FOLDER}」フォルダの、指定日数より古いメールを削除")
     args = ap.parse_args()
 
-    user = os.environ.get("YAHOO_USER") or input("Yahoo! JAPAN ID またはメールアドレス: ")
-    password = os.environ.get("YAHOO_PASS") or getpass.getpass("パスワード: ")
+    user, password = get_login()
+    print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), "開始")
 
     m = imaplib.IMAP4_SSL(HOST, 993)
     m.login(user, password)

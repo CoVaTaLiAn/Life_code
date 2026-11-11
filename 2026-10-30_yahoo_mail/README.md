@@ -27,10 +27,19 @@ python3 src/sort_yahoo_mail.py --run
 
 実際に振り分ける。`--delete-old 90` を足すと、振り分け後にメルマガフォルダの90日より古いメールを削除する。
 
-ID とパスワードは実行時に聞かれる。環境変数 `YAHOO_USER`・`YAHOO_PASS` に入れておけば聞かれない。
+ID とパスワードは、環境変数 `YAHOO_USER`・`YAHOO_PASS` → macOS キーチェーン → 実行時の入力、の順に探す。
+
+## Mac で毎日自動実行する
+
+```bash
+bash src/setup_mac.sh
+```
+
+ID とパスワードをキーチェーンに保存し、毎朝7時に `--run` で動く設定（launchd）を入れ、その場で1回振り分ける。記録は `~/Library/Logs/yahoo-mail-sorter.log`。止めるときは `launchctl unload ~/Library/LaunchAgents/com.life-code.yahoo-mail-sorter.plist`。
 
 ## ファイル
 
 | ファイル | 内容 |
 |---|---|
 | `src/sort_yahoo_mail.py` | 振り分けスクリプト（標準ライブラリだけで動く） |
+| `src/setup_mac.sh` | Mac で毎日自動実行するための設定 |
