@@ -1,0 +1,495 @@
+<title>統計検定2級 記述ドリル</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one narrow answer-sheet column. Problem sheet → graph-paper answer box → red-pen grading → history by topic. */
+:root {
+  --paper: #f6f8f7;
+  --sheet: #ffffff;
+  --ink: #18302c;
+  --ink-soft: #4d6661;
+  --rule: #d5e0dc;
+  --grid: #e4ecea;
+  --accent: #1f6e62;
+  --accent-ink: #ffffff;
+  --pen: #c8342b;
+  --pen-soft: #fbe9e7;
+  --ok: #1d7a45;
+  --ok-soft: #e3f3e9;
+  --warn: #a86500;
+  --warn-soft: #fbf0dc;
+  --f-display: "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  --f-body: "Noto Sans JP", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --paper: #0f1817; --sheet: #16211f; --ink: #e3ece9; --ink-soft: #9db2ad; --rule: #2a3a37; --grid: #1d2b29;
+  --accent: #4fb3a3; --accent-ink: #08201c; --pen: #ff7a6e; --pen-soft: #3a1c19; --ok: #5fd08f; --ok-soft: #15301f;
+  --warn: #f0b25a; --warn-soft: #33270f; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --paper: #0f1817; --sheet: #16211f; --ink: #e3ece9; --ink-soft: #9db2ad; --rule: #2a3a37; --grid: #1d2b29;
+  --accent: #4fb3a3; --accent-ink: #08201c; --pen: #ff7a6e; --pen-soft: #3a1c19; --ok: #5fd08f; --ok-soft: #15301f;
+  --warn: #f0b25a; --warn-soft: #33270f; color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--paper); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.75;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 60px }
+.wrap { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 22px }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; line-height: 1.35 }
+h1 { font-size: 1.6rem; font-weight: 900; letter-spacing: .01em }
+h2 { font-size: 1.1rem; font-weight: 700 }
+.eyebrow { font-family: var(--f-mono); font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-soft) }
+.lede { color: var(--ink-soft); margin: 6px 0 0; max-width: 60ch }
+header { display: flex; flex-direction: column; gap: 4px }
+
+.sheet { background: var(--sheet); border: 1px solid var(--rule); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 14px; min-width: 0 }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+.label { font-size: .78rem; font-weight: 700; color: var(--ink-soft); letter-spacing: .04em }
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px }
+.chip { font: inherit; font-size: .82rem; border: 1px solid var(--rule); background: transparent; color: var(--ink); border-radius: 999px; padding: 4px 11px; cursor: pointer; display: inline-flex; gap: 6px; align-items: center }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink) }
+.chip .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--rule) }
+.chip .dot.hot { background: var(--pen) } .chip .dot.mid { background: var(--warn) } .chip .dot.new { background: var(--ink-soft) } .chip .dot.cool { background: var(--ok) }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: .75rem; color: var(--ink-soft) }
+.legend span { display: inline-flex; gap: 5px; align-items: center }
+
+.btn { font: inherit; font-weight: 700; border-radius: 8px; padding: 9px 16px; cursor: pointer; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink) }
+.btn.ghost { background: transparent; color: var(--accent) }
+.btn.pen { background: var(--pen); border-color: var(--pen); color: #fff }
+.btn:disabled { opacity: .5; cursor: default }
+.btn:focus-visible, .chip:focus-visible, textarea:focus-visible, select:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+select { font: inherit; padding: 6px 8px; border-radius: 8px; border: 1px solid var(--rule); background: var(--sheet); color: var(--ink) }
+
+.status { font-size: .85rem; color: var(--ink-soft) }
+.status.err { color: var(--pen) }
+
+.problem-head { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: baseline }
+.tag { font-size: .75rem; font-weight: 700; padding: 2px 9px; border-radius: 4px; background: var(--grid); color: var(--ink) }
+.tag.sample { background: var(--warn-soft); color: var(--warn) }
+.prose { white-space: pre-wrap; overflow-wrap: anywhere; margin: 0 }
+.qs { margin: 0; padding-left: 0; list-style: none; display: flex; flex-direction: column; gap: 6px }
+.qs li { white-space: pre-wrap; overflow-wrap: anywhere }
+.given { font-size: .85rem; color: var(--ink-soft); border-top: 1px dashed var(--rule); padding-top: 10px; margin: 0; padding-left: 1.2em }
+.tbl-wrap { overflow-x: auto }
+table { border-collapse: collapse; font-family: var(--f-mono); font-size: .85rem; font-variant-numeric: tabular-nums }
+th, td { border: 1px solid var(--rule); padding: 4px 12px; text-align: right; white-space: nowrap }
+th:first-child, td:first-child { text-align: left }
+th { background: var(--grid); font-weight: 600 }
+
+.answer { width: 100%; min-height: 260px; resize: vertical; font-family: var(--f-mono); font-size: .9rem; line-height: 28px; color: var(--ink);
+  border: 1px solid var(--rule); border-radius: 8px; padding: 6px 12px;
+  background-color: var(--sheet);
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 14px 14px; background-position: -1px 5px }
+.tip { font-size: .8rem; color: var(--ink-soft); margin: 0 }
+.hint { background: var(--grid); border-radius: 8px; padding: 10px 12px; font-size: .9rem; white-space: pre-wrap }
+
+.grade { border: 2px solid var(--pen); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 12px; background: var(--sheet) }
+.score { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; color: var(--pen) }
+.score b { font-family: var(--f-display); font-size: 2.6rem; font-weight: 900; line-height: 1 }
+.score .verdict { font-family: var(--f-display); font-weight: 700; font-size: 1.1rem }
+.marks { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none }
+.marks li { display: grid; grid-template-columns: 2.2em 1fr; gap: 8px; align-items: start }
+.mark { font-family: var(--f-display); font-weight: 900; font-size: 1.3rem; color: var(--pen); line-height: 1.4; text-align: center }
+.marks li > div { min-width: 0; overflow-wrap: anywhere }
+.box { border-radius: 8px; padding: 10px 12px; font-size: .9rem }
+.box h3 { font-size: .85rem; margin-bottom: 4px }
+.box ul { margin: 0; padding-left: 1.2em }
+.box.bad { background: var(--pen-soft) } .box.good { background: var(--ok-soft) } .box.habit { background: var(--warn-soft) }
+details { border-top: 1px solid var(--rule); padding-top: 10px }
+summary { cursor: pointer; font-weight: 700; font-family: var(--f-display) }
+details .prose { margin-top: 8px; font-size: .9rem }
+
+.stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px }
+.stat { border: 1px solid var(--rule); border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; min-width: 0 }
+.stat .t { font-size: .8rem; font-weight: 700 }
+.stat .n { font-family: var(--f-mono); font-size: .8rem; color: var(--ink-soft); font-variant-numeric: tabular-nums }
+.bar { height: 5px; border-radius: 3px; background: var(--grid); overflow: hidden }
+.bar i { display: block; height: 100% }
+.hist { display: flex; flex-direction: column; gap: 0; margin: 0; padding: 0; list-style: none }
+.hist li { display: grid; grid-template-columns: 4.6em 1fr 3em; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--rule); font-size: .85rem; align-items: baseline }
+.hist .d { font-family: var(--f-mono); color: var(--ink-soft); font-size: .75rem }
+.hist .s { font-family: var(--f-mono); text-align: right; font-weight: 600 }
+.hist .m { min-width: 0; overflow-wrap: anywhere }
+.hist .m small { display: block; color: var(--ink-soft) }
+.empty { color: var(--ink-soft); font-size: .9rem; margin: 0 }
+.memo { font-size: .88rem }
+.memo dt { font-weight: 700; margin-top: 8px }
+.memo dd { margin: 0; color: var(--ink-soft); overflow-wrap: anywhere }
+footer { font-size: .75rem; color: var(--ink-soft); text-align: center }
+@media (prefers-reduced-motion: no-preference) { .grade { animation: pop .25s ease-out } @keyframes pop { from { transform: translateY(4px); opacity: .6 } to { transform: none; opacity: 1 } } }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Stat. Test Grade 2 · 記述練習</span>
+    <h1>統計検定2級 記述ドリル</h1>
+    <p class="lede">AIが問題を作り、あなたは解き方を書く。AIが赤ペンで採点し、前に間違えたところが再発していないかも見ます。</p>
+  </header>
+
+  <section class="sheet" aria-labelledby="pick-h">
+    <h2 id="pick-h">出題範囲</h2>
+    <div class="row">
+      <span class="label">選び方</span>
+      <select id="mode">
+        <option value="weak">苦手を優先（おすすめ）</option>
+        <option value="pick">下で選んだ分野から</option>
+      </select>
+      <span class="label">難しさ</span>
+      <select id="level">
+        <option value="basic">基本（1〜2問）</option>
+        <option value="exam" selected>本番レベル（2〜3問）</option>
+        <option value="hard">応用（3〜4問）</option>
+      </select>
+    </div>
+    <div class="chips" id="topics" role="group" aria-label="分野"></div>
+    <div class="legend">
+      <span><i class="dot hot" style="width:7px;height:7px;border-radius:50%;background:var(--pen);display:inline-block"></i>再発・要復習</span>
+      <span><i style="width:7px;height:7px;border-radius:50%;background:var(--warn);display:inline-block"></i>要復習</span>
+      <span><i style="width:7px;height:7px;border-radius:50%;background:var(--ink-soft);display:inline-block"></i>未着手</span>
+      <span><i style="width:7px;height:7px;border-radius:50%;background:var(--ok);display:inline-block"></i>できている</span>
+    </div>
+    <div class="row">
+      <button class="btn" id="gen">問題を作る</button>
+      <span class="status" id="gen-status" role="status"></span>
+    </div>
+  </section>
+
+  <section class="sheet" id="problem" aria-labelledby="prob-title"></section>
+
+  <section class="sheet" aria-labelledby="ans-h">
+    <h2 id="ans-h">解き方と答え</h2>
+    <p class="tip">式・途中の計算・結論まで書いてください。記号は x̄, s², √, Σ, ≒ などそのままでも「xbar」「sqrt」でも大丈夫です。</p>
+    <textarea class="answer" id="answer" placeholder="(1) 期待度数 = 行合計×列合計÷全体 なので …&#10;(2) χ² = Σ(O−E)²/E = …&#10;(3) 3.84 より大きいので帰無仮説を棄却する"></textarea>
+    <div class="row">
+      <button class="btn pen" id="grade">採点する</button>
+      <button class="btn ghost" id="hint">ヒントだけ見る</button>
+      <span class="status" id="ans-status" role="status"></span>
+    </div>
+    <div class="hint" id="hint-out" hidden></div>
+  </section>
+
+  <section id="result" hidden></section>
+
+  <section class="sheet" aria-labelledby="hist-h">
+    <h2 id="hist-h">分野ごとの成績</h2>
+    <div class="stats" id="stats"></div>
+    <h2>これまでの採点</h2>
+    <ul class="hist" id="hist"></ul>
+    <span class="status" id="hist-status"></span>
+  </section>
+
+  <section class="sheet" aria-labelledby="memo-h">
+    <details>
+      <summary id="memo-h">公式メモ（11/10〜12の振り返りより）</summary>
+      <dl class="memo" id="memo"></dl>
+    </details>
+  </section>
+
+  <footer>出題と採点はClaudeが行います。数値はAIの計算なので、模範解答に違和感があれば教科書で確かめてください。</footer>
+</div>
+
+<script>
+(() => {
+  // ---- Topics and what this learner got wrong before (from the 11/10–12 review) ----
+  const TOPICS = [
+    { id: "chi", name: "カイ二乗検定（独立性）", heat: "hot", past: "期待度数を全セル同じ（全体÷セル数）にした。Σ(O−E)²を期待度数で割らなかった（100で割った）。χ²と臨界値の比較で結論を出せなかった。第11問・第24問で再発。" },
+    { id: "reg", name: "単回帰", heat: "mid", past: "切片aと傾きbを取り違えた。正しくは b=Sxy/Sxx、a=ȳ−b·x̄。" },
+    { id: "f", name: "F検定（等分散）", heat: "mid", past: "自由度を(分母,分子)の順に書いた。分子=大きい方の不偏分散の自由度を先に書く。" },
+    { id: "pois", name: "ポアソン分布", heat: "new", past: "未着手。P(X=k)=λ^k e^(−λ)/k!、期間が2倍ならλも2倍。" },
+    { id: "mreg", name: "重回帰の出力の読み取り", heat: "mid", past: "全体が分からなかった。自由度(SSR=p, SSE=n−p−1)、R²、調整済みR²、F、係数のt。" },
+    { id: "norm", name: "正規分布", heat: "mid", past: "上側5%点をz=1.645のまま答えた。元の単位に戻す（μ+1.645σ）。" },
+    { id: "geo", name: "幾何分布", heat: "cool", past: "以前 E(X)=p、P(X>5)=0.9⁴ と間違えたが第23問で正解。" },
+    { id: "prop", name: "母比率の推定・検定", heat: "cool", past: "以前SEを√(np(1−p))にした。今は理解済み。" },
+    { id: "anova", name: "一元配置分散分析", heat: "cool", past: "正解。結論は「差があるとは言えない」と書く。" },
+    { id: "pair", name: "対応のあるt検定", heat: "cool", past: "正解。" },
+    { id: "ev", name: "期待値と分散の性質", heat: "cool", past: "正解。" },
+    { id: "ci", name: "母平均の区間推定", heat: "cool", past: "正解。" },
+    { id: "t2", name: "2標本t検定", heat: "new", past: "まだ出題していない。" },
+    { id: "bin", name: "二項分布・正規近似", heat: "new", past: "まだ出題していない。" },
+    { id: "bayes", name: "条件付き確率・ベイズ", heat: "new", past: "まだ出題していない。" },
+    { id: "desc", name: "記述統計（箱ひげ図・相関）", heat: "new", past: "まだ出題していない。" },
+  ];
+  const HEAT_W = { hot: 6, mid: 3, new: 2, cool: 1 };
+  const PATTERNS = TOPICS.filter(t => t.heat === "hot" || t.heat === "mid").map(t => `・${t.name}: ${t.past}`).join("\n");
+
+  const MEMO = [
+    ["F検定（等分散）", "F=大きい不偏分散÷小さい不偏分散。自由度は(分子の自由度, 分母の自由度)"],
+    ["幾何分布", "P(X=k)=(1−p)^(k−1)·p、P(X>k)=(1−p)^k、E(X)=1/p、V(X)=(1−p)/p²"],
+    ["ポアソン分布", "P(X=k)=λ^k·e^(−λ)/k!、E(X)=V(X)=λ。期間が2倍ならλも2倍"],
+    ["カイ二乗検定（独立性）", "期待度数=(行合計×列合計)÷全体、χ²=Σ(O−E)²/E、自由度=(行数−1)×(列数−1)。2×2では4セルの|O−E|が同じ"],
+    ["単回帰", "b=Sxy/Sxx、a=ȳ−b·x̄、R²=Sxy²/(Sxx·Syy)=r²"],
+    ["重回帰", "自由度 SSR=p、SSE=n−p−1、SST=n−1。R²=SSR/SST。調整済みR²=1−(SSE/(n−p−1))/(SST/(n−1))。F=(SSR/p)÷(SSE/(n−p−1))。係数のt=推定値÷標準誤差（自由度n−p−1）"],
+    ["区間推定", "平均: SE=s/√n、x̄±t点×SE。比率: SE=√(p̂(1−p̂)/n)、p̂±1.96×SE。検定ではH0の値でSEを作る"],
+    ["対応のあるt検定", "差の列で1標本t検定。t=差の平均÷(差のSD/√n)、自由度n−1"],
+    ["期待値と分散", "E(aX+bY)=aE(X)+bE(Y)。V(aX+bY)=a²V(X)+b²V(Y)+2ab·Cov。独立ならCov=0"],
+    ["自由度の考え方", "推定した値の数だけ減る。平均を推定→n−1、切片と傾き→n−2"],
+  ];
+
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const store = {
+    get(k) { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+  };
+
+  // ---- Topic chips ----
+  const picked = new Set(store.get("picked") || ["chi", "reg", "f", "pois"]);
+  function renderChips() {
+    $("topics").innerHTML = TOPICS.map(t =>
+      `<button class="chip" type="button" data-id="${t.id}" aria-pressed="${picked.has(t.id)}"><i class="dot ${t.heat}"></i>${esc(t.name)}</button>`).join("");
+  }
+  $("topics").addEventListener("click", e => {
+    const b = e.target.closest(".chip"); if (!b) return;
+    const id = b.dataset.id; picked.has(id) ? picked.delete(id) : picked.add(id);
+    store.set("picked", [...picked]); renderChips();
+  });
+  renderChips();
+  MEMO.forEach(([t, d]) => { $("memo").insertAdjacentHTML("beforeend", `<dt>${esc(t)}</dt><dd>${esc(d)}</dd>`); });
+
+  // ---- History (db, falls back to this browser) ----
+  let attempts = store.get("attempts-local") || [];
+  let db = null;
+  function stats() {
+    const by = {};
+    for (const a of attempts) { (by[a.topic] ||= []).push(a.score); }
+    return by;
+  }
+  function pickTopic() {
+    const mode = $("mode").value;
+    let pool = mode === "pick" ? TOPICS.filter(t => picked.has(t.id)) : TOPICS;
+    if (!pool.length) pool = TOPICS;
+    if (mode === "pick") return pool[Math.floor(Math.random() * pool.length)];
+    const by = stats();
+    const weights = pool.map(t => {
+      const s = by[t.name] || [];
+      let w = HEAT_W[t.heat];
+      if (s.length) { const recent = s.slice(0, 3); const avg = recent.reduce((x, y) => x + y, 0) / recent.length; w = avg < 60 ? w + 4 : avg < 85 ? w + 1 : Math.max(0.5, w - 2); }
+      return w;
+    });
+    let r = Math.random() * weights.reduce((a, b) => a + b, 0);
+    for (let i = 0; i < pool.length; i++) { r -= weights[i]; if (r <= 0) return pool[i]; }
+    return pool[0];
+  }
+  function renderHistory() {
+    const by = stats();
+    $("stats").innerHTML = TOPICS.filter(t => by[t.name]).map(t => {
+      const s = by[t.name]; const avg = Math.round(s.reduce((a, b) => a + b, 0) / s.length);
+      const col = avg >= 80 ? "var(--ok)" : avg >= 50 ? "var(--warn)" : "var(--pen)";
+      return `<div class="stat"><span class="t">${esc(t.name)}</span><span class="n">${s.length}回 · 平均${avg}点 · 直近${s[0]}点</span><span class="bar"><i style="width:${avg}%;background:${col}"></i></span></div>`;
+    }).join("") || `<p class="empty">まだ採点がありません。1問解くとここに分野ごとの平均点が出ます。</p>`;
+    $("hist").innerHTML = attempts.slice(0, 30).map(a => {
+      const d = new Date(a.at); const ds = `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+      const miss = (a.mistakes || []).map(m => m.point).slice(0, 2).join(" / ");
+      return `<li><span class="d">${ds}</span><span class="m">${esc(a.topic)}<small>${esc(miss || a.title || "")}</small></span><span class="s" style="color:${a.score >= 80 ? "var(--ok)" : a.score >= 50 ? "var(--warn)" : "var(--pen)"}">${a.score}</span></li>`;
+    }).join("");
+  }
+  renderHistory();
+
+  (async () => {
+    try {
+      db = await window.claude?.use?.("db");
+    } catch { db = null; }
+    if (!db) { $("hist-status").textContent = "履歴はこのブラウザだけに保存されます。"; return; }
+    const timer = setTimeout(() => { $("hist-status").textContent = "履歴の読み込みに時間がかかっています。"; }, 10000);
+    db.collection("attempts").orderBy("at", "desc").limit(200).onSnapshot(snap => {
+      clearTimeout(timer); $("hist-status").textContent = "";
+      const remote = snap.docs.map(d => d.data());
+      if (remote.length || !attempts.length) { attempts = remote; renderHistory(); }
+    }, () => { clearTimeout(timer); $("hist-status").textContent = "履歴を読み込めませんでした。このブラウザの記録を表示しています。"; db = null; });
+  })();
+
+  async function saveAttempt(a) {
+    attempts = [a, ...attempts]; renderHistory();
+    store.set("attempts-local", attempts.slice(0, 200));
+    if (db) { try { await db.collection("attempts").add(a); } catch { $("hist-status").textContent = "記録をサーバーに保存できませんでした（このブラウザには残っています）。"; } }
+  }
+
+  // ---- Problem rendering ----
+  const SAMPLE = {
+    sample: true,
+    topic: "カイ二乗検定（独立性）",
+    title: "通勤手段と朝食の有無",
+    problem: "ある会社の社員200人に、通勤手段（電車・車）と朝食をとるかどうかを調べた。通勤手段と朝食の有無が独立かどうかを有意水準5%で検定したい。",
+    table: { headers: ["", "朝食あり", "朝食なし", "計"], rows: [["電車", "70", "50", "120"], ["車", "30", "50", "80"], ["計", "100", "100", "200"]] },
+    questions: ["(1) 「電車・朝食あり」のセルの期待度数を求めよ。", "(2) χ²統計量を求めよ（小数第2位まで）。", "(3) 自由度と結論を書け。"],
+    given: ["自由度1のχ²分布の上側5%点は3.84"],
+    solution: "(1) 期待度数=行合計×列合計÷全体=120×100÷200=60\n他のセルも同様に 電車なし60、車あり40、車なし40。\n(2) 2×2なので|O−E|はすべて10。\nχ²=10²/60+10²/60+10²/40+10²/40=1.667+1.667+2.5+2.5≒8.33\n(3) 自由度=(2−1)×(2−1)=1。8.33>3.84 なので帰無仮説（独立）を棄却する。通勤手段と朝食の有無には関連があると言える。",
+    answers: ["(1) 60", "(2) χ²≒8.33", "(3) 自由度1、8.33>3.84 で棄却（関連がある）"],
+    checkpoints: ["期待度数を行合計×列合計÷全体で出している", "各セルを自分の期待度数で割っている", "臨界値と比較して結論を書いている"],
+  };
+  let current = store.get("current") || SAMPLE;
+
+  function renderProblem() {
+    const p = current;
+    const tbl = p.table && p.table.headers?.length ? `<div class="tbl-wrap"><table><thead><tr>${p.table.headers.map(h => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${(p.table.rows || []).map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>` : "";
+    $("problem").innerHTML = `
+      <div class="problem-head">
+        <h2 id="prob-title">${esc(p.title || "問題")}</h2>
+        <span class="row"><span class="tag">${esc(p.topic)}</span>${p.sample ? `<span class="tag sample">見本の問題</span>` : ""}</span>
+      </div>
+      <p class="prose">${esc(p.problem)}</p>
+      ${tbl}
+      <ol class="qs">${(p.questions || []).map(q => `<li>${esc(q)}</li>`).join("")}</ol>
+      ${(p.given || []).length ? `<ul class="given">${p.given.map(g => `<li>${esc(g)}</li>`).join("")}</ul>` : ""}`;
+  }
+  renderProblem();
+  $("answer").value = store.get("draft") || "";
+  $("answer").addEventListener("input", () => store.set("draft", $("answer").value));
+
+  // ---- Claude ----
+  let samplePromise = null;
+  const getSample = () => (samplePromise ||= (async () => { try { return await window.claude?.use?.("sample"); } catch { return null; } })());
+  const errCopy = code => ({
+    not_granted: "Claudeの利用が許可されていません。ページの権限設定から許可してください。",
+    rate_limited: "短い間に何度も呼び出しました。少し待ってからもう一度押してください。",
+    cancelled: "止めました。",
+    sampling_disabled: "このアカウントではページからClaudeを呼び出せません。",
+    session_expired: "ログインが切れています。ページを開き直してください。",
+  }[code] || "AIからの返事を受け取れませんでした。もう一度押してください。");
+
+  function parseJSON(text) {
+    const m = text.match(/\{[\s\S]*\}/);
+    return JSON.parse(m ? m[0] : text);
+  }
+  async function askJSON(prompt, opts) {
+    const sample = await getSample();
+    if (!sample) { const e = new Error("unavailable"); e.code = "unavailable"; throw e; }
+    try { return await sample.json(prompt, opts); }
+    catch (e) {
+      if (e && e.text) { try { return parseJSON(e.text); } catch {} }
+      throw e;
+    }
+  }
+
+  $("gen").addEventListener("click", async () => {
+    const topic = pickTopic();
+    const level = $("level").value;
+    const levelText = { basic: "基本。小問1〜2個。公式を1回当てはめれば解ける", exam: "本番レベル。小問2〜3個", hard: "応用。小問3〜4個。複数の考え方を組み合わせる" }[level];
+    const recent = attempts.filter(a => a.topic === topic.name).slice(0, 3).map(a => a.title).filter(Boolean);
+    const prompt = `あなたは統計検定2級の問題作成者です。日本語で、記述式（解き方を書かせる）の問題を1つ作ってください。
+
+分野: ${topic.name}
+難しさ: ${levelText}
+この受験者がこの分野で以前つまずいた点: ${topic.past}
+受験者の他の苦手パターン:
+${PATTERNS}
+${recent.length ? `最近出した題材（重ならないように）: ${recent.join("、")}` : ""}
+
+条件:
+- つまずいた点を確かめられる小問を必ず1つ入れる（例: 期待度数、自由度の順序、元の単位に戻す、切片の計算など）。
+- 数値は手計算で解けるきりのよい値にする。電卓なしでも1〜2分で計算できる程度。
+- 必要な数表の値（z、t、χ²、F の上側%点など）は given にすべて書く。
+- 模範解答の数値は必ず検算し、途中式まで正しいことを確認してから出す。
+- LaTeXやMarkdownは使わず、x̄、s²、√、Σ、≒、² などの記号をそのまま使う。
+- データ表がある場合は table に入れ、本文には書かない。表がなければ table は null。
+
+次のJSONだけを返す:
+{"title":"短い題名","problem":"問題文","table":{"headers":["","列1"],"rows":[["行1","値"]]} または null,"questions":["(1) …","(2) …"],"given":["数表の値など"],"solution":"模範解答（途中式つき、小問ごと）","answers":["(1) 最終答え"],"checkpoints":["採点で見るポイント"]}`;
+    $("gen").disabled = true; $("gen-status").className = "status"; $("gen-status").textContent = `「${topic.name}」の問題を作っています…（20〜60秒）`;
+    try {
+      const p = await askJSON(prompt, { cache: false });
+      if (!p || !p.problem) throw new Error("bad");
+      current = { ...p, topic: topic.name, topicId: topic.id };
+      store.set("current", current); store.set("draft", "");
+      $("answer").value = ""; $("hint-out").hidden = true; $("result").hidden = true;
+      renderProblem(); $("gen-status").textContent = "";
+      $("problem").scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch (e) {
+      $("gen-status").className = "status err";
+      $("gen-status").textContent = e.code === "unavailable" ? "ここではAIを呼び出せません。claude.ai でこのページを開いてください。" : errCopy(e.code);
+    } finally { $("gen").disabled = false; }
+  });
+
+  $("hint").addEventListener("click", async () => {
+    const p = current;
+    const prompt = `統計検定2級の問題を解いている受験者に、最初の一歩だけのヒントを日本語で2〜3行で出してください。答えや最終的な数値は書かないこと。LaTeXやMarkdownは使わない。
+
+問題: ${p.problem}
+${p.table ? "表: " + JSON.stringify(p.table) : ""}
+小問: ${(p.questions || []).join(" ")}
+模範解答（受験者には見せない）: ${p.solution}
+受験者がいま書いている途中: ${$("answer").value || "（まだ何も書いていない）"}
+受験者の過去のつまずき: ${TOPICS.find(t => t.name === p.topic)?.past || ""}`;
+    $("hint").disabled = true; $("ans-status").className = "status"; $("ans-status").textContent = "ヒントを考えています…";
+    const out = $("hint-out");
+    try {
+      const sample = await getSample();
+      if (!sample) throw Object.assign(new Error(), { code: "unavailable" });
+      out.hidden = false; out.textContent = "…";
+      await sample(prompt, { modelTier: "quick", cache: false, onText: ({ text }) => { out.textContent = text; } });
+      $("ans-status").textContent = "";
+    } catch (e) {
+      $("ans-status").className = "status err";
+      $("ans-status").textContent = e.code === "unavailable" ? "ここではAIを呼び出せません。" : errCopy(e.code);
+    } finally { $("hint").disabled = false; }
+  });
+
+  $("grade").addEventListener("click", async () => {
+    const ans = $("answer").value.trim();
+    if (!ans) { $("ans-status").className = "status err"; $("ans-status").textContent = "解き方を書いてから採点してください。"; $("answer").focus(); return; }
+    const p = current;
+    const prompt = `あなたは統計検定2級の記述答案を採点する先生です。受験者の答案を模範解答と照らして日本語で採点してください。
+
+問題: ${p.problem}
+${p.table ? "表: " + JSON.stringify(p.table) : ""}
+小問: ${(p.questions || []).join("\n")}
+与えられた値: ${(p.given || []).join(" / ")}
+模範解答: ${p.solution}
+最終答え: ${(p.answers || []).join(" / ")}
+採点ポイント: ${(p.checkpoints || []).join(" / ")}
+
+受験者の過去のつまずき（再発していないか必ず確認する）:
+${PATTERNS}
+
+受験者の答案:
+"""
+${ans}
+"""
+
+採点の方針:
+- 最終の数値だけでなく、考え方・式・途中計算・結論の書き方を見る。丸め誤差の範囲は正解にする。
+- 模範解答に誤りがあると判断したら、正しい解き方で採点し、model_fix に正しい解答を書く。
+- 検定の結論で「差がない」「独立である」と言い切っていたら、「…とは言えない」が正しいと指摘する。
+- 過去と同じ間違いをしていたら recurrence にその内容を書く。なければ空文字。
+- LaTeXやMarkdownは使わない。やさしく、具体的に。
+
+次のJSONだけを返す:
+{"score":0〜100の整数,"verdict":"正解|ほぼ正解|部分正解|不正解","per_question":[{"q":"(1)","mark":"○|△|×","comment":"どこが良い/悪いか一文"}],"good":["できていたこと"],"mistakes":[{"point":"間違い","correct":"正しくは"}],"recurrence":"過去と同じ間違い","next":"次に意識すること一文","model_fix":""}`;
+    $("grade").disabled = true; $("ans-status").className = "status"; $("ans-status").textContent = "赤ペンで採点しています…（20〜60秒）";
+    try {
+      const g = await askJSON(prompt, { cache: false });
+      if (typeof g?.score !== "number") throw new Error("bad");
+      renderGrade(g, p);
+      $("ans-status").textContent = "";
+      await saveAttempt({ at: Date.now(), topic: p.topic, title: p.title || "", level: $("level").value, score: Math.max(0, Math.min(100, Math.round(g.score))),
+        verdict: g.verdict || "", marks: (g.per_question || []).map(x => `${x.q}${x.mark}`).join(" "),
+        mistakes: (g.mistakes || []).slice(0, 6), recurrence: g.recurrence || "",
+        problem: { problem: p.problem, table: p.table || null, questions: p.questions || [] }, answer: ans.slice(0, 4000), sample: !!p.sample });
+    } catch (e) {
+      $("ans-status").className = "status err";
+      $("ans-status").textContent = e.code === "unavailable" ? "ここではAIを呼び出せません。claude.ai でこのページを開いてください。" : errCopy(e.code);
+    } finally { $("grade").disabled = false; }
+  });
+
+  function renderGrade(g, p) {
+    const r = $("result");
+    const list = (arr, f) => (arr || []).map(f).join("");
+    r.innerHTML = `<div class="grade">
+      <div class="score"><b>${Math.round(g.score)}</b><span>点</span><span class="verdict">${esc(g.verdict)}</span></div>
+      <ul class="marks">${list(g.per_question, x => `<li><span class="mark">${esc(x.mark)}</span><div><strong>${esc(x.q)}</strong> ${esc(x.comment)}</div></li>`)}</ul>
+      ${g.recurrence ? `<div class="box habit"><h3>前と同じ間違い</h3>${esc(g.recurrence)}</div>` : ""}
+      ${(g.mistakes || []).length ? `<div class="box bad"><h3>直すところ</h3><ul>${list(g.mistakes, m => `<li>${esc(m.point)} → <strong>${esc(m.correct)}</strong></li>`)}</ul></div>` : ""}
+      ${(g.good || []).length ? `<div class="box good"><h3>できていたこと</h3><ul>${list(g.good, x => `<li>${esc(x)}</li>`)}</ul></div>` : ""}
+      ${g.next ? `<p class="prose"><strong>次に意識すること:</strong> ${esc(g.next)}</p>` : ""}
+      <details open><summary>模範解答</summary><p class="prose">${esc(g.model_fix || p.solution)}</p></details>
+      <div class="row"><button class="btn" type="button" id="again">次の問題を作る</button></div>
+    </div>`;
+    r.hidden = false;
+    $("again").onclick = () => { $("gen").click(); window.scrollTo({ top: 0, behavior: "smooth" }); };
+    r.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+})();
+</script>

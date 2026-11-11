@@ -11,6 +11,7 @@
 | [`research/2026-11-06_pubmed_notebook/`](research/2026-11-06_pubmed_notebook/README.md) | PubMed 一括検索ノートブック（Google Colab 無料枠） |
 | [`Blog/2026-10-21_obsidian_icloud_gdrive/`](Blog/2026-10-21_obsidian_icloud_gdrive/README.md) | Obsidian（iCloud）→ Google Drive の自動同期（Mac） |
 | [`Blog/2026-10-24_pctimer_windows/`](Blog/2026-10-24_pctimer_windows/README.md) | 指定時刻に Windows をロックするタイマー |
+| [`study/2026-11-11_stat-exam-practice/`](study/2026-11-11_stat-exam-practice/README.md) | 統計検定2級の記述ドリル（AIが出題・採点する Artifact ページ） |
 | [`analysis/`](analysis/example_churn_sample/report.md) | CSV 初期分析の出力先（下記 `csv-analysis`） |
 | `.claude/` | Claude Code 用のスキル・エージェント（`csv-analysis`・`pubmed-survey`・`gmail-triage` など） |
 
