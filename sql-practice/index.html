@@ -1,0 +1,789 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SQLドリル</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Noto+Sans+JP:wght@400;500;700&family=Zen+Kaku+Gothic+New:wght@700&display=swap">
+<style>
+/* layout: 左にクエリの句を1行ずつ積む「組み立て台」、右に生成SQLと実行結果。狭い画面では縦に積む */
+:root{
+  --bg:#edf1f3; --surface:#ffffff; --sunk:#f5f7f8; --ink:#15222c; --muted:#5a6a77; --line:#d3dce2;
+  --accent:#0a7570; --accent-ink:#ffffff; --accent-soft:#dcefed;
+  --t-k:#0a7570; --t-s:#a24f17; --t-n:#6a43c0; --t-f:#1c5ea9;
+  --ok:#14773b; --ok-soft:#e0f3e6; --err:#b02222; --err-soft:#fbe6e6; --warn:#7f5400; --warn-soft:#fbf0d6;
+  --f-head:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",sans-serif;
+  --f-body:"Noto Sans JP","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
+  --f-code:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --r:8px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f161b; --surface:#162027; --sunk:#111a20; --ink:#e2e9ee; --muted:#93a3af; --line:#2a3842;
+    --accent:#35c2b6; --accent-ink:#06201e; --accent-soft:#163a38;
+    --t-k:#4fd3c6; --t-s:#f1a46a; --t-n:#b9a4f6; --t-f:#7eb6f2;
+    --ok:#5fd68b; --ok-soft:#173726; --err:#ff8a8a; --err-soft:#3d1c1c; --warn:#f3c768; --warn-soft:#3a2f12;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f161b; --surface:#162027; --sunk:#111a20; --ink:#e2e9ee; --muted:#93a3af; --line:#2a3842;
+  --accent:#35c2b6; --accent-ink:#06201e; --accent-soft:#163a38;
+  --t-k:#4fd3c6; --t-s:#f1a46a; --t-n:#b9a4f6; --t-f:#7eb6f2;
+  --ok:#5fd68b; --ok-soft:#173726; --err:#ff8a8a; --err-soft:#3d1c1c; --warn:#f3c768; --warn-soft:#3a2f12;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.6;margin:0}
+.wrap{max-width:1240px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));display:flex;flex-direction:column;gap:16px}
+code,pre,textarea,.mono{font-family:var(--f-code)}
+h1,h2,h3{font-family:var(--f-head);text-wrap:balance;margin:0}
+button,select,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* header */
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px}
+.brand h1{font-size:26px;letter-spacing:.02em}
+.brand h1 .semi{color:var(--accent);font-family:var(--f-code);font-weight:600}
+.brand p{margin:2px 0 0;color:var(--muted)}
+.tabs{display:flex;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:3px}
+.tabs button{border:0;background:none;padding:6px 16px;border-radius:999px;color:var(--muted);font-weight:500}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+
+/* drill */
+.drill{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:20px}
+.plist{display:flex;flex-direction:column;gap:8px}
+.pgroup{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.pgroup .gname{font-size:12px;color:var(--muted);width:5.5em;letter-spacing:.04em}
+.pnum{width:34px;height:30px;border-radius:6px;border:1px solid var(--line);background:var(--sunk);font-family:var(--f-code);font-size:13px;font-variant-numeric:tabular-nums;position:relative}
+.pnum[aria-current="true"]{border-color:var(--accent);background:var(--accent);color:var(--accent-ink)}
+.pnum.done::after{content:"";position:absolute;right:-3px;top:-3px;width:9px;height:9px;border-radius:50%;background:var(--ok);border:2px solid var(--surface)}
+.progress{font-size:12px;color:var(--muted);margin-top:2px}
+.task{display:flex;flex-direction:column;gap:8px;min-width:0}
+.task .meta{display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted)}
+.tag{background:var(--accent-soft);color:var(--accent);border-radius:4px;padding:1px 8px;font-weight:500}
+.task h2{font-size:19px}
+.task p{margin:0}
+.taskbtns{display:flex;flex-wrap:wrap;gap:8px}
+.reveal{background:var(--sunk);border:1px dashed var(--line);border-radius:6px;padding:8px 12px;margin:0;overflow-x:auto}
+
+/* main grid */
+.main{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:16px;align-items:start}
+.builder{display:flex;flex-direction:column;gap:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.bhead{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line);gap:8px}
+.bhead h3{font-size:15px}
+.clause{display:grid;grid-template-columns:96px minmax(0,1fr);border-bottom:1px solid var(--line)}
+.clause:last-child{border-bottom:0}
+.clause .side{padding:12px 10px 12px 14px;background:var(--sunk);border-right:1px solid var(--line);display:flex;flex-direction:column;gap:2px}
+.kw{font-family:var(--f-code);font-weight:600;color:var(--t-k);font-size:13px;letter-spacing:.02em}
+.ord{font-size:11px;color:var(--muted)}
+.cbody{padding:12px 14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.ttl{font-size:12px;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:baseline;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:4px 9px}
+.chip code{font-size:12.5px}
+.chip small{color:var(--muted);font-size:11px}
+.chip[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent)}
+.chip[aria-pressed="true"] code{color:var(--accent);font-weight:600}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.lbl{font-size:12px;color:var(--muted);min-width:2.5em}
+.paren{font-family:var(--f-code);color:var(--muted)}
+select,input[type="text"]{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:5px 8px;max-width:100%;min-width:0}
+select{font-family:var(--f-code);font-size:12.5px}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:5px 12px;font-size:13px}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.btn.ghost{border-style:dashed;color:var(--accent)}
+.x{border:0;background:none;color:var(--muted);font-size:16px;line-height:1;padding:2px 6px;border-radius:4px}
+.x:hover{color:var(--err);background:var(--err-soft)}
+.picked{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.pill{display:inline-flex;align-items:center;gap:2px;background:var(--sunk);border:1px solid var(--line);border-radius:999px;padding:2px 4px 2px 10px}
+.pill code{font-size:12.5px}
+.hintline{font-size:12px;color:var(--muted)}
+.check{display:flex;align-items:center;gap:6px;font-size:13px}
+.cond{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--sunk)}
+
+/* output */
+.out{display:flex;flex-direction:column;gap:12px;min-width:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;min-width:0}
+.pbar{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.pbar h3{font-size:14px}
+.pbar .btns{display:flex;gap:6px}
+#sqlview{margin:0;padding:14px 16px;font-size:14px;line-height:1.75;white-space:pre-wrap;word-break:break-word;min-height:4.5em}
+#sqledit{display:block;width:100%;min-height:10em;border:0;padding:14px 16px;font-size:14px;line-height:1.75;background:var(--sunk);resize:vertical}
+.t-k{color:var(--t-k);font-weight:600}.t-s{color:var(--t-s)}.t-n{color:var(--t-n)}.t-f{color:var(--t-f);font-weight:600}
+.explain{margin:0;padding:10px 16px;border-top:1px solid var(--line);background:var(--sunk);font-size:13px}
+.explain b{font-weight:500;color:var(--muted);margin-right:6px}
+.warn{margin:0;padding:8px 16px;background:var(--warn-soft);color:var(--warn);font-size:13px;border-top:1px solid var(--line)}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.actions .kbd{font-size:12px;color:var(--muted)}
+.verdict{border-radius:var(--r);padding:10px 14px;font-weight:500;margin:0}
+.verdict.ok{background:var(--ok-soft);color:var(--ok)}
+.verdict.ng{background:var(--err-soft);color:var(--err)}
+.tablewrap{overflow-x:auto;max-height:460px;overflow-y:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:6px 12px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{position:sticky;top:0;background:var(--sunk);font-family:var(--f-code);font-weight:600;font-size:12px;color:var(--muted)}
+td.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--f-code);font-size:12.5px}
+.null{font-family:var(--f-code);font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 4px}
+.count{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.msg{padding:16px;margin:0;color:var(--muted)}
+.msg.err{color:var(--err);background:var(--err-soft)}
+.msg.err code{display:block;margin-top:4px;font-size:12px;opacity:.85}
+
+/* schema */
+details.schema{background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+details.schema summary{padding:10px 14px;cursor:pointer;font-weight:500}
+.tables{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;padding:0 14px 14px}
+.tcard{border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.tcard h4{margin:0;padding:6px 10px;background:var(--sunk);font-family:var(--f-code);font-size:13px;display:flex;justify-content:space-between;align-items:center;gap:6px}
+.tcard h4 span{font-family:var(--f-body);font-weight:400;color:var(--muted);font-size:12px}
+.tcard ul{list-style:none;margin:0;padding:6px 10px;font-size:12.5px}
+.tcard li{display:flex;justify-content:space-between;gap:8px;padding:2px 0}
+.tcard li code{font-size:12.5px}
+.tcard li em{font-style:normal;color:var(--muted);font-size:11px;font-family:var(--f-code)}
+.tcard .btn{margin:0 10px 10px}
+.loading{padding:40px 16px;text-align:center;color:var(--muted)}
+
+@media (max-width:900px){
+  .main,.drill{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:480px){
+  .clause{grid-template-columns:minmax(0,1fr)}
+  .clause .side{flex-direction:row;align-items:baseline;gap:10px;border-right:0;border-bottom:1px solid var(--line);padding:8px 14px}
+  .pgroup .gname{width:100%}
+}
+@media (prefers-reduced-motion:no-preference){
+  .chip,.btn,.pnum{transition:background-color .12s,border-color .12s}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>SQLドリル<span class="semi">;</span></h1>
+      <p>ボタンとリストを選ぶだけでSQLができあがります。できたSQLはその場で実行されます。</p>
+    </div>
+    <div class="tabs" role="tablist" aria-label="モード">
+      <button type="button" role="tab" id="tab-drill" aria-selected="true">練習問題</button>
+      <button type="button" role="tab" id="tab-free" aria-selected="false">自由に組み立てる</button>
+    </div>
+  </header>
+
+  <section class="drill" id="drill" aria-label="練習問題">
+    <div>
+      <div class="plist" id="plist"></div>
+      <p class="progress" id="progress"></p>
+    </div>
+    <article class="task" id="task"></article>
+  </section>
+
+  <div class="main">
+    <section class="builder" aria-label="SQLの組み立て">
+      <div class="bhead">
+        <h3>組み立て台</h3>
+        <button type="button" class="btn" id="reset">最初から</button>
+      </div>
+      <div id="builder"><p class="loading">データベースを準備しています…</p></div>
+    </section>
+
+    <section class="out">
+      <div class="panel">
+        <div class="pbar">
+          <h3>できあがったSQL</h3>
+          <div class="btns">
+            <button type="button" class="btn" id="copy">コピー</button>
+            <button type="button" class="btn" id="edit">手で書き換える</button>
+          </div>
+        </div>
+        <pre id="sqlview"></pre>
+        <textarea id="sqledit" spellcheck="false" aria-label="SQLを直接編集" hidden></textarea>
+        <p class="explain" id="explain"></p>
+        <p class="warn" id="warn" hidden></p>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn primary" id="run">実行する</button>
+        <button type="button" class="btn primary" id="check">答え合わせ</button>
+        <span class="kbd" id="kbd" hidden>Ctrl + Enter でも実行できます</span>
+      </div>
+      <p class="verdict" id="verdict" hidden></p>
+      <div class="panel">
+        <div class="pbar"><h3>実行結果</h3><span class="count" id="rescount"></span></div>
+        <div class="tablewrap" id="result"></div>
+      </div>
+    </section>
+  </div>
+
+  <details class="schema" id="schema">
+    <summary>表（テーブル）の中身を確認する</summary>
+    <div class="tables" id="tables"></div>
+  </details>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-asm.js"></script>
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* ---------- データ ---------- */
+const SCHEMA = {
+  employees: {label:"社員", cols:[["id","INTEGER","社員ID"],["name","TEXT","名前"],["dept_id","INTEGER","部署ID"],["age","INTEGER","年齢"],["salary","INTEGER","月給"],["hire_date","TEXT","入社日"],["city","TEXT","勤務地"]]},
+  departments: {label:"部署", cols:[["id","INTEGER","部署ID"],["name","TEXT","部署名"],["floor","INTEGER","フロア"]]},
+  sales: {label:"売上", cols:[["id","INTEGER","売上ID"],["employee_id","INTEGER","社員ID"],["product","TEXT","商品"],["amount","INTEGER","金額"],["sold_on","TEXT","販売日"]]}
+};
+const RELS = [["employees","dept_id","departments","id"],["sales","employee_id","employees","id"]];
+const SEED = `
+CREATE TABLE departments(id INTEGER PRIMARY KEY, name TEXT, floor INTEGER);
+INSERT INTO departments VALUES (1,'営業部',3),(2,'開発部',5),(3,'マーケティング部',4),(4,'人事部',2),(5,'経理部',2);
+CREATE TABLE employees(id INTEGER PRIMARY KEY, name TEXT, dept_id INTEGER, age INTEGER, salary INTEGER, hire_date TEXT, city TEXT);
+INSERT INTO employees VALUES
+(1,'佐藤 花子',1,34,420000,'2016-04-01','東京'),
+(2,'鈴木 一郎',2,28,310000,'2020-04-01','大阪'),
+(3,'高橋 美咲',1,45,560000,'2008-10-01','東京'),
+(4,'田中 健太',3,31,350000,'2018-07-15','名古屋'),
+(5,'伊藤 さくら',2,26,290000,'2022-04-01','東京'),
+(6,'渡辺 大輔',4,39,480000,'2012-04-01','福岡'),
+(7,'山本 彩',3,29,330000,'2021-01-10','大阪'),
+(8,'中村 翔',1,52,610000,'2001-04-01','東京'),
+(9,'小林 由美',4,36,400000,'2014-09-01','東京'),
+(10,'加藤 亮',2,41,450000,'2010-04-01','大阪'),
+(11,'吉田 結衣',3,24,270000,'2024-04-01','名古屋'),
+(12,'山田 拓也',1,33,380000,'2017-04-01','福岡'),
+(13,'佐々木 恵',4,47,520000,'2006-04-01','東京'),
+(14,'山口 蓮',2,30,340000,'2019-10-01','札幌'),
+(15,'松本 葵',NULL,27,300000,'2023-06-01','東京'),
+(16,'井上 誠',3,38,430000,'2013-04-01','大阪');
+CREATE TABLE sales(id INTEGER PRIMARY KEY, employee_id INTEGER, product TEXT, amount INTEGER, sold_on TEXT);
+INSERT INTO sales(employee_id,product,amount,sold_on) VALUES
+(1,'ノートPC',240000,'2026-01-12'),(1,'モニター',85000,'2026-02-03'),(1,'ノートPC',480000,'2026-03-21'),(1,'タブレット',132000,'2026-05-08'),(1,'ノートPC',360000,'2026-07-19'),
+(3,'ノートPC',720000,'2026-01-25'),(3,'キーボード',24000,'2026-02-14'),(3,'モニター',170000,'2026-04-02'),(3,'タブレット',264000,'2026-06-11'),
+(8,'ノートPC',960000,'2026-02-28'),(8,'モニター',255000,'2026-03-15'),(8,'マウス',18000,'2026-05-30'),(8,'ノートPC',240000,'2026-08-04'),
+(12,'モニター',85000,'2026-01-20'),(12,'キーボード',36000,'2026-03-03'),(12,'ノートPC',240000,'2026-04-18'),(12,'マウス',9000,'2026-06-27'),(12,'タブレット',132000,'2026-09-09'),
+(2,'マウス',6000,'2026-02-10'),(2,'キーボード',12000,'2026-07-07'),
+(6,'ノートPC',480000,'2026-03-30'),(6,'モニター',170000,'2026-08-22'),
+(10,'タブレット',396000,'2026-04-25'),(10,'ノートPC',240000,'2026-10-01'),
+(4,'モニター',85000,'2026-05-16'),(4,'マウス',12000,'2026-09-28'),
+(16,'ノートPC',240000,'2026-06-05'),(16,'タブレット',132000,'2026-10-14');
+`;
+
+/* ---------- 練習問題 ---------- */
+const PROBLEMS = [
+  {g:"基本", t:"全社員のデータ", q:"社員（employees）表の<b>すべての列</b>を表示してください。", h:"SELECT で列を何も選ばないと * （すべての列）になります。", a:"SELECT * FROM employees;"},
+  {g:"基本", t:"名前と勤務地", q:"全社員の<b>名前（name）</b>と<b>勤務地（city）</b>だけを表示してください。", h:"SELECT の列ボタンを name → city の順に押します。", a:"SELECT name, city FROM employees;"},
+  {g:"基本", t:"勤務地の一覧", q:"社員の勤務地（city）を、<b>重複なし</b>で一覧にしてください。", h:"city を選んで DISTINCT にチェックを入れます。", a:"SELECT DISTINCT city FROM employees;"},
+  {g:"絞り込み", t:"東京で働く人", q:"勤務地が<b>東京</b>の社員の、名前（name）と年齢（age）を表示してください。", h:"WHERE に「city = 東京」の条件を追加します。", a:"SELECT name, age FROM employees WHERE city = '東京';"},
+  {g:"絞り込み", t:"月給35万円以上", q:"月給（salary）が<b>350000円以上</b>の社員の、名前と月給を表示してください。", h:"演算子は >= （以上）を使います。", a:"SELECT name, salary FROM employees WHERE salary >= 350000;"},
+  {g:"絞り込み", t:"30代の社員", q:"年齢（age）が<b>30〜39歳</b>の社員の、名前と年齢を表示してください。", h:"BETWEEN 30 AND 39 は「30以上39以下」です。", a:"SELECT name, age FROM employees WHERE age BETWEEN 30 AND 39;"},
+  {g:"絞り込み", t:"「山」で始まる名前", q:"名前（name）が<b>「山」で始まる</b>社員の名前を表示してください。", h:"LIKE '山%' の % は「何文字でもよい」という意味です。", a:"SELECT name FROM employees WHERE name LIKE '山%';"},
+  {g:"絞り込み", t:"条件を2つ重ねる", q:"勤務地が<b>大阪</b>で、かつ月給が<b>400000円以上</b>の社員の名前を表示してください。", h:"条件を2つ追加し、つなぎ方を AND にします。", a:"SELECT name FROM employees WHERE city = '大阪' AND salary >= 400000;"},
+  {g:"絞り込み", t:"部署が未定の人", q:"部署ID（dept_id）が<b>空（NULL）</b>の社員の名前を表示してください。", h:"NULL は = では比べられません。IS NULL を使います。", a:"SELECT name FROM employees WHERE dept_id IS NULL;"},
+  {g:"並べ替え", t:"若い順", q:"全社員の名前と年齢を、<b>年齢の若い順</b>に表示してください。", h:"ORDER BY age ASC（ASC は小さい順）。", a:"SELECT name, age FROM employees ORDER BY age ASC;"},
+  {g:"並べ替え", t:"月給トップ3", q:"月給が<b>高い順に3人</b>、名前と月給を表示してください。", h:"ORDER BY salary DESC で大きい順にして、LIMIT 3。", a:"SELECT name, salary FROM employees ORDER BY salary DESC LIMIT 3;"},
+  {g:"集計", t:"社員の人数", q:"社員が<b>全部で何人</b>いるかを表示してください。", h:"集計で COUNT ( * ) を追加します。", a:"SELECT COUNT(*) FROM employees;"},
+  {g:"集計", t:"勤務地ごとの人数", q:"<b>勤務地ごと</b>の社員数を、勤務地と人数の2列で表示してください。", h:"SELECT に city と COUNT(*)、GROUP BY に city。", a:"SELECT city, COUNT(*) FROM employees GROUP BY city;"},
+  {g:"集計", t:"平均月給ランキング", q:"勤務地ごとの<b>平均月給</b>を、平均月給が<b>高い順</b>に表示してください（勤務地と平均月給の2列）。", h:"AVG(salary) を SELECT に入れると、ORDER BY の候補にも出てきます。", a:"SELECT city, AVG(salary) FROM employees GROUP BY city ORDER BY AVG(salary) DESC;"},
+  {g:"結合", t:"社員と部署名", q:"社員の名前と、所属する<b>部署名</b>を表示してください（部署がない人は出なくてよい）。", h:"JOIN で departments をつなげ、employees.dept_id = departments.id。", a:"SELECT employees.name, departments.name FROM employees INNER JOIN departments ON employees.dept_id = departments.id;"},
+  {g:"結合", t:"部署がない人も残す", q:"<b>全社員</b>の名前と部署名を表示してください。部署がない人も、部署名を空（NULL）にして表示します。", h:"INNER JOIN を LEFT JOIN に変えると、左の表（FROM の表）の行がすべて残ります。", a:"SELECT employees.name, departments.name FROM employees LEFT JOIN departments ON employees.dept_id = departments.id;"},
+  {g:"結合", t:"部署ごとの人数", q:"<b>部署名ごと</b>の社員数を、部署名と人数の2列で表示してください。", h:"JOIN でつなげてから、GROUP BY departments.name。", a:"SELECT departments.name, COUNT(*) FROM employees INNER JOIN departments ON employees.dept_id = departments.id GROUP BY departments.name;"},
+  {g:"結合", t:"売上100万円超え", q:"売上（sales）の<b>合計が1000000円を超える</b>社員の、名前と売上合計を表示してください。", h:"sales と employees をつなげ、名前でまとめて、HAVING SUM(sales.amount) > 1000000。", a:"SELECT employees.name, SUM(sales.amount) FROM sales INNER JOIN employees ON sales.employee_id = employees.id GROUP BY employees.name HAVING SUM(sales.amount) > 1000000;"}
+];
+
+/* ---------- 状態 ---------- */
+const AGG = ["COUNT","SUM","AVG","MAX","MIN"];
+const AGGLBL = {COUNT:"数える",SUM:"合計",AVG:"平均",MAX:"最大",MIN:"最小"};
+const AGGJA = {COUNT:"件数",SUM:"合計",AVG:"平均",MAX:"最大",MIN:"最小"};
+const OPS = [
+  ["=","= 等しい"],["<>","<> 等しくない"],[">","> より大きい"],[">=",">= 以上"],["<","< 未満"],["<=","<= 以下"],
+  ["LIKE_START","LIKE 〜で始まる"],["LIKE_HAS","LIKE 〜を含む"],["LIKE_END","LIKE 〜で終わる"],
+  ["BETWEEN","BETWEEN 〜から〜"],["IS NULL","IS NULL 空"],["IS NOT NULL","IS NOT NULL 空でない"]
+];
+const OPJA = {"=":"","<>":"以外",">":"より大きい",">=":"以上","<":"未満","<=":"以下"};
+const HAV_OPS = [">",">=","=","<","<="];
+
+const fresh = (from="employees") => ({from, distinct:false, select:[], join:null, where:[], groupBy:[], having:null, orderBy:[], limit:""});
+let db, S = fresh(), mode = "drill", cur = 0, manual = false;
+const ui = {aggFn:"COUNT", aggCol:"*"};
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); }catch(e){ return d; } },
+  set(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+};
+let solved = new Set(store.get("sqldrill-solved", []));
+cur = Math.min(Math.max(0, store.get("sqldrill-cur", 0)), PROBLEMS.length - 1);
+
+/* ---------- 列のヘルパー ---------- */
+function availCols(){
+  const tabs = [S.from]; if (S.join) tabs.push(S.join.table);
+  const qual = !!S.join;
+  return tabs.flatMap(t => SCHEMA[t].cols.map(([c,ty,lab]) => ({q: qual ? `${t}.${c}` : c, t, c, ty, lab})));
+}
+const colInfo = q => availCols().find(x => x.q === q);
+const isNum = q => { const ci = colInfo(q); return !!ci && ci.ty === "INTEGER"; };
+function labelOf(q){
+  const ci = colInfo(q); if (!ci) return q;
+  return S.join ? `${SCHEMA[ci.t].label}の${ci.lab}` : ci.lab;
+}
+const exprSQL = e => e.fn ? `${e.fn}(${e.col})` : e.col;
+const exprJa = e => !e.fn ? labelOf(e.col) : (e.col === "*" ? "件数" : `${labelOf(e.col)}の${AGGJA[e.fn]}`);
+function parseKey(k){ const m = k.match(/^(\w+)\((.+)\)$/); return m ? {fn:m[1], col:m[2]} : {fn:"", col:k}; }
+const quote = s => "'" + String(s).replace(/'/g, "''") + "'";
+const lit = (q, v) => (isNum(q) && /^-?\d+(\.\d+)?$/.test(String(v))) ? String(v) : quote(v ?? "");
+
+const distinctCache = {};
+function distinctVals(q){
+  const [t, c] = q.includes(".") ? q.split(".") : [S.from, q];
+  const key = t + "." + c;
+  if (!distinctCache[key]){
+    const r = db.exec(`SELECT DISTINCT ${c} FROM ${t} WHERE ${c} IS NOT NULL ORDER BY ${c}`);
+    distinctCache[key] = r.length ? r[0].values.map(v => String(v[0])) : [];
+  }
+  return distinctCache[key];
+}
+function valueOptions(w){
+  const vals = distinctVals(w.col);
+  const uniq = a => [...new Set(a)].filter(s => s.trim() !== "");
+  if (w.op === "LIKE_START") return uniq(vals.map(v => [...v][0]));
+  if (w.op === "LIKE_END") return uniq(vals.map(v => [...v].slice(-1)[0]));
+  if (w.op === "LIKE_HAS") return uniq(vals.flatMap(v => [...v])).slice(0, 120);
+  return vals;
+}
+function defaultOn(a, b){
+  for (const [t1,c1,t2,c2] of RELS){
+    if (t1 === a && t2 === b) return [`${a}.${c1}`, `${b}.${c2}`];
+    if (t2 === a && t1 === b) return [`${a}.${c2}`, `${b}.${c1}`];
+  }
+  return [`${a}.id`, `${b}.id`];
+}
+
+/* JOIN の有無が変わったら「表名.列名」と「列名」を書き換え、使えなくなった列を外す */
+function normalize(){
+  const av = availCols().map(c => c.q);
+  const fix = q => {
+    if (q === "*" || av.includes(q)) return q;
+    const [t, base] = q.includes(".") ? q.split(".") : [S.from, q];
+    const cand = S.join ? `${t}.${base}` : (t === S.from ? base : null);
+    return cand && av.includes(cand) ? cand : null;
+  };
+  const fixE = e => { const c = fix(e.col); return c === null ? null : {...e, col:c}; };
+  S.select = S.select.map(fixE).filter(Boolean);
+  S.where = S.where.map(w => { const c = fix(w.col); return c ? {...w, col:c} : null; }).filter(Boolean);
+  S.groupBy = S.groupBy.map(fix).filter(Boolean);
+  if (S.having){ const e = fixE(S.having.e); S.having = e ? {...S.having, e} : null; }
+  if (!S.groupBy.length) S.having = null;
+  const keys = orderKeys();
+  S.orderBy = S.orderBy.map(o => { const e = fixE(parseKey(o.k)); return e ? {...o, k:exprSQL(e)} : null; })
+                       .filter(o => o && keys.includes(o.k));
+}
+function orderKeys(){
+  const ks = availCols().map(c => c.q);
+  S.select.filter(e => e.fn).forEach(e => { const k = exprSQL(e); if (!ks.includes(k)) ks.push(k); });
+  return ks;
+}
+
+/* ---------- SQL を作る ---------- */
+function condSQL(w){
+  switch (w.op){
+    case "LIKE_START": return `${w.col} LIKE ${quote(w.v1 + "%")}`;
+    case "LIKE_HAS": return `${w.col} LIKE ${quote("%" + w.v1 + "%")}`;
+    case "LIKE_END": return `${w.col} LIKE ${quote("%" + w.v1)}`;
+    case "BETWEEN": return `${w.col} BETWEEN ${lit(w.col, w.v1)} AND ${lit(w.col, w.v2)}`;
+    case "IS NULL": case "IS NOT NULL": return `${w.col} ${w.op}`;
+    default: return `${w.col} ${w.op} ${lit(w.col, w.v1)}`;
+  }
+}
+function buildSQL(){
+  const sel = S.select.length ? S.select.map(exprSQL).join(", ") : "*";
+  const L = [`SELECT ${S.distinct ? "DISTINCT " : ""}${sel}`, `FROM ${S.from}`];
+  if (S.join) L.push(`${S.join.type} ${S.join.table} ON ${S.join.left} = ${S.join.right}`);
+  S.where.forEach((w, i) => L.push((i ? `  ${w.conj} ` : "WHERE ") + condSQL(w)));
+  if (S.groupBy.length) L.push("GROUP BY " + S.groupBy.join(", "));
+  if (S.having) L.push(`HAVING ${exprSQL(S.having.e)} ${S.having.op} ${S.having.v}`);
+  if (S.orderBy.length) L.push("ORDER BY " + S.orderBy.map(o => `${o.k} ${o.dir}`).join(", "));
+  if (S.limit) L.push("LIMIT " + S.limit);
+  return L.join("\n") + ";";
+}
+function condJa(w){
+  const n = labelOf(w.col);
+  switch (w.op){
+    case "LIKE_START": return `${n}が「${w.v1}」で始まる`;
+    case "LIKE_HAS": return `${n}に「${w.v1}」を含む`;
+    case "LIKE_END": return `${n}が「${w.v1}」で終わる`;
+    case "BETWEEN": return `${n}が ${w.v1}〜${w.v2}`;
+    case "IS NULL": return `${n}が空（NULL）`;
+    case "IS NOT NULL": return `${n}が空でない`;
+    case "=": return `${n}が「${w.v1}」`;
+    case "<>": return `${n}が「${w.v1}」以外`;
+    default: return `${n}が ${w.v1} ${OPJA[w.op]}`;
+  }
+}
+function explain(){
+  const p = [];
+  let src = `「${SCHEMA[S.from].label}」表`;
+  if (S.join) src += `と「${SCHEMA[S.join.table].label}」表を ${S.join.left} = ${S.join.right} でつなげた表（${S.join.type === "LEFT JOIN" ? "左の表の行はすべて残す" : "両方に対応がある行だけ"}）`;
+  p.push(src + "から");
+  if (S.where.length) p.push("条件「" + S.where.map((w, i) => (i ? (w.conj === "AND" ? " かつ " : " または ") : "") + condJa(w)).join("") + "」に合う行に絞り");
+  if (S.groupBy.length){
+    p.push(S.groupBy.map(labelOf).join("・") + "ごとにまとめ");
+    if (S.having) p.push(`条件「${exprJa(S.having.e)}が ${S.having.v} ${S.having.op === "=" ? "" : OPJA[S.having.op]}」に合うグループだけ残し`);
+  }
+  p.push((S.select.length ? S.select.map(exprJa).join("、") : "すべての列") + (S.distinct ? "を重複なしで" : "を") + "取り出し");
+  if (S.orderBy.length) p.push(S.orderBy.map(o => `${exprJa(parseKey(o.k))}の${o.dir === "ASC" ? "小さい順" : "大きい順"}`).join("、") + "に並べ");
+  if (S.limit) p.push(`先頭 ${S.limit} 件だけ表示し`);
+  return p.join("、") + "ます。";
+}
+function warnings(){
+  const plain = S.select.filter(e => !e.fn).map(e => e.col);
+  const hasAgg = S.select.some(e => e.fn);
+  if (S.groupBy.length){
+    const miss = plain.filter(c => !S.groupBy.includes(c));
+    if (miss.length) return `GROUP BY でまとめていない列（${miss.join(", ")}）を SELECT に入れています。SQLiteでは動きますが、多くのデータベースではエラーになります。`;
+  } else if (hasAgg && plain.length){
+    return `集計（COUNT など）と普通の列（${plain.join(", ")}）を一緒に出すときは、GROUP BY でまとめる列を選びましょう。`;
+  }
+  return "";
+}
+const KW = /^(SELECT|DISTINCT|FROM|WHERE|AND|OR|NOT|INNER|LEFT|RIGHT|OUTER|JOIN|ON|GROUP|BY|HAVING|ORDER|ASC|DESC|LIMIT|OFFSET|LIKE|BETWEEN|IS|NULL|AS|IN|CASE|WHEN|THEN|ELSE|END|INSERT|INTO|VALUES|UPDATE|SET|DELETE|CREATE|TABLE)$/i;
+function hl(sql){
+  return sql.replace(/('(?:[^']|'')*')|(\b\d+(?:\.\d+)?\b)|([A-Za-z_]\w*)|([^'\w]+)|([\s\S])/g, (m, s, n, w, o, z) => {
+    if (s) return `<span class="t-s">${esc(s)}</span>`;
+    if (n) return `<span class="t-n">${n}</span>`;
+    if (w) return KW.test(w) ? `<span class="t-k">${w}</span>` : /^(COUNT|SUM|AVG|MAX|MIN|ROUND|LENGTH|UPPER|LOWER)$/i.test(w) ? `<span class="t-f">${w}</span>` : esc(w);
+    return esc(o || z);
+  });
+}
+
+/* ---------- 組み立て台の描画 ---------- */
+const opt = (v, label, sel) => `<option value="${esc(v)}"${String(v) === String(sel) ? " selected" : ""}>${esc(label)}</option>`;
+const colOpts = (cols, sel) => cols.map(c => opt(c.q, `${c.q}（${c.lab}）`, sel)).join("");
+function clause(kw, ord, ttl, body){
+  return `<section class="clause"><div class="side"><span class="kw">${kw}</span><span class="ord" title="データベースが実際に処理する順番">実行順 ${ord}</span></div><div class="cbody"><span class="ttl">${ttl}</span>${body}</div></section>`;
+}
+function valueSelect(w, i, which){
+  const vals = valueOptions(w);
+  const cur = w[which];
+  return `<select id="w-${which}-${i}" data-act="w${which}" data-i="${i}" aria-label="値">${vals.map(v => opt(v, v, cur)).join("")}</select>`;
+}
+function render(){
+  const av = availCols();
+  const B = [];
+
+  // SELECT
+  const aggCols = (ui.aggFn === "COUNT" ? [{q:"*", lab:"行を数える"}] : [])
+    .concat(av.filter(c => ["COUNT","MAX","MIN"].includes(ui.aggFn) || c.ty === "INTEGER"));
+  if (!aggCols.some(c => c.q === ui.aggCol)) ui.aggCol = aggCols[0].q;
+  const picked = S.select.map((e, i) => `<span class="pill"><code>${hl(exprSQL(e))}</code><button type="button" class="x" data-act="rmsel" data-i="${i}" aria-label="${esc(exprSQL(e))} を外す">×</button></span>`).join("");
+  B.push(clause("SELECT", 6, "取り出す列を押して選ぶ（押した順に並びます）", `
+    <div class="chips">${av.map(c => `<button type="button" class="chip" data-act="tcol" data-q="${esc(c.q)}" aria-pressed="${S.select.some(e => !e.fn && e.col === c.q)}"><code>${esc(c.q)}</code><small>${esc(c.lab)}</small></button>`).join("")}</div>
+    <div class="row"><span class="lbl">集計</span>
+      <select id="agg-fn" data-act="aggfn" aria-label="集計関数">${AGG.map(f => opt(f, `${f}（${AGGLBL[f]}）`, ui.aggFn)).join("")}</select>
+      <span class="paren">(</span><select id="agg-col" data-act="aggcol" aria-label="集計する列">${aggCols.map(c => opt(c.q, c.q === "*" ? "*（行を数える）" : `${c.q}（${c.lab}）`, ui.aggCol)).join("")}</select><span class="paren">)</span>
+      <button type="button" class="btn ghost" data-act="addagg">＋ 追加</button></div>
+    <div class="picked">${picked || '<span class="hintline">何も選ばないと <code>*</code>（すべての列）になります</span>'}</div>
+    <label class="check"><input type="checkbox" id="distinct" data-act="distinct"${S.distinct ? " checked" : ""}><code>DISTINCT</code> 同じ行をまとめて1行にする</label>`));
+
+  // FROM
+  B.push(clause("FROM", 1, "データを取り出す表", `
+    <div class="row"><select id="from" data-act="from" aria-label="表">${Object.keys(SCHEMA).map(t => opt(t, `${t}（${SCHEMA[t].label}）`, S.from)).join("")}</select></div>`));
+
+  // JOIN
+  if (!S.join){
+    B.push(clause("JOIN", 2, "別の表をつなげる（必要なときだけ）", `<div class="row"><button type="button" class="btn ghost" data-act="addjoin">＋ 表をつなげる</button></div>`));
+  } else {
+    const others = Object.keys(SCHEMA).filter(t => t !== S.from);
+    B.push(clause("JOIN", 2, "別の表をつなげる", `
+      <div class="row">
+        <select id="j-type" data-act="jtype" aria-label="結合の種類">${opt("INNER JOIN","INNER JOIN（両方にある行だけ）",S.join.type)}${opt("LEFT JOIN","LEFT JOIN（左の表は全部残す）",S.join.type)}</select>
+        <select id="j-table" data-act="jtable" aria-label="つなげる表">${others.map(t => opt(t, `${t}（${SCHEMA[t].label}）`, S.join.table)).join("")}</select>
+        <button type="button" class="x" data-act="rmjoin" aria-label="JOINを外す">×</button>
+      </div>
+      <div class="row"><span class="lbl mono">ON</span>
+        <select id="j-left" data-act="jleft" aria-label="左の列">${colOpts(av.filter(c => c.t === S.from), S.join.left)}</select>
+        <span class="paren">=</span>
+        <select id="j-right" data-act="jright" aria-label="右の列">${colOpts(av.filter(c => c.t === S.join.table), S.join.right)}</select>
+      </div>`));
+  }
+
+  // WHERE
+  const whereRows = S.where.map((w, i) => {
+    const ops = OPS.filter(([o]) => !(isNum(w.col) && o.startsWith("LIKE")));
+    let val = "";
+    if (w.op === "BETWEEN") val = `${valueSelect(w, i, "v1")}<span class="paren">AND</span>${valueSelect(w, i, "v2")}`;
+    else if (!w.op.startsWith("IS")) val = valueSelect(w, i, "v1");
+    return `<div class="cond">
+      ${i ? `<select id="w-conj-${i}" data-act="wconj" data-i="${i}" aria-label="つなぎ方">${opt("AND","AND（かつ）",w.conj)}${opt("OR","OR（または）",w.conj)}</select>` : ""}
+      <select id="w-col-${i}" data-act="wcol" data-i="${i}" aria-label="列">${colOpts(av, w.col)}</select>
+      <select id="w-op-${i}" data-act="wop" data-i="${i}" aria-label="比べ方">${ops.map(([o, l]) => opt(o, l, w.op)).join("")}</select>
+      ${val}
+      <button type="button" class="x" data-act="rmw" data-i="${i}" aria-label="条件を外す">×</button></div>`;
+  }).join("");
+  B.push(clause("WHERE", 3, "行を条件で絞り込む", `${whereRows}<div class="row"><button type="button" class="btn ghost" data-act="addw">＋ 条件を追加</button></div>`));
+
+  // GROUP BY
+  B.push(clause("GROUP BY", 4, "同じ値ごとにまとめる（集計と一緒に使う）", `
+    <div class="chips">${av.map(c => `<button type="button" class="chip" data-act="tgrp" data-q="${esc(c.q)}" aria-pressed="${S.groupBy.includes(c.q)}"><code>${esc(c.q)}</code><small>${esc(c.lab)}</small></button>`).join("")}</div>`));
+
+  // HAVING
+  if (S.groupBy.length){
+    let body;
+    if (!S.having) body = `<div class="row"><button type="button" class="btn ghost" data-act="addhaving">＋ まとめた後の条件を追加</button></div>`;
+    else {
+      const h = S.having;
+      const hCols = (h.e.fn === "COUNT" ? [{q:"*", lab:"行を数える"}] : []).concat(av.filter(c => ["COUNT","MAX","MIN"].includes(h.e.fn) || c.ty === "INTEGER"));
+      const vals = h.e.fn === "COUNT" ? [1,2,3,4,5,10] : [100000,200000,300000,400000,500000,1000000];
+      body = `<div class="cond">
+        <select id="h-fn" data-act="hfn" aria-label="集計関数">${AGG.map(f => opt(f, f, h.e.fn)).join("")}</select>
+        <span class="paren">(</span><select id="h-col" data-act="hcol" aria-label="列">${hCols.map(c => opt(c.q, c.q, h.e.col)).join("")}</select><span class="paren">)</span>
+        <select id="h-op" data-act="hop" aria-label="比べ方">${HAV_OPS.map(o => opt(o, o, h.op)).join("")}</select>
+        <select id="h-v" data-act="hv" aria-label="値">${vals.map(v => opt(v, v, h.v)).join("")}</select>
+        <button type="button" class="x" data-act="rmhaving" aria-label="条件を外す">×</button></div>`;
+    }
+    B.push(clause("HAVING", 5, "まとめたグループを条件で絞る", body));
+  }
+
+  // ORDER BY
+  const keys = orderKeys();
+  const ordRows = S.orderBy.map((o, i) => `<div class="cond">
+      <select id="o-k-${i}" data-act="ok" data-i="${i}" aria-label="並べる列">${keys.map(k => opt(k, k, o.k)).join("")}</select>
+      <select id="o-d-${i}" data-act="odir" data-i="${i}" aria-label="向き">${opt("ASC","ASC（小さい順）",o.dir)}${opt("DESC","DESC（大きい順）",o.dir)}</select>
+      <button type="button" class="x" data-act="rmo" data-i="${i}" aria-label="並べ替えを外す">×</button></div>`).join("");
+  B.push(clause("ORDER BY", 7, "並べ替える", `${ordRows}<div class="row"><button type="button" class="btn ghost" data-act="addo">＋ 並べ替えを追加</button></div>`));
+
+  // LIMIT
+  B.push(clause("LIMIT", 8, "表示する行数", `<div class="row"><select id="limit" data-act="limit" aria-label="行数">${["","1","3","5","10"].map(v => opt(v, v ? `${v} 行` : "制限なし", S.limit)).join("")}</select></div>`));
+
+  $("#builder").innerHTML = B.join("");
+}
+
+/* ---------- 操作 ---------- */
+function newCond(){
+  const col = availCols()[0].q;
+  const w = {conj:"AND", col, op:"=", v1:"", v2:""};
+  resetVals(w); return w;
+}
+function resetVals(w){
+  const vals = valueOptions(w);
+  w.v1 = vals[0] ?? "";
+  w.v2 = vals[vals.length - 1] ?? "";
+}
+function onChange(ev){
+  const el = ev.target, act = el.dataset.act; if (!act) return;
+  const i = +el.dataset.i, v = el.value;
+  switch (act){
+    case "from": S = fresh(v); break;
+    case "distinct": S.distinct = el.checked; break;
+    case "aggfn": ui.aggFn = v; break;
+    case "aggcol": ui.aggCol = v; break;
+    case "jtype": S.join.type = v; break;
+    case "jtable": { S.join.table = v; [S.join.left, S.join.right] = defaultOn(S.from, v); break; }
+    case "jleft": S.join.left = v; break;
+    case "jright": S.join.right = v; break;
+    case "wconj": S.where[i].conj = v; break;
+    case "wcol": { const w = S.where[i]; w.col = v; if (isNum(v) && w.op.startsWith("LIKE")) w.op = "="; resetVals(w); break; }
+    case "wop": { const w = S.where[i]; const was = w.op; w.op = v; if (was.startsWith("LIKE") !== v.startsWith("LIKE") || !valueOptions(w).includes(w.v1)) resetVals(w); break; }
+    case "wv1": S.where[i].v1 = v; break;
+    case "wv2": S.where[i].v2 = v; break;
+    case "hfn": S.having.e.fn = v; if (v !== "COUNT" && S.having.e.col === "*") S.having.e.col = (availCols().find(c => c.ty === "INTEGER") || {q:"*"}).q; if (v === "COUNT") S.having.v = 1; else if (+S.having.v < 100000) S.having.v = 300000; break;
+    case "hcol": S.having.e.col = v; break;
+    case "hop": S.having.op = v; break;
+    case "hv": S.having.v = v; break;
+    case "ok": S.orderBy[i].k = v; break;
+    case "odir": S.orderBy[i].dir = v; break;
+    case "limit": S.limit = v; break;
+  }
+  changed();
+}
+function onClick(ev){
+  const el = ev.target.closest("[data-act]"); if (!el || el.tagName === "SELECT" || el.tagName === "INPUT") return;
+  const act = el.dataset.act, i = +el.dataset.i, q = el.dataset.q;
+  switch (act){
+    case "tcol": { const k = S.select.findIndex(e => !e.fn && e.col === q); if (k >= 0) S.select.splice(k, 1); else S.select.push({fn:"", col:q}); break; }
+    case "addagg": { const e = {fn:ui.aggFn, col:ui.aggCol}; if (!S.select.some(x => exprSQL(x) === exprSQL(e))) S.select.push(e); break; }
+    case "rmsel": S.select.splice(i, 1); break;
+    case "addjoin": { const t = Object.keys(SCHEMA).find(t => t !== S.from && RELS.some(r => (r[0] === S.from && r[2] === t) || (r[2] === S.from && r[0] === t))) || Object.keys(SCHEMA).find(t => t !== S.from); const [l, r] = defaultOn(S.from, t); S.join = {type:"INNER JOIN", table:t, left:l, right:r}; break; }
+    case "rmjoin": S.join = null; break;
+    case "addw": S.where.push(newCond()); break;
+    case "rmw": S.where.splice(i, 1); break;
+    case "tgrp": { const k = S.groupBy.indexOf(q); if (k >= 0) S.groupBy.splice(k, 1); else S.groupBy.push(q); break; }
+    case "addhaving": S.having = {e:{fn:"COUNT", col:"*"}, op:">", v:1}; break;
+    case "rmhaving": S.having = null; break;
+    case "addo": S.orderBy.push({k:orderKeys()[0], dir:"ASC"}); break;
+    case "rmo": S.orderBy.splice(i, 1); break;
+    default: return;
+  }
+  changed();
+}
+function changed(){
+  if (manual) setManual(false);
+  normalize(); render(); update(); hideVerdict();
+}
+
+/* ---------- 実行と表示 ---------- */
+function currentSQL(){ return manual ? $("#sqledit").value : buildSQL(); }
+function runSQL(sql){
+  const res = db.exec(sql);
+  if (res.length) return res[res.length - 1];
+  try {
+    const st = db.prepare(sql.trim().replace(/;\s*$/, ""));
+    const cols = st.getColumnNames(); st.free();
+    return {columns:cols, values:[]};
+  } catch (e) { return {columns:[], values:[]}; }
+}
+function friendly(msg){
+  const m = String(msg);
+  if (/no such column/.test(m)) return "その列は見つかりません。列名のつづりや、表名.列名 の書き方を確認してください。";
+  if (/no such table/.test(m)) return "その表は見つかりません。";
+  if (/ambiguous column/.test(m)) return "同じ名前の列が2つの表にあります。「表名.列名」の形で指定してください。";
+  if (/syntax error|incomplete input/.test(m)) return "SQLの書き方に誤りがあります。キーワードの順番やカンマ、引用符 ' を確認してください。";
+  if (/misuse of aggregate/.test(m)) return "集計関数（COUNT など）を WHERE の中では使えません。まとめた後の条件は HAVING に書きます。";
+  return "SQLを実行できませんでした。";
+}
+function renderResult(){
+  const box = $("#result"), cnt = $("#rescount");
+  let r;
+  try { r = runSQL(currentSQL()); }
+  catch (e) {
+    box.innerHTML = `<p class="msg err">${esc(friendly(e.message))}<code>${esc(e.message)}</code></p>`;
+    cnt.textContent = ""; return null;
+  }
+  if (!r.columns.length){ box.innerHTML = `<p class="msg">表示する結果はありません。</p>`; cnt.textContent = ""; return r; }
+  const rows = r.values.slice(0, 300);
+  const head = r.columns.map(c => `<th>${esc(c)}</th>`).join("");
+  const body = rows.map(row => "<tr>" + row.map(v => v === null ? `<td><span class="null">NULL</span></td>` : typeof v === "number" ? `<td class="num">${esc(Number.isInteger(v) ? v : Math.round(v * 1000) / 1000)}</td>` : `<td>${esc(v)}</td>`).join("") + "</tr>").join("");
+  box.innerHTML = rows.length ? `<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>` : `<table><thead><tr>${head}</tr></thead></table><p class="msg">条件に合う行は 0 行でした。</p>`;
+  cnt.textContent = `${r.values.length} 行 × ${r.columns.length} 列`;
+  return r;
+}
+function update(){
+  if (!manual) $("#sqlview").innerHTML = hl(buildSQL());
+  $("#explain").innerHTML = manual ? "<b>手書きモード</b>組み立て台を操作すると、組み立てた内容で上書きされます。" : `<b>意味</b>${esc(explain())}`;
+  const w = manual ? "" : warnings();
+  $("#warn").hidden = !w; $("#warn").textContent = w;
+  renderResult();
+}
+function setManual(on){
+  manual = on;
+  $("#sqlview").hidden = on; $("#sqledit").hidden = !on; $("#kbd").hidden = !on;
+  $("#edit").textContent = on ? "組み立て台に戻る" : "手で書き換える";
+  if (on){ $("#sqledit").value = buildSQL(); $("#sqledit").focus(); }
+}
+
+/* ---------- 答え合わせ ---------- */
+function hideVerdict(){ $("#verdict").hidden = true; }
+function verdict(ok, text){ const v = $("#verdict"); v.hidden = false; v.className = "verdict " + (ok ? "ok" : "ng"); v.textContent = text; }
+function check(){
+  const p = PROBLEMS[cur];
+  let mine;
+  try { mine = runSQL(currentSQL()); } catch (e) { verdict(false, "SQLがエラーで実行できません。先にエラーを直しましょう。"); return; }
+  const ans = runSQL(p.a);
+  const ordered = /ORDER BY/i.test(p.a);
+  const key = row => JSON.stringify(row);
+  if (mine.columns.length !== ans.columns.length){ verdict(false, `列の数が違います（あなた ${mine.columns.length} 列 / 正解 ${ans.columns.length} 列）。`); return; }
+  if (mine.values.length !== ans.values.length){ verdict(false, `行の数が違います（あなた ${mine.values.length} 行 / 正解 ${ans.values.length} 行）。`); return; }
+  const a = mine.values.map(key), b = ans.values.map(key);
+  const sameSet = [...a].sort().join("|") === [...b].sort().join("|");
+  const sameSeq = a.join("|") === b.join("|");
+  if (ordered ? sameSeq : sameSet){
+    solved.add(cur); store.set("sqldrill-solved", [...solved]);
+    renderPList();
+    verdict(true, cur < PROBLEMS.length - 1 ? "正解です！「次の問題」に進みましょう。" : "正解です！全問クリアまであと少し、未回答の問題がないか確認してみましょう。");
+  } else if (ordered && sameSet){
+    verdict(false, "行はそろっていますが、並び順が違います。ORDER BY を確認しましょう。");
+  } else {
+    verdict(false, "列と行の数は合っていますが、中身が違います。列の順番や条件を確認しましょう。");
+  }
+}
+
+/* ---------- 問題の表示 ---------- */
+function renderPList(){
+  const groups = [...new Set(PROBLEMS.map(p => p.g))];
+  $("#plist").innerHTML = groups.map(g => `<div class="pgroup"><span class="gname">${esc(g)}</span>${PROBLEMS.map((p, i) => p.g !== g ? "" : `<button type="button" class="pnum${solved.has(i) ? " done" : ""}" data-p="${i}" aria-current="${i === cur}" aria-label="問題${i + 1} ${esc(p.t)}${solved.has(i) ? "（正解済み）" : ""}">${i + 1}</button>`).join("")}</div>`).join("");
+  $("#progress").textContent = `正解 ${solved.size} / ${PROBLEMS.length} 問`;
+}
+function renderTask(){
+  const p = PROBLEMS[cur];
+  $("#task").innerHTML = `
+    <div class="meta"><span class="tag">${esc(p.g)}</span><span>問題 ${cur + 1} / ${PROBLEMS.length}</span>${solved.has(cur) ? '<span style="color:var(--ok)">● 正解済み</span>' : ""}</div>
+    <h2>${esc(p.t)}</h2>
+    <p>${p.q}</p>
+    <div class="taskbtns">
+      <button type="button" class="btn" id="show-hint">ヒント</button>
+      <button type="button" class="btn" id="show-ans">答えを見る</button>
+      <button type="button" class="btn" id="next"${cur === PROBLEMS.length - 1 ? " disabled" : ""}>次の問題 →</button>
+    </div>
+    <p class="reveal" id="hint" hidden>${esc(p.h)}</p>
+    <pre class="reveal mono" id="ans" hidden>${hl(p.a)}</pre>`;
+}
+function goProblem(i){
+  cur = i; store.set("sqldrill-cur", cur);
+  S = fresh(); if (manual) setManual(false);
+  renderPList(); renderTask(); render(); update(); hideVerdict();
+}
+function setMode(m){
+  mode = m;
+  $("#tab-drill").setAttribute("aria-selected", m === "drill");
+  $("#tab-free").setAttribute("aria-selected", m === "free");
+  $("#drill").hidden = m !== "drill";
+  $("#check").hidden = m !== "drill";
+  hideVerdict();
+}
+
+/* ---------- 表の中身 ---------- */
+function renderTables(){
+  $("#tables").innerHTML = Object.entries(SCHEMA).map(([t, s]) => {
+    const n = db.exec(`SELECT COUNT(*) FROM ${t}`)[0].values[0][0];
+    return `<div class="tcard"><h4>${t}<span>${s.label}・${n}行</span></h4>
+      <ul>${s.cols.map(([c, ty, lab]) => `<li><span><code>${c}</code> ${esc(lab)}</span><em>${ty}</em></li>`).join("")}</ul>
+      <button type="button" class="btn" data-peek="${t}">中身を表示</button></div>`;
+  }).join("") + `<div class="tcard"><h4>つながり<span>JOINのキー</span></h4><ul>
+      <li><code>employees.dept_id</code><em>→ departments.id</em></li>
+      <li><code>sales.employee_id</code><em>→ employees.id</em></li></ul>
+      <button type="button" class="btn" id="resetdb">データを初期状態に戻す</button></div>`;
+}
+function initDB(SQL){
+  db = new SQL.Database(); db.run(SEED);
+  for (const k in distinctCache) delete distinctCache[k];
+}
+
+/* ---------- 起動 ---------- */
+initSqlJs().then(SQL => {
+  initDB(SQL);
+  $("#builder").addEventListener("change", onChange);
+  $("#builder").addEventListener("click", onClick);
+  $("#plist").addEventListener("click", e => { const b = e.target.closest("[data-p]"); if (b) goProblem(+b.dataset.p); });
+  $("#task").addEventListener("click", e => {
+    if (e.target.id === "show-hint") $("#hint").hidden = !$("#hint").hidden;
+    if (e.target.id === "show-ans") $("#ans").hidden = !$("#ans").hidden;
+    if (e.target.id === "next" && cur < PROBLEMS.length - 1) goProblem(cur + 1);
+  });
+  $("#tab-drill").addEventListener("click", () => setMode("drill"));
+  $("#tab-free").addEventListener("click", () => setMode("free"));
+  $("#reset").addEventListener("click", () => { S = fresh(S.from); changed(); });
+  $("#run").addEventListener("click", () => { renderResult(); hideVerdict(); });
+  $("#check").addEventListener("click", check);
+  $("#edit").addEventListener("click", () => { setManual(!manual); if (!manual){ normalize(); render(); } update(); });
+  $("#sqledit").addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter"){ e.preventDefault(); renderResult(); hideVerdict(); } });
+  $("#copy").addEventListener("click", () => {
+    const text = currentSQL(), btn = $("#copy");
+    const done = () => { btn.textContent = "コピーしました"; setTimeout(() => btn.textContent = "コピー", 1500); };
+    try {
+      navigator.clipboard.writeText(text).then(done, () => { setManual(true); $("#sqledit").select(); });
+    } catch (e) { setManual(true); $("#sqledit").select(); }
+  });
+  $("#tables").addEventListener("click", e => {
+    const t = e.target.dataset.peek;
+    if (t){ setManual(true); $("#sqledit").value = `SELECT * FROM ${t};`; update(); $("#result").scrollIntoView({behavior:"smooth", block:"nearest"}); }
+    if (e.target.id === "resetdb"){ initDB(SQL); renderTables(); update(); e.target.textContent = "初期状態に戻しました"; }
+  });
+  renderTables(); renderPList(); renderTask(); setMode("drill"); render(); update();
+}).catch(err => {
+  $("#builder").innerHTML = `<p class="msg err">データベースを読み込めませんでした。ネットにつながっているか確認して、ページを開き直してください。<code>${esc(err && err.message || err)}</code></p>`;
+});
+</script>
+</body>
+</html>

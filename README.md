@@ -10,3 +10,12 @@ CSV と課題（何を予測したいか）を渡すと、クレンジング →
 - 見本（架空データ）: [`analysis/example_churn_sample/report.md`](analysis/example_churn_sample/report.md)
 - 元データと中間 CSV は `.gitignore` でコミット対象外
 - コンペ（Kaggle・SIGNATE）の解法は別リポジトリ [kaggle-signate_solution](https://github.com/CoVaTaLiAn/kaggle-signate_solution) に置く（例: Jリーグ観客動員数予測）
+
+## SQL練習サイト（`sql-practice/`）
+
+ボタンとリストを選ぶだけで SQL を組み立てて、その場で実行・答え合わせができる練習サイト。
+
+- 開き方: `sql-practice/index.html` をブラウザで開くだけ（サーバー不要。SQLite をブラウザ内で動かす sql.js を CDN から読み込むのでネット接続は必要）
+- 練習問題 18 問（基本 / 絞り込み / 並べ替え / 集計 / 結合）。正解すると番号に緑の丸が付く（ブラウザに保存）
+- 「自由に組み立てる」タブでは問題なしで自由に試せる。「手で書き換える」で SQL を直接書くこともできる
+- 練習用データ: 社員（employees）・部署（departments）・売上（sales）の架空データ
