@@ -140,7 +140,8 @@ def keychain_password(service):
 
 
 def get_jev_key():
-    return os.environ.get("TYPESAFE_API_KEY") or keychain_password(JEV_KEYCHAIN_SERVICE)
+    key = os.environ.get("TYPESAFE_API_KEY") or keychain_password(JEV_KEYCHAIN_SERVICE)
+    return key.strip() if key else None
 
 
 def body_text(msg):
