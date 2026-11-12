@@ -15,11 +15,15 @@
       │   └ writer             … ブログ・資料・メール文面・要約
       ├ 秘書室
       │   └ secretary          … Gmail・カレンダー・Drive の確認と下書き
-      └ 品質管理部
-          └ reviewer           … 検収・ファクトチェック・コードレビュー
+      ├ 品質管理部
+      │   └ reviewer           … 検収・ファクトチェック・コードレビュー
+      └ 判定係（Jev。エージェントではなく scripts/jev.py）
+          … 振り分け・モデル選び・成果物の一次チェック・候補の絞り込み
 ```
 
 ## 部署一覧（subagent_type として使う名前）
+
+モデルは発注のたびに `jev.py tier` で決める。下の「既定」は指定しなかった時の値、「下限」は節約モードでもこれより軽くしない値。
 
 | 部署 | エージェント | 頼むこと | 頼まないこと | 主な出力 |
 |---|---|---|---|---|
@@ -31,6 +35,14 @@
 | 編集部 | `writer` | 文章の執筆・推敲・要約・構成 | 事実の新規調査 | `<ID>_draft.md` |
 | 秘書室 | `secretary` | メール・予定・Drive の確認、返信や予定の下書き | 送信・予定登録・共有 | `<ID>_secretary.md`＋Gmail 下書き |
 | 品質管理部 | `reviewer` | 成果物の検収（根拠・抜け・誤り・リスク） | 成果物の書き直し | `review_<ID>.md` |
+
+| エージェント | 既定のモデル | 下限 |
+|---|---|---|
+| `secretary` | haiku | haiku |
+| `web-researcher` / `writer` | sonnet | haiku |
+| `engineer` | sonnet | sonnet |
+| `data-analyst` / `paper-researcher` / `patent-search` | 社長と同じ | sonnet |
+| `reviewer` | 社長と同じ | sonnet |
 
 ## よくある編成
 

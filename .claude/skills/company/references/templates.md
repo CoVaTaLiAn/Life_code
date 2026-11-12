@@ -14,14 +14,16 @@
 
 ## タスク
 
-| ID | フェーズ | 部署（エージェント） | 内容 | 入力 | 出力 | 依存 |
-|---|---|---|---|---|---|---|
-| T1 | 1 | web-researcher | | 依頼文 | T1_research.md | - |
-| T2 | 1 | paper-researcher | | 依頼文 | research/.../report.md | - |
-| T3 | 2 | writer | | T1, T2 の出力 | T3_draft.md | T1, T2 |
-| R3 | 3 | reviewer | T3 の検収 | T3_draft.md | review_T3.md | T3 |
+| ID | フェーズ | 部署（エージェント） | モデル | 内容 | 入力 | 出力 | 依存 | 必須 |
+|---|---|---|---|---|---|---|---|---|
+| T1 | 1 | web-researcher | haiku | | 依頼文 | T1_research.md | - | ○ |
+| T2 | 1 | paper-researcher | sonnet | | 依頼文 | research/.../report.md | - | △（節約モードでは省く） |
+| T3 | 2 | writer | sonnet | | T1, T2 の出力 | T3_draft.md | T1, T2 | ○ |
+| R3 | 3 | reviewer | opus | T3 の検収 | T3_draft.md | review_T3.md | T3 | ○ |
 
-## 決裁が必要になりそうなこと
+モデルは `jev.py tier` の結果。進み具合はこの表ではなく `progress.md`（`ledger.py status`）で見る。
+
+## 決裁が必要になりそうなこと（発生したら `ledger.py decide` で箱へ。仕事は止めない）
 - （例: 下書きしたメールの送信）
 ```
 
@@ -61,8 +63,11 @@
 
 ## 未解決・要確認
 
-## 決裁をお願いしたいこと
-- [ ] （例: T4 の返信下書きを送信してよいか）
+## 決裁待ち箱に入れたこと
+- #3 T4 の返信下書きを送信してよいか
+
+## 使ったもの
+- トークン: （`ledger.py status` の値）／モード: 通常・節約・打切り
 
 ## 次の一手
 ```
