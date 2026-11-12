@@ -17,6 +17,13 @@ security delete-generic-password -s "$SERVICE" >/dev/null 2>&1 || true
 echo "パスワードを2回聞かれます（入力しても表示されません）"
 security add-generic-password -s "$SERVICE" -a "$YID" -T /usr/bin/security -w
 
+read -r -p "Jev（TypeSafe AI）の API キーも保存しますか？ [y/N]: " ANS
+if [ "$ANS" = "y" ] || [ "$ANS" = "Y" ]; then
+  security delete-generic-password -s "typesafe-api-key" >/dev/null 2>&1 || true
+  echo "API キーを2回聞かれます（入力しても表示されません）"
+  security add-generic-password -s "typesafe-api-key" -a jev -T /usr/bin/security -w
+fi
+
 echo "== 2/3 毎日 朝7時に自動実行する設定 =="
 mkdir -p "$HOME/Library/LaunchAgents" "$HOME/Library/Logs"
 cat > "$PLIST" <<PL
@@ -45,6 +52,6 @@ echo "== 3/3 今すぐ1回実行する =="
 "$PYTHON" "$SCRIPT" --run </dev/null
 
 echo
-echo "完了しました。これから毎朝7時に、緊急なもの以外を自動で既読にします。"
+echo "完了しました。これから毎朝7時に、緊急・重要なもの以外を自動で既読にします。"
 echo "記録: $LOG"
 echo "止めたいとき: launchctl unload $PLIST"
