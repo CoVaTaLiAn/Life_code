@@ -1,5 +1,5 @@
 #!/bin/bash
-# Yahoo!メール自動振り分けを、Mac で毎日自動実行するための設定。
+# Yahoo!メールの「緊急以外を既読にする」処理を、Mac で毎日自動実行するための設定。
 # 使い方: bash yahoo_mail/setup_mac.sh
 set -e
 
@@ -41,10 +41,10 @@ PL
 launchctl unload "$PLIST" 2>/dev/null || true
 launchctl load "$PLIST"
 
-echo "== 3/3 今すぐ1回振り分ける =="
+echo "== 3/3 今すぐ1回実行する =="
 "$PYTHON" "$SCRIPT" --run </dev/null
 
 echo
-echo "完了しました。これから毎朝7時に自動で振り分けます。"
+echo "完了しました。これから毎朝7時に、緊急なもの以外を自動で既読にします。"
 echo "記録: $LOG"
 echo "止めたいとき: launchctl unload $PLIST"

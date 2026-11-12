@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
-"""Yahoo!メール（Yahoo! JAPAN）の受信箱を自動で振り分けるスクリプト。
+"""Yahoo!メール（Yahoo! JAPAN）の受信箱で、緊急なもの以外の未読メールを既読にする。
 
 使い方:
-    python3 sort_yahoo_mail.py            # お試し（何も動かさず、振り分け結果だけ表示）
-    python3 sort_yahoo_mail.py --run      # 実際に振り分ける
-    python3 sort_yahoo_mail.py --run --delete-old 90
-                                          # 振り分け後、メルマガフォルダの90日より古いメールを削除
+    python3 sort_yahoo_mail.py                    # お試し（何も変えず、件数と残すメールの件名を表示）
+    python3 sort_yahoo_mail.py --run              # 実際に既読にする
+    python3 sort_yahoo_mail.py --restore-folders  # 以前の振り分けで作ったフォルダのメールを受信箱に戻し、フォルダを消す
+
+「緊急」の判定は URGENT_SUBJECT / URGENT_FROM（件名・差出人に含む語）で変えられる。
 
 ログイン情報は、環境変数 YAHOO_USER / YAHOO_PASS → macOS キーチェーン
 （setup_mac.sh で保存）→ 画面での入力、の順に探す。
 
 事前準備:
-    Yahoo!メールの「設定 → IMAP/POP/SMTPアクセス」で
+    Yahoo!メールの「設定 → IMAP/POP/SMTPアクセス」で IMAP を「利用する」にし、
     「Yahoo! JAPAN公式サービス以外からのアクセスも有効にする」をオンにする。
 """
 import argparse
@@ -29,27 +30,18 @@ import sys
 HOST = "imap.mail.yahoo.co.jp"
 KEYCHAIN_SERVICE = "yahoo-mail-sorter"
 
-# 上から順に判定し、最初に当たったフォルダへ移動する。
-# "subject" は件名、"from" は差出人（名前・アドレス）に含まれる語。
-RULES = [
-    ("要確認", {
-        "subject": ["認証", "確認コード", "ワンタイム", "パスワード", "ログイン", "本人確認", "セキュリティ"],
-    }),
-    ("買い物", {
-        "subject": ["注文", "ご購入", "発送", "出荷", "領収書", "お支払い", "決済", "配達"],
-        "from": ["amazon", "rakuten", "mercari", "yodobashi", "zozo"],
-    }),
-    ("会員登録", {
-        "subject": ["登録完了", "会員登録", "ようこそ", "仮登録", "本登録"],
-    }),
-    ("メルマガ", {
-        "subject": ["メールマガジン", "メルマガ", "キャンペーン", "セール", "クーポン", "ポイント", "お知らせ", "限定", "プレゼント"],
-        "from": ["newsletter", "magazine", "info@", "news@", "noreply", "no-reply", "mailmag"],
-    }),
+# これらを件名に含む未読メールは、既読にせず残す
+URGENT_SUBJECT = [
+    "緊急", "至急", "重要", "警告",
+    "認証", "確認コード", "認証コード", "ワンタイム", "パスワード", "本人確認",
+    "ログイン", "サインイン", "セキュリティ", "不正", "不審", "ロック", "停止",
+    "支払い期限", "お支払い期限", "未払い", "延滞", "督促", "期限切れ",
 ]
+# これらを差出人に含む未読メールも残す（例: "bank", "@example.co.jp"）
+URGENT_FROM = []
 
-# メルマガ以外でも、本文に「配信停止」系の文言があるものはメルマガ扱いにしたいときはここに足す
-JUNK_FOLDER = "メルマガ"
+# 以前の振り分け機能で作ったフォルダ（--restore-folders で受信箱に戻す）
+OLD_FOLDERS = ["要確認", "買い物", "会員登録", "メルマガ"]
 
 
 def imap_utf7_encode(s):
@@ -72,6 +64,10 @@ def imap_utf7_encode(s):
     return "".join(out)
 
 
+def quote(name):
+    return '"' + imap_utf7_encode(name).replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
 def decode_header(value):
     if not value:
         return ""
@@ -87,14 +83,9 @@ def decode_header(value):
     return "".join(parts)
 
 
-def classify(subject, sender):
+def is_urgent(subject, sender):
     s, f = subject.lower(), sender.lower()
-    for folder, cond in RULES:
-        if any(k.lower() in s for k in cond.get("subject", [])):
-            return folder
-        if any(k.lower() in f for k in cond.get("from", [])):
-            return folder
-    return None
+    return any(k.lower() in s for k in URGENT_SUBJECT) or any(k.lower() in f for k in URGENT_FROM)
 
 
 def keychain_login():
@@ -124,74 +115,83 @@ def get_login():
     return input("Yahoo! JAPAN ID またはメールアドレス: "), getpass.getpass("パスワード: ")
 
 
-def quote(name):
-    return '"' + imap_utf7_encode(name).replace("\\", "\\\\").replace('"', '\\"') + '"'
+def chunks(items, n=200):
+    for i in range(0, len(items), n):
+        yield b",".join(items[i:i + n])
 
 
-def main():
-    ap = argparse.ArgumentParser(description="Yahoo!メールの自動振り分け")
-    ap.add_argument("--run", action="store_true", help="実際に移動する（付けないとお試しのみ）")
-    ap.add_argument("--delete-old", type=int, metavar="日数",
-                    help=f"「{JUNK_FOLDER}」フォルダの、指定日数より古いメールを削除")
-    args = ap.parse_args()
+def restore_folders(m):
+    for folder in OLD_FOLDERS:
+        typ, _ = m.select(quote(folder))
+        if typ != "OK":
+            continue
+        typ, data = m.uid("search", None, "ALL")
+        uids = data[0].split()
+        moved = 0
+        for chunk in chunks(uids):
+            typ, _ = m.uid("copy", chunk, "INBOX")
+            if typ == "OK":
+                m.uid("store", chunk, "+FLAGS", r"(\Deleted)")
+                moved += chunk.count(b",") + 1
+        m.expunge()
+        m.close()
+        if moved == len(uids):
+            m.delete(quote(folder))
+            print(f"「{folder}」の {moved} 通を受信箱に戻し、フォルダを消しました")
+        else:
+            print(f"「{folder}」: {len(uids)} 通中 {moved} 通だけ戻せました（フォルダは残しています）")
 
-    user, password = get_login()
-    print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), "開始")
 
-    m = imaplib.IMAP4_SSL(HOST, 993)
-    m.login(user, password)
-    print("ログインしました")
-
-    if args.run:
-        for folder, _ in RULES:
-            m.create(quote(folder))  # すでにあれば失敗するだけなので無視
-
+def mark_read(m, run):
     m.select("INBOX")
-    typ, data = m.uid("search", None, "ALL")
+    typ, data = m.uid("search", None, "UNSEEN")
     uids = data[0].split()
-    print(f"受信箱のメール: {len(uids)} 通")
-
-    plan = {}
-    for i in range(0, len(uids), 200):
-        chunk = b",".join(uids[i:i + 200])
+    keep, to_read = [], []
+    for chunk in chunks(uids):
         typ, resp = m.uid("fetch", chunk, "(UID BODY.PEEK[HEADER.FIELDS (SUBJECT FROM)])")
         for item in resp:
             if not isinstance(item, tuple):
                 continue
             uid = re.search(rb"UID (\d+)", item[0]).group(1)
             msg = email.message_from_bytes(item[1])
-            folder = classify(decode_header(msg.get("Subject")), decode_header(msg.get("From")))
-            if folder:
-                plan.setdefault(folder, []).append(uid)
+            subject = decode_header(msg.get("Subject"))
+            if is_urgent(subject, decode_header(msg.get("From"))):
+                keep.append(subject)
+            else:
+                to_read.append(uid)
 
-    for folder, _ in RULES:
-        print(f"  {folder}: {len(plan.get(folder, []))} 通")
-    print(f"  受信箱に残る: {len(uids) - sum(len(v) for v in plan.values())} 通")
+    print(f"受信箱の未読: {len(uids)} 通")
+    print(f"  既読にする: {len(to_read)} 通")
+    print(f"  緊急として未読のまま残す: {len(keep)} 通")
+    for s in keep[:20]:
+        print(f"    - {s[:60]}")
+    if len(keep) > 20:
+        print(f"    …ほか {len(keep) - 20} 通")
 
-    if not args.run:
-        print("\nお試しモードなので何も動かしていません。実行するには --run を付けてください。")
-        m.logout()
+    if not run:
+        print("\nお試しモードなので何も変えていません。実行するには --run を付けてください。")
         return
+    for chunk in chunks(to_read):
+        m.uid("store", chunk, "+FLAGS", r"(\Seen)")
+    print("既読にしました")
 
-    for folder, ids in plan.items():
-        for i in range(0, len(ids), 200):
-            chunk = b",".join(ids[i:i + 200])
-            typ, _ = m.uid("copy", chunk, quote(folder))
-            if typ == "OK":
-                m.uid("store", chunk, "+FLAGS", r"(\Deleted)")
-    m.expunge()
-    print("振り分けが終わりました")
 
-    if args.delete_old:
-        since = (datetime.date.today() - datetime.timedelta(days=args.delete_old)).strftime("%d-%b-%Y")
-        m.select(quote(JUNK_FOLDER))
-        typ, data = m.uid("search", None, "BEFORE", since)
-        old = data[0].split()
-        for i in range(0, len(old), 200):
-            m.uid("store", b",".join(old[i:i + 200]), "+FLAGS", r"(\Deleted)")
-        m.expunge()
-        print(f"「{JUNK_FOLDER}」の古いメール {len(old)} 通を削除しました")
+def main():
+    ap = argparse.ArgumentParser(description="Yahoo!メールの、緊急なもの以外を既読にする")
+    ap.add_argument("--run", action="store_true", help="実際に既読にする（付けないとお試しのみ）")
+    ap.add_argument("--restore-folders", action="store_true",
+                    help="以前の振り分けフォルダのメールを受信箱に戻し、フォルダを消す")
+    args = ap.parse_args()
 
+    user, password = get_login()
+    print(datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), "開始")
+    m = imaplib.IMAP4_SSL(HOST, 993)
+    m.login(user, password)
+
+    if args.restore_folders:
+        restore_folders(m)
+    else:
+        mark_read(m, args.run)
     m.logout()
 
 
