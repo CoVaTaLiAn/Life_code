@@ -5,6 +5,7 @@
 
 必要: pandas numpy
 """
+import base64
 import csv
 import datetime as dt
 import html
@@ -349,6 +350,10 @@ class Report:
     def code(self, text):
         self.blocks.append(("code", text))
 
+    def img(self, path, alt=""):
+        """画像。md では相対パスで参照し、html には埋め込む（単体で開ける）。path は保存先からの相対パス。"""
+        self.blocks.append(("img", str(path), alt))
+
     def table(self, headers, rows, empty="該当なし"):
         if not rows:
             self.p(empty)
@@ -371,6 +376,8 @@ class Report:
                 out += [f"- {i}" for i in b[1]] + [""]
             elif b[0] == "code":
                 out += ["```", b[1], "```", ""]
+            elif b[0] == "img":
+                out += [f"![{b[2]}]({b[1]})", ""]
             else:
                 out.append("| " + " | ".join(map(self._cell, b[1])) + " |")
                 out.append("|" + "---|" * len(b[1]))
@@ -383,7 +390,7 @@ class Report:
         t = re.sub(r"`([^`]+)`", r"<code>\1</code>", t)
         return re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", t)
 
-    def to_html(self):
+    def to_html(self, base=Path(".")):
         e = self._inline
         out = [f"<!doctype html><html lang='ja'><head><meta charset='utf-8'>"
                f"<meta name='viewport' content='width=device-width,initial-scale=1'>"
@@ -399,6 +406,10 @@ class Report:
                 out.append("<ul>" + "".join(f"<li>{e(i)}</li>" for i in b[1]) + "</ul>")
             elif b[0] == "code":
                 out.append(f"<pre>{html.escape(b[1])}</pre>")
+            elif b[0] == "img":
+                data = base64.b64encode((Path(base) / b[1]).read_bytes()).decode()
+                out.append(f"<p><img alt='{html.escape(b[2])}' style='max-width:100%;height:auto' "
+                           f"src='data:image/png;base64,{data}'></p>")
             else:
                 out.append("<div class='tw'><table><tr>" + "".join(f"<th>{e(c)}</th>" for c in b[1]) + "</tr>")
                 for r in b[2]:
@@ -412,5 +423,5 @@ class Report:
         outdir = Path(outdir)
         outdir.mkdir(parents=True, exist_ok=True)
         (outdir / f"{name}.md").write_text(self.to_md(), encoding="utf-8")
-        (outdir / f"{name}.html").write_text(self.to_html(), encoding="utf-8")
+        (outdir / f"{name}.html").write_text(self.to_html(outdir), encoding="utf-8")
         return outdir / f"{name}.html"

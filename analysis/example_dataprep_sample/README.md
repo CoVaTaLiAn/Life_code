@@ -17,6 +17,7 @@
 | 4 | `04_encode/` | エンコーディング（学習用で fit） | [report.md](04_encode/report.md) |
 | 5 | `05_cleanse_test/` | テスト用データに同じクレンジング | [report.md](05_cleanse_test/report.md) |
 | 6 | `06_encode_test/` | テスト用データに同じ変換（apply） | [report.md](06_encode_test/report.md) |
+| 7 | `07_visualize/` | カテゴリ別の統計の可視化（画像は `figs/`） | [report.md](07_visualize/report.md) |
 
 実行したコマンド（リポジトリのルートで）:
 ```bash
@@ -36,4 +37,5 @@ $C --input $D/data/raw_test.csv --out $D/05_cleanse_test --stage all --drop-cons
   --schema-from $D/02_cleanse/cleaned.schema.json --category-map $D/02_cleanse/stage4_categories/category_map.json \
   --sentinel "年齢=999,月間来店回数=-1" --null-category "会員ランク=不明" --range "$R"
 python3 $S/data-encoding/scripts/encode.py apply --input $D/05_cleanse_test/cleaned.csv --state $D/04_encode/encoder_state.json --out $D/06_encode_test
+python3 $S/data-visualizing/scripts/visualize_categories.py --input $D/02_cleanse/cleaned.csv --out $D/07_visualize --target 解約
 ```
