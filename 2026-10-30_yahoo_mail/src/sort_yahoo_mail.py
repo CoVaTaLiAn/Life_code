@@ -243,8 +243,12 @@ def chunks(items, n=200):
 
 def restore_folders(m):
     for folder in OLD_FOLDERS:
-        typ, _ = m.select(quote(folder))
+        try:
+            typ, _ = m.select(quote(folder))
+        except imaplib.IMAP4.error:
+            typ = "NO"
         if typ != "OK":
+            print(f"「{folder}」フォルダはないので、そのままにします")
             continue
         typ, data = m.uid("search", None, "ALL")
         uids = data[0].split()
