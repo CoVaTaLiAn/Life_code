@@ -28,7 +28,7 @@
 | 部署 | エージェント | 頼むこと | 頼まないこと | 主な出力 |
 |---|---|---|---|---|
 | 調査部 | `web-researcher` | Web での情報収集、比較表、相場・制度・手順の確認 | 論文・特許（専門部署へ） | `<ID>_research.md`（出典URL付き） |
-| 調査部 | `paper-researcher` | 先行研究・文献レビュー | 一般 Web 情報 | `research/<日付>_<テーマ>/report.md` |
+| 調査部 | `paper-researcher` | 先行研究・文献レビュー（論文が多いと内部で子エージェントを並列に動かすので、トークンを多く使う） | 一般 Web 情報 | `research/<日付>_<テーマ>/report.md` |
 | 調査部 | `patent-search` | 先行技術・侵害予防・出願動向 | 法的判断 | `<ID>_patent.md` |
 | 分析部 | `data-analyst` | CSV の EDA・特徴量・ベースラインモデル | データ収集 | `analysis/<日付>_<課題>/report.md` |
 | 開発部 | `engineer` | コードを書く・直す・動かして確かめる | push・本番反映 | リポジトリ内のプロジェクト＋`<ID>_dev.md` |

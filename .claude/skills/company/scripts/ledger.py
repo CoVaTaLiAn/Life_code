@@ -4,13 +4,15 @@
 止まっても続きから再開できるように、社長は一手ごとに log を打つ。
 
   ledger.py start  <案件フォルダ> "目的" [--budget 600000]   案件を始める
-  ledger.py log    <案件フォルダ> "やったこと" [--task T1] [--status 済|途中|失敗]
+  ledger.py log    <案件フォルダ> "やったこと" [--task T1] [--status 発注|受領|途中|差し戻し|失敗|済]
                    [--tokens 12345] [--model sonnet]            1行追記し、予算の状態を返す
   ledger.py status <案件フォルダ>                             どこまで進んだか・予算・モード
   ledger.py decide <案件フォルダ> "お願いしたい決裁" [--detail "補足"] [--file パス]   決裁待ち箱に入れる
   ledger.py inbox                                             決裁待ち箱の未処理を一覧
   ledger.py resolve <番号> 承認|却下|保留 [--note "メモ"]      決裁の結果を書く
   ledger.py open                                              終わっていない案件を一覧（再開用）
+
+状態: 既定は「途中」。「済」は検収を通った時だけ明示して付ける（再開時、済でないタスクはやり直しの対象になる）。
 
 モード（log と status が返す）:
   通常   … 予算の 70% 未満
@@ -28,6 +30,7 @@ ROOT = Path(__file__).resolve().parents[4]  # リポジトリの直下
 COMPANY = ROOT / "company"
 INBOX = COMPANY / "DECISIONS.md"
 LOG = COMPANY / "LOG.md"
+STATUSES = ["発注", "受領", "途中", "差し戻し", "失敗", "済"]
 DEFAULT_BUDGET = 600_000  # 1案件で部署に使わせるトークンの目安
 
 
@@ -91,7 +94,7 @@ def cmd_log(a):
     st["steps"] += 1
     if a.task:
         st["tasks"][a.task] = a.status
-    if a.task == "完了" or a.done:
+    if a.done:
         st["done"] = True
     write_state(d, st)
     with (d / "progress.md").open("a", encoding="utf-8") as f:
@@ -175,7 +178,8 @@ def cmd_open(a):
             if d.is_dir() and (d / "state.json").exists():
                 st = read_state(d)
                 if not st.get("done"):
-                    out.append({"case": d.name, "goal": st.get("goal", ""), **summary(st)})
+                    out.append({"case": d.name, "goal": st.get("goal", ""), **summary(st),
+                                "todo": [t for t, s in st["tasks"].items() if s != "済"]})
     print(json.dumps(out, ensure_ascii=False, indent=2))
 
 
@@ -185,7 +189,9 @@ def main():
     p = sub.add_parser("start"); p.add_argument("case"); p.add_argument("goal")
     p.add_argument("--budget", type=int, default=DEFAULT_BUDGET); p.set_defaults(fn=cmd_start)
     p = sub.add_parser("log"); p.add_argument("case"); p.add_argument("text")
-    p.add_argument("--task", default=""); p.add_argument("--status", default="済")
+    p.add_argument("--task", default="")
+    p.add_argument("--status", default="途中", choices=STATUSES,
+                   help="済は検収を通った時だけ明示して付ける")
     p.add_argument("--tokens", type=int, default=0); p.add_argument("--model", default="")
     p.add_argument("--done", action="store_true", help="案件の完了を記録する"); p.set_defaults(fn=cmd_log)
     p = sub.add_parser("status"); p.add_argument("case"); p.set_defaults(fn=cmd_status)

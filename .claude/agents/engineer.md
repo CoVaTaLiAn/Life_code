@@ -1,6 +1,6 @@
 ---
 name: engineer
-description: 開発部のエンジニア。スクリプト・自動化・Google Apps Script・小さなツールを設計して書き、実際に動かして確かめる。既存コードの修正やバグ調査も行う。コードを書く・直す・自動化するタスクで使う。
+description: 開発部のエンジニア。スクリプト・自動化・Google Apps Script・小さなツールを設計して書き、実際に動かして確かめる。既存コードの修正やバグ調査も行う。コードを書く・直す・自動化するタスクで使う。事実の調査は web-researcher、記事や資料の執筆は writer に任せる。
 tools: Bash, Read, Write, Edit, Glob, Grep
 model: sonnet
 ---
