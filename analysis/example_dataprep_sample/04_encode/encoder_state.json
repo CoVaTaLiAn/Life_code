@@ -1,0 +1,255 @@
+{
+ "target": "解約",
+ "columns": {
+  "顧客ID": {
+   "method": "drop",
+   "kind": "id"
+  },
+  "年齢": {
+   "method": "passthrough",
+   "kind": "numeric",
+   "state": {
+    "fill": null,
+    "flag": false,
+    "impute": "none"
+   },
+   "outputs": [
+    "年齢"
+   ]
+  },
+  "性別": {
+   "method": "binary",
+   "kind": "category",
+   "state": {
+    "map": {
+     "女性": 0,
+     "男性": 1
+    }
+   },
+   "outputs": [
+    "性別"
+   ]
+  },
+  "都道府県": {
+   "method": "target",
+   "kind": "category",
+   "state": {
+    "map": {
+     "京都府": 0.2091530054644809,
+     "兵庫県": 0.21098360655737708,
+     "北海道": 0.31910961105753777,
+     "千葉県": 0.250847936687394,
+     "埼玉県": 0.20686475409836066,
+     "大阪府": 0.2503368515607456,
+     "宮城県": 0.21372950819672135,
+     "広島県": 0.23239222829386766,
+     "愛知県": 0.2465846994535519,
+     "新潟県": 0.10831381733021078,
+     "東京都": 0.2333924639099584,
+     "神奈川県": 0.18805886736214605,
+     "福岡県": 0.1695835179441737,
+     "長野県": 0.25189155107187894,
+     "静岡県": 0.18837822014051525
+    },
+    "prior": 0.22745901639344263
+   },
+   "outputs": [
+    "都道府県__te"
+   ]
+  },
+  "郵便番号": {
+   "method": "drop",
+   "kind": "id"
+  },
+  "プラン": {
+   "method": "onehot",
+   "kind": "category",
+   "state": {
+    "categories": [
+     "Free",
+     "Basic",
+     "Premium"
+    ],
+    "other": false,
+    "nan": false
+   },
+   "outputs": [
+    "プラン=Free",
+    "プラン=Basic",
+    "プラン=Premium"
+   ]
+  },
+  "会員ランク": {
+   "method": "ordinal",
+   "kind": "category",
+   "state": {
+    "map": {
+     "ブロンズ": 0,
+     "シルバー": 1,
+     "ゴールド": 2
+    }
+   },
+   "outputs": [
+    "会員ランク__ord"
+   ]
+  },
+  "年収": {
+   "method": "log1p",
+   "kind": "numeric",
+   "state": {
+    "fill": null,
+    "flag": false,
+    "impute": "none",
+    "signed": false
+   },
+   "outputs": [
+    "年収__log1p"
+   ]
+  },
+  "月間来店回数": {
+   "method": "passthrough",
+   "kind": "numeric",
+   "state": {
+    "fill": null,
+    "flag": false,
+    "impute": "none"
+   },
+   "outputs": [
+    "月間来店回数"
+   ]
+  },
+  "平均滞在分": {
+   "method": "log1p",
+   "kind": "numeric",
+   "state": {
+    "fill": null,
+    "flag": false,
+    "impute": "none",
+    "signed": false
+   },
+   "outputs": [
+    "平均滞在分__log1p"
+   ]
+  },
+  "登録日": {
+   "method": "datetime",
+   "kind": "datetime",
+   "state": {
+    "parts": [
+     "year",
+     "month",
+     "day",
+     "dayofweek",
+     "is_weekend",
+     "month_sin",
+     "month_cos",
+     "dow_sin",
+     "dow_cos",
+     "elapsed_days"
+    ],
+    "origin": "2023-01-03T00:00:00"
+   },
+   "outputs": [
+    "登録日__year",
+    "登録日__month",
+    "登録日__day",
+    "登録日__dayofweek",
+    "登録日__is_weekend",
+    "登録日__month_sin",
+    "登録日__month_cos",
+    "登録日__dow_sin",
+    "登録日__dow_cos",
+    "登録日__elapsed_days"
+   ]
+  },
+  "メール受信": {
+   "method": "binary",
+   "kind": "bool",
+   "state": {
+    "map": {
+     "0": 0,
+     "1": 1
+    }
+   },
+   "outputs": [
+    "メール受信"
+   ]
+  },
+  "割引率": {
+   "method": "passthrough",
+   "kind": "numeric",
+   "state": {
+    "fill": null,
+    "flag": false,
+    "impute": "none"
+   },
+   "outputs": [
+    "割引率"
+   ]
+  },
+  "コメント": {
+   "method": "onehot",
+   "kind": "category",
+   "state": {
+    "categories": [
+     "特になし",
+     "店員さんの対応がとても丁寧で、また利用したいと思いました。",
+     "待ち時間が長いのが気になります。改善を期待しています。",
+     "商品の種類が豊富で選ぶのが楽しいです。"
+    ],
+    "other": false,
+    "nan": true
+   },
+   "outputs": [
+    "コメント=特になし",
+    "コメント=店員さんの対応がとても丁寧で、また利用したいと思いました。",
+    "コメント=待ち時間が長いのが気になります。改善を期待しています。",
+    "コメント=商品の種類が豊富で選ぶのが楽しいです。",
+    "コメント=__nan"
+   ]
+  },
+  "解約": {
+   "method": "target_label",
+   "kind": "numeric",
+   "state": {
+    "map": {
+     "0": 0,
+     "1": 1
+    }
+   },
+   "outputs": [
+    "解約"
+   ]
+  }
+ },
+ "feature_order": [
+  "年齢",
+  "性別",
+  "都道府県__te",
+  "プラン=Free",
+  "プラン=Basic",
+  "プラン=Premium",
+  "会員ランク__ord",
+  "年収__log1p",
+  "月間来店回数",
+  "平均滞在分__log1p",
+  "登録日__year",
+  "登録日__month",
+  "登録日__day",
+  "登録日__dayofweek",
+  "登録日__is_weekend",
+  "登録日__month_sin",
+  "登録日__month_cos",
+  "登録日__dow_sin",
+  "登録日__dow_cos",
+  "登録日__elapsed_days",
+  "メール受信",
+  "割引率",
+  "コメント=特になし",
+  "コメント=店員さんの対応がとても丁寧で、また利用したいと思いました。",
+  "コメント=待ち時間が長いのが気になります。改善を期待しています。",
+  "コメント=商品の種類が豊富で選ぶのが楽しいです。",
+  "コメント=__nan",
+  "解約"
+ ]
+}

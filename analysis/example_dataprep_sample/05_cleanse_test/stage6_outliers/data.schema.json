@@ -1,0 +1,18 @@
+{
+ "columns": {
+  "顧客ID": "id",
+  "年齢": "numeric",
+  "性別": "category",
+  "都道府県": "category",
+  "郵便番号": "id",
+  "プラン": "category",
+  "会員ランク": "category",
+  "年収": "numeric",
+  "月間来店回数": "numeric",
+  "平均滞在分": "numeric",
+  "登録日": "datetime",
+  "メール受信": "bool",
+  "割引率": "numeric",
+  "コメント": "category"
+ }
+}

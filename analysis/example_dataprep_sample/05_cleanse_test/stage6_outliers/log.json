@@ -1,0 +1,56 @@
+{
+ "stage": 6,
+ "name": "outliers",
+ "title": "外れ値",
+ "input": "analysis/example_dataprep_sample/05_cleanse_test/stage5_missing/data.csv",
+ "before": {
+  "rows": 115,
+  "cols": 14,
+  "missing": 65
+ },
+ "after": {
+  "rows": 115,
+  "cols": 14,
+  "missing": 65
+ },
+ "actions": [
+  [
+   "年収",
+   "範囲 0:100000000 の外の値を欠損にした",
+   0,
+   ""
+  ],
+  [
+   "平均滞在分",
+   "範囲 0:600 の外の値を欠損にした",
+   0,
+   ""
+  ],
+  [
+   "登録日",
+   "範囲 2000-01-01:2026-12-31 の外の値を欠損にした",
+   0,
+   ""
+  ]
+ ],
+ "review": [
+  [
+   "年収",
+   "極端な値（境界 -6,328,500〜15,420,500 の外）",
+   1,
+   "15,606,000"
+  ]
+ ],
+ "args": {
+  "input": "analysis/example_dataprep_sample/data/raw_test.csv",
+  "out": "analysis/example_dataprep_sample/05_cleanse_test",
+  "stage": "all",
+  "drop_constant": true,
+  "schema_from": "analysis/example_dataprep_sample/02_cleanse/cleaned.schema.json",
+  "category_map": "analysis/example_dataprep_sample/02_cleanse/stage4_categories/category_map.json",
+  "sentinel": "年齢=999,月間来店回数=-1",
+  "null_category": "会員ランク=不明",
+  "range": "年収=0:100000000,平均滞在分=0:600,登録日=2000-01-01:2026-12-31",
+  "iqr_k": 3.0
+ }
+}

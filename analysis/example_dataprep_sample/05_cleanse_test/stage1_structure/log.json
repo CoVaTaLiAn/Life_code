@@ -1,0 +1,55 @@
+{
+ "stage": 1,
+ "name": "structure",
+ "title": "構造を整える",
+ "input": "analysis/example_dataprep_sample/data/raw_test.csv",
+ "before": {
+  "rows": 115,
+  "cols": 17,
+  "missing": 168
+ },
+ "after": {
+  "rows": 115,
+  "cols": 14,
+  "missing": 53
+ },
+ "actions": [
+  [
+   "（列名）",
+   "列名を正規化（全角→半角、空白→_、空の名前に仮の名前）",
+   2,
+   "'顧客ＩＤ'→顧客ID / ' 年齢 '→年齢"
+  ],
+  [
+   "（列）",
+   "すべて空の列を削除",
+   1,
+   "備考"
+  ],
+  [
+   "年齢コピー",
+   "`年齢` と中身が同じ列を削除",
+   1,
+   ""
+  ],
+  [
+   "（列）",
+   "値が1種類しかない列を削除",
+   1,
+   "国"
+  ]
+ ],
+ "review": [],
+ "args": {
+  "input": "analysis/example_dataprep_sample/data/raw_test.csv",
+  "out": "analysis/example_dataprep_sample/05_cleanse_test",
+  "stage": "all",
+  "drop_constant": true,
+  "schema_from": "analysis/example_dataprep_sample/02_cleanse/cleaned.schema.json",
+  "category_map": "analysis/example_dataprep_sample/02_cleanse/stage4_categories/category_map.json",
+  "sentinel": "年齢=999,月間来店回数=-1",
+  "null_category": "会員ランク=不明",
+  "range": "年収=0:100000000,平均滞在分=0:600,登録日=2000-01-01:2026-12-31",
+  "iqr_k": 3.0
+ }
+}

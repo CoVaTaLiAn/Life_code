@@ -1,0 +1,142 @@
+{
+ "target": "解約",
+ "source": "analysis/example_dataprep_sample/02_cleanse/cleaned.csv",
+ "columns": {
+  "顧客ID": {
+   "kind": "id",
+   "method": "drop",
+   "params": {},
+   "reason": "行を識別するだけの値。学習に使うと丸暗記になる",
+   "alternatives": [
+    "別の表との結合キーとして使う"
+   ]
+  },
+  "年齢": {
+   "kind": "numeric",
+   "method": "passthrough",
+   "params": {},
+   "reason": "分布に大きな偏りがない。木のモデルならそのまま使える",
+   "alternatives": [
+    "線形モデル・ニューラルネットなら standard（標準化）"
+   ]
+  },
+  "性別": {
+   "kind": "category",
+   "method": "binary",
+   "params": {},
+   "reason": "値が2種類。0/1 にすれば十分",
+   "alternatives": []
+  },
+  "都道府県": {
+   "kind": "category",
+   "method": "target",
+   "params": {},
+   "reason": "15 種類。One-Hot では列が増えすぎるので目的変数の平均に置き換える（fold 外で計算）",
+   "alternatives": [
+    "frequency",
+    "onehot（上位だけ残す）"
+   ]
+  },
+  "郵便番号": {
+   "kind": "id",
+   "method": "drop",
+   "params": {},
+   "reason": "行を識別するだけの値。学習に使うと丸暗記になる",
+   "alternatives": [
+    "別の表との結合キーとして使う"
+   ]
+  },
+  "プラン": {
+   "kind": "category",
+   "method": "onehot",
+   "params": {},
+   "reason": "3 種類と少ない。列が増えすぎず、順序の仮定も置かない",
+   "alternatives": [
+    "木のモデルだけなら label"
+   ]
+  },
+  "会員ランク": {
+   "kind": "category",
+   "method": "ordinal",
+   "params": {
+    "order": [
+     "ブロンズ",
+     "シルバー",
+     "ゴールド"
+    ]
+   },
+   "reason": "値に順序がある。順番どおりの整数にする",
+   "alternatives": [
+    "onehot"
+   ]
+  },
+  "年収": {
+   "kind": "numeric",
+   "method": "log1p",
+   "params": {},
+   "reason": "右に裾が長い（歪度 1.3、0 以上）。対数で裾を縮める",
+   "alternatives": [
+    "木のモデル（LightGBM など）だけなら passthrough でよい"
+   ]
+  },
+  "月間来店回数": {
+   "kind": "numeric",
+   "method": "passthrough",
+   "params": {},
+   "reason": "分布に大きな偏りがない。木のモデルならそのまま使える",
+   "alternatives": [
+    "線形モデル・ニューラルネットなら standard（標準化）"
+   ]
+  },
+  "平均滞在分": {
+   "kind": "numeric",
+   "method": "log1p",
+   "params": {},
+   "reason": "右に裾が長い（歪度 1.2、0 以上）。対数で裾を縮める",
+   "alternatives": [
+    "木のモデル（LightGBM など）だけなら passthrough でよい"
+   ]
+  },
+  "登録日": {
+   "kind": "datetime",
+   "method": "datetime",
+   "params": {},
+   "reason": "年・月・曜日などに分解し、月と曜日は sin/cos で周期を表す",
+   "alternatives": [
+    "基準日からの経過日数だけ使う"
+   ]
+  },
+  "メール受信": {
+   "kind": "bool",
+   "method": "binary",
+   "params": {},
+   "reason": "値が2種類。0/1 にすれば十分",
+   "alternatives": []
+  },
+  "割引率": {
+   "kind": "numeric",
+   "method": "passthrough",
+   "params": {},
+   "reason": "数値だが 4 種類しかない。大小に意味があればそのまま",
+   "alternatives": [
+    "コード値（大小に意味がない）なら onehot"
+   ]
+  },
+  "コメント": {
+   "kind": "category",
+   "method": "onehot",
+   "params": {},
+   "reason": "4 種類と少ない。列が増えすぎず、順序の仮定も置かない",
+   "alternatives": [
+    "木のモデルだけなら label"
+   ]
+  },
+  "解約": {
+   "kind": "numeric",
+   "method": "target_label",
+   "params": {},
+   "reason": "目的変数（2 クラスの分類）。クラスを整数にする",
+   "alternatives": []
+  }
+ }
+}

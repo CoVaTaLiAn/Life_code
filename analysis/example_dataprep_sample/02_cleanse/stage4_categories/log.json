@@ -1,0 +1,55 @@
+{
+ "stage": 4,
+ "name": "categories",
+ "title": "カテゴリの統一",
+ "input": "analysis/example_dataprep_sample/02_cleanse/stage3_types/data.csv",
+ "before": {
+  "rows": 488,
+  "cols": 15,
+  "missing": 259
+ },
+ "after": {
+  "rows": 488,
+  "cols": 15,
+  "missing": 259
+ },
+ "actions": [
+  [
+   "性別",
+   "指定どおりに統一",
+   12,
+   "男→男性 / M→男性 / 女→女性"
+  ],
+  [
+   "都道府県",
+   "指定どおりに統一",
+   7,
+   "東京→東京都 / TOKYO→東京都 / 大阪→大阪府"
+  ],
+  [
+   "プラン",
+   "表記ゆれを `Free` に統一",
+   7,
+   "FREE(4件) / free(3件)"
+  ],
+  [
+   "プラン",
+   "表記ゆれを `Basic` に統一",
+   8,
+   "basic(8件)"
+  ],
+  [
+   "プラン",
+   "表記ゆれを `Premium` に統一",
+   8,
+   "premium(8件)"
+  ]
+ ],
+ "review": [],
+ "args": {
+  "out": "analysis/example_dataprep_sample/02_cleanse",
+  "stage": "4",
+  "map": "性別:男=男性;性別:M=男性;性別:女=女性;都道府県:東京=東京都;都道府県:TOKYO=東京都;都道府県:大阪=大阪府",
+  "iqr_k": 3.0
+ }
+}

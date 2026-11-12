@@ -1,0 +1,32 @@
+<!doctype html><html lang='ja'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>クレンジング 段階1: 構造を整える</title><style>
+:root{--bg:#fff;--fg:#1c1c1e;--sub:#5b6068;--line:#d9dce1;--head:#f3f4f6;--acc:#1f5fbf}
+@media(prefers-color-scheme:dark){:root{--bg:#16181c;--fg:#e8e9eb;--sub:#a0a5ad;--line:#33373e;--head:#22252b;--acc:#7fb0ff}}
+body{background:var(--bg);color:var(--fg);font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;
+line-height:1.7;margin:0 auto;padding:16px;max-width:1080px}
+h1{font-size:1.4rem;margin:.2em 0}h2{font-size:1.15rem;border-bottom:2px solid var(--line);padding-bottom:4px;margin-top:2em}
+h3{font-size:1rem;margin-top:1.4em}.meta{color:var(--sub);font-size:.9rem}
+.tw{overflow-x:auto}table{border-collapse:collapse;font-size:.85rem;margin:.5em 0}
+th,td{border:1px solid var(--line);padding:4px 8px;text-align:left;vertical-align:top;white-space:nowrap}
+td.w{white-space:normal;min-width:14em}th{background:var(--head)}
+code{background:var(--head);padding:1px 4px;border-radius:3px;font-size:.9em}
+pre{background:var(--head);padding:10px;overflow-x:auto;font-size:.85rem}strong{color:var(--acc)}
+</style></head><body>
+<h1>クレンジング 段階1: 構造を整える</h1><p><strong>役割</strong>: 列名を整え、空の行・列、重複した行・列、紛れ込んだ見出し行を取り除く。セルの値は書き換えない</p><p class='meta'>
+入力: analysis/example_dataprep_sample/data/raw.csv<br>出力: analysis/example_dataprep_sample/02_cleanse/stage1_structure/data.csv<br>行 × 列: 500 × 18 → 488 × 15<br>欠損セル: 787 → 232<br>作成日時: 2026-11-12 08:49
+</p>
+<h2>1. 実施した変更</h2>
+<div class='tw'><table><tr><th>列</th><th>内容</th><th>件数</th><th>例</th></tr>
+<tr><td>（列名）</td><td>列名を正規化（全角→半角、空白→_、空の名前に仮の名前）</td><td>2</td><td>&#x27;顧客ＩＤ&#x27;→顧客ID / &#x27; 年齢 &#x27;→年齢</td></tr>
+<tr><td>（行）</td><td>すべて空の行を削除</td><td>3</td><td></td></tr>
+<tr><td>（列）</td><td>すべて空の列を削除</td><td>1</td><td>備考</td></tr>
+<tr><td>（行）</td><td>完全に重複した行を削除（最初の1行を残す）</td><td>9</td><td>例: 元の 130 行目</td></tr>
+<tr><td>年齢コピー</td><td><code>年齢</code> と中身が同じ列を削除</td><td>1</td><td></td></tr>
+<tr><td>（列）</td><td>値が1種類しかない列を削除</td><td>1</td><td>国</td></tr>
+</table></div>
+<h2>2. 要確認（自動では変更していない）</h2>
+<p>なし</p>
+<h2>3. 状況</h2>
+<ul><li>pandas は同名の列を読み込み時に <code>名前.1</code> のように変える。元ファイルに同名の列がないか列名を確認する。</li></ul>
+<h2>4. 次の処理</h2>
+<p>段階2（文字の正規化）</p>
+</body></html>

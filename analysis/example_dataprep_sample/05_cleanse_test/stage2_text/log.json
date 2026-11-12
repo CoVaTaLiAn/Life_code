@@ -1,0 +1,67 @@
+{
+ "stage": 2,
+ "name": "text",
+ "title": "文字の正規化",
+ "input": "analysis/example_dataprep_sample/05_cleanse_test/stage1_structure/data.csv",
+ "before": {
+  "rows": 115,
+  "cols": 14,
+  "missing": 53
+ },
+ "after": {
+  "rows": 115,
+  "cols": 14,
+  "missing": 61
+ },
+ "actions": [
+  [
+   "年齢",
+   "空白・全角英数字・制御文字を正規化",
+   1,
+   "'２８'→'28'"
+  ],
+  [
+   "年齢",
+   "欠損を表す文字を欠損にした",
+   1,
+   "-"
+  ],
+  [
+   "性別",
+   "空白・全角英数字・制御文字を正規化",
+   4,
+   "'Ｍ'→'M' / ' 女性'→'女性'"
+  ],
+  [
+   "プラン",
+   "空白・全角英数字・制御文字を正規化",
+   2,
+   "'FREE '→'FREE' / 'Premium\\u3000'→'Premium'"
+  ],
+  [
+   "年収",
+   "空白・全角英数字・制御文字を正規化",
+   107,
+   "'￥7,419,000'→'¥7,419,000' / '￥5,489,000'→'¥5,489,000' / '￥4,025,000'→'¥4,025,000'"
+  ],
+  [
+   "年収",
+   "欠損を表す文字を欠損にした",
+   7,
+   "NA / N/A / -"
+  ]
+ ],
+ "review": [],
+ "args": {
+  "input": "analysis/example_dataprep_sample/data/raw_test.csv",
+  "out": "analysis/example_dataprep_sample/05_cleanse_test",
+  "stage": "all",
+  "drop_constant": true,
+  "schema_from": "analysis/example_dataprep_sample/02_cleanse/cleaned.schema.json",
+  "category_map": "analysis/example_dataprep_sample/02_cleanse/stage4_categories/category_map.json",
+  "sentinel": "年齢=999,月間来店回数=-1",
+  "null_category": "会員ランク=不明",
+  "range": "年収=0:100000000,平均滞在分=0:600,登録日=2000-01-01:2026-12-31",
+  "iqr_k": 3.0
+ }
+}

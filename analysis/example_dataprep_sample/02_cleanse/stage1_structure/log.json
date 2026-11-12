@@ -1,0 +1,62 @@
+{
+ "stage": 1,
+ "name": "structure",
+ "title": "構造を整える",
+ "input": "analysis/example_dataprep_sample/data/raw.csv",
+ "before": {
+  "rows": 500,
+  "cols": 18,
+  "missing": 787
+ },
+ "after": {
+  "rows": 488,
+  "cols": 15,
+  "missing": 232
+ },
+ "actions": [
+  [
+   "（列名）",
+   "列名を正規化（全角→半角、空白→_、空の名前に仮の名前）",
+   2,
+   "'顧客ＩＤ'→顧客ID / ' 年齢 '→年齢"
+  ],
+  [
+   "（行）",
+   "すべて空の行を削除",
+   3,
+   ""
+  ],
+  [
+   "（列）",
+   "すべて空の列を削除",
+   1,
+   "備考"
+  ],
+  [
+   "（行）",
+   "完全に重複した行を削除（最初の1行を残す）",
+   9,
+   "例: 元の 130 行目"
+  ],
+  [
+   "年齢コピー",
+   "`年齢` と中身が同じ列を削除",
+   1,
+   ""
+  ],
+  [
+   "（列）",
+   "値が1種類しかない列を削除",
+   1,
+   "国"
+  ]
+ ],
+ "review": [],
+ "args": {
+  "input": "analysis/example_dataprep_sample/data/raw.csv",
+  "out": "analysis/example_dataprep_sample/02_cleanse",
+  "stage": "1",
+  "drop_constant": true,
+  "iqr_k": 3.0
+ }
+}

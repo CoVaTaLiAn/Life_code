@@ -1,0 +1,195 @@
+<!doctype html><html lang='ja'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>データプロファイリング: 見本データ（クレンジング前）</title><style>
+:root{--bg:#fff;--fg:#1c1c1e;--sub:#5b6068;--line:#d9dce1;--head:#f3f4f6;--acc:#1f5fbf}
+@media(prefers-color-scheme:dark){:root{--bg:#16181c;--fg:#e8e9eb;--sub:#a0a5ad;--line:#33373e;--head:#22252b;--acc:#7fb0ff}}
+body{background:var(--bg);color:var(--fg);font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;
+line-height:1.7;margin:0 auto;padding:16px;max-width:1080px}
+h1{font-size:1.4rem;margin:.2em 0}h2{font-size:1.15rem;border-bottom:2px solid var(--line);padding-bottom:4px;margin-top:2em}
+h3{font-size:1rem;margin-top:1.4em}.meta{color:var(--sub);font-size:.9rem}
+.tw{overflow-x:auto}table{border-collapse:collapse;font-size:.85rem;margin:.5em 0}
+th,td{border:1px solid var(--line);padding:4px 8px;text-align:left;vertical-align:top;white-space:nowrap}
+td.w{white-space:normal;min-width:14em}th{background:var(--head)}
+code{background:var(--head);padding:1px 4px;border-radius:3px;font-size:.9em}
+pre{background:var(--head);padding:10px;overflow-x:auto;font-size:.85rem}strong{color:var(--acc)}
+</style></head><body>
+<h1>データプロファイリング: 見本データ（クレンジング前）</h1><p><strong>役割</strong>: データの中身を調べて報告する（変更はしない）。クレンジングとエンコーディングの判断材料を作る</p><p class='meta'>
+入力: analysis/example_dataprep_sample/data/raw.csv<br>状態: 未クレンジング（種類は推定）<br>文字コード / 区切り: cp932 / ,<br>作成日時: 2026-11-12 08:49
+</p>
+<h2>1. 全体</h2>
+<div class='tw'><table><tr><th>項目</th><th>値</th></tr>
+<tr><td>行数 × 列数</td><td>500 × 18</td></tr>
+<tr><td>列の種類</td><td>数値 8、カテゴリ 7、文章 1、日時 1、真偽(0/1) 1</td></tr>
+<tr><td>欠損セル</td><td>817（全セルの 9.1%）</td></tr>
+<tr><td>完全に重複した行</td><td>11</td></tr>
+<tr><td>目的変数</td><td>解約</td></tr>
+</table></div>
+<h2>2. 列の一覧</h2>
+<div class='tw'><table><tr><th>列</th><th>種類</th><th>欠損率</th><th>種類数</th><th>値の例</th><th>おすすめのエンコーディング</th></tr>
+<tr><td>顧客ＩＤ</td><td>文章</td><td>0.6%</td><td>488</td><td>C00476 / C00474 / C00112</td><td>文字数・単語数</td></tr>
+<tr><td> 年齢 </td><td>数値</td><td>1.0%</td><td>58</td><td>31 / 24 / 18</td><td>対数変換 log1p</td></tr>
+<tr><td>性別</td><td>カテゴリ</td><td>0.6%</td><td>5</td><td>男性 / 女性 / M</td><td>One-Hot</td></tr>
+<tr><td>都道府県</td><td>カテゴリ</td><td>0.6%</td><td>18</td><td>千葉県 / 京都府 / 兵庫県</td><td>ターゲット(目的変数の平均)</td></tr>
+<tr><td>郵便番号</td><td>数値</td><td>0.6%</td><td>488</td><td>6,775,519 / 7,984,050 / 1,309,938</td><td>そのまま</td></tr>
+<tr><td>プラン</td><td>カテゴリ</td><td>0.6%</td><td>7</td><td>Free / Basic / Premium</td><td>One-Hot</td></tr>
+<tr><td>会員ランク</td><td>カテゴリ</td><td>0.6%</td><td>4</td><td>シルバー / ブロンズ / ゴールド</td><td>One-Hot</td></tr>
+<tr><td>年収</td><td>数値</td><td>7.0%</td><td>439</td><td>2,473,000 / 5,085,000 / 2,474,000</td><td>そのまま</td></tr>
+<tr><td>月間来店回数</td><td>数値</td><td>0.6%</td><td>16</td><td>6 / 1 / 3</td><td>そのまま</td></tr>
+<tr><td>平均滞在分</td><td>数値</td><td>0.8%</td><td>346</td><td>53.7 / 22.6 / 33.2</td><td>そのまま</td></tr>
+<tr><td>登録日</td><td>日時</td><td>1.4%</td><td>369</td><td>2025-01-10 / 2023-12-07 / 2023-11-24</td><td>日時の分解＋周期</td></tr>
+<tr><td>メール受信</td><td>真偽(0/1)</td><td>1.0%</td><td>2</td><td>1 / 0</td><td>0/1 化</td></tr>
+<tr><td>割引率</td><td>数値</td><td>0.6%</td><td>4</td><td>10 / 5 / 20</td><td>そのまま</td></tr>
+<tr><td>コメント</td><td>カテゴリ</td><td>45.2%</td><td>4</td><td class=w>特になし / 待ち時間が長いのが気になります。改善を期待して… / 店員さんの対応がとても丁寧で、また利用したいと…</td><td>One-Hot</td></tr>
+<tr><td>国</td><td>カテゴリ</td><td>0.6%</td><td>1</td><td>日本</td><td>使わない（除外）</td></tr>
+<tr><td>備考</td><td>カテゴリ</td><td>100.0%</td><td>0</td><td></td><td>使わない（除外）</td></tr>
+<tr><td>年齢コピー</td><td>数値</td><td>1.0%</td><td>58</td><td>31 / 24 / 18</td><td>対数変換 log1p</td></tr>
+<tr><td>解約</td><td>数値</td><td>0.6%</td><td>2</td><td>0 / 1</td><td>目的変数: クラス→整数</td></tr>
+</table></div>
+<h2>3. 数値列の統計値</h2>
+<div class='tw'><table><tr><th>列</th><th>平均</th><th>標準偏差</th><th>最小</th><th>25%</th><th>中央値</th><th>75%</th><th>最大</th><th>歪度</th><th>0 の割合</th><th>外れ値</th><th>分布</th></tr>
+<tr><td> 年齢 </td><td>66.677</td><td>153.759</td><td>18</td><td>33</td><td>42</td><td>51</td><td>999</td><td>5.883</td><td>0.0%</td><td>13</td><td>█▁▁▁▁▁▁▁▁▁</td></tr>
+<tr><td>郵便番号</td><td>5.03e+06</td><td>2.88e+06</td><td>32,348</td><td>2,584,386</td><td>4,923,148</td><td>7,646,413</td><td>9,968,423</td><td>0.103</td><td>0.0%</td><td>0</td><td>▅█▇█▆▇▆▆▇▇</td></tr>
+<tr><td>年収</td><td>7.14e+06</td><td>4.53e+07</td><td>-500,000</td><td>3,324,000</td><td>4,591,000</td><td>6,127,000</td><td>980,000,000</td><td>21.464</td><td>0.0%</td><td>3</td><td>█▁▁▁▁▁▁▁▁▁</td></tr>
+<tr><td>月間来店回数</td><td>5.702</td><td>2.484</td><td>-1</td><td>4</td><td>6</td><td>7</td><td>14</td><td>0.219</td><td>0.2%</td><td>0</td><td>▁▁▄▃█▃▄▂▂▁</td></tr>
+<tr><td>平均滞在分</td><td>36.366</td><td>110.719</td><td>-5</td><td>13.875</td><td>25</td><td>40.75</td><td>2,000</td><td>15.45</td><td>0.0%</td><td>3</td><td>█▁▁▁▁▁▁▁▁▁</td></tr>
+<tr><td>メール受信</td><td>0.628</td><td>0.484</td><td>0</td><td>0</td><td>1</td><td>1</td><td>1</td><td>-</td><td>37.2%</td><td>0</td><td>▅▁▁▁▁▁▁▁▁█</td></tr>
+<tr><td>割引率</td><td>9.185</td><td>7.646</td><td>0</td><td>5</td><td>10</td><td>20</td><td>20</td><td>0.338</td><td>24.7%</td><td>0</td><td>▇▁▇▁▁▇▁▁▁█</td></tr>
+<tr><td>年齢コピー</td><td>66.677</td><td>153.759</td><td>18</td><td>33</td><td>42</td><td>51</td><td>999</td><td>5.883</td><td>0.0%</td><td>13</td><td>█▁▁▁▁▁▁▁▁▁</td></tr>
+<tr><td>解約</td><td>0.229</td><td>0.421</td><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td><td>-</td><td>77.1%</td><td>0</td><td>█▁▁▁▁▁▁▁▁▃</td></tr>
+</table></div>
+<p>歪度: 0 に近いほど左右対称、1 を超えると右に裾が長い。外れ値: 四分位範囲の3倍より外にある値の数。分布: 最小〜最大を10区間に分けた件数。</p>
+<h2>4. カテゴリ列の中身</h2>
+<div class='tw'><table><tr><th>列</th><th>種類数</th><th>最多の値の割合</th><th>1% 未満の値の数</th><th>1回だけの値の数</th></tr>
+<tr><td>性別</td><td>5</td><td>52.1%</td><td>2</td><td>0</td></tr>
+<tr><td>都道府県</td><td>18</td><td>24.5%</td><td>4</td><td>1</td></tr>
+<tr><td>プラン</td><td>7</td><td>45.3%</td><td>2</td><td>0</td></tr>
+<tr><td>会員ランク</td><td>4</td><td>59.4%</td><td>0</td><td>0</td></tr>
+<tr><td>コメント</td><td>4</td><td>42.0%</td><td>0</td><td>0</td></tr>
+<tr><td>国</td><td>1</td><td>100.0%</td><td>0</td><td>0</td></tr>
+</table></div>
+<h3>性別（5 種類）</h3>
+<div class='tw'><table><tr><th>値</th><th>件数</th><th>割合</th><th></th></tr>
+<tr><td>男性</td><td>259</td><td>52.1%</td><td>██████████</td></tr>
+<tr><td>女性</td><td>226</td><td>45.5%</td><td>█████████</td></tr>
+<tr><td>女</td><td>7</td><td>1.4%</td><td>█</td></tr>
+<tr><td>M</td><td>3</td><td>0.6%</td><td>█</td></tr>
+<tr><td>男</td><td>2</td><td>0.4%</td><td>█</td></tr>
+</table></div>
+<h3>都道府県（18 種類・上位10）</h3>
+<div class='tw'><table><tr><th>値</th><th>件数</th><th>割合</th><th></th></tr>
+<tr><td>東京都</td><td>122</td><td>24.5%</td><td>█████</td></tr>
+<tr><td>大阪府</td><td>62</td><td>12.5%</td><td>██</td></tr>
+<tr><td>愛知県</td><td>57</td><td>11.5%</td><td>██</td></tr>
+<tr><td>北海道</td><td>42</td><td>8.5%</td><td>██</td></tr>
+<tr><td>神奈川県</td><td>34</td><td>6.8%</td><td>█</td></tr>
+<tr><td>埼玉県</td><td>30</td><td>6.0%</td><td>█</td></tr>
+<tr><td>福岡県</td><td>27</td><td>5.4%</td><td>█</td></tr>
+<tr><td>千葉県</td><td>21</td><td>4.2%</td><td>█</td></tr>
+<tr><td>京都府</td><td>21</td><td>4.2%</td><td>█</td></tr>
+<tr><td>静岡県</td><td>18</td><td>3.6%</td><td>█</td></tr>
+</table></div>
+<h3>プラン（7 種類）</h3>
+<div class='tw'><table><tr><th>値</th><th>件数</th><th>割合</th><th></th></tr>
+<tr><td>Free</td><td>225</td><td>45.3%</td><td>█████████</td></tr>
+<tr><td>Basic</td><td>169</td><td>34.0%</td><td>███████</td></tr>
+<tr><td>Premium</td><td>80</td><td>16.1%</td><td>███</td></tr>
+<tr><td>basic</td><td>8</td><td>1.6%</td><td>█</td></tr>
+<tr><td>premium</td><td>8</td><td>1.6%</td><td>█</td></tr>
+<tr><td>FREE</td><td>4</td><td>0.8%</td><td>█</td></tr>
+<tr><td>free</td><td>3</td><td>0.6%</td><td>█</td></tr>
+</table></div>
+<h3>会員ランク（4 種類）</h3>
+<div class='tw'><table><tr><th>値</th><th>件数</th><th>割合</th><th></th></tr>
+<tr><td>ブロンズ</td><td>295</td><td>59.4%</td><td>████████████</td></tr>
+<tr><td>シルバー</td><td>140</td><td>28.2%</td><td>██████</td></tr>
+<tr><td>ゴールド</td><td>52</td><td>10.5%</td><td>██</td></tr>
+<tr><td>不明</td><td>10</td><td>2.0%</td><td>█</td></tr>
+</table></div>
+<h3>コメント（4 種類）</h3>
+<div class='tw'><table><tr><th>値</th><th>件数</th><th>割合</th><th></th></tr>
+<tr><td>特になし</td><td>115</td><td>42.0%</td><td>████████</td></tr>
+<tr><td>店員さんの対応がとても丁寧で、また利用したいと思いました。</td><td>69</td><td>25.2%</td><td>█████</td></tr>
+<tr><td>待ち時間が長いのが気になります。改善を期待しています。</td><td>57</td><td>20.8%</td><td>████</td></tr>
+<tr><td>商品の種類が豊富で選ぶのが楽しいです。</td><td>33</td><td>12.0%</td><td>██</td></tr>
+</table></div>
+<h3>国（1 種類）</h3>
+<div class='tw'><table><tr><th>値</th><th>件数</th><th>割合</th><th></th></tr>
+<tr><td>日本</td><td>497</td><td>100.0%</td><td>████████████████████</td></tr>
+</table></div>
+<h3>割引率（4 種類）</h3>
+<div class='tw'><table><tr><th>値</th><th>件数</th><th>割合</th><th></th></tr>
+<tr><td>0</td><td>123</td><td>24.7%</td><td>█████</td></tr>
+<tr><td>5</td><td>117</td><td>23.5%</td><td>█████</td></tr>
+<tr><td>10</td><td>116</td><td>23.3%</td><td>█████</td></tr>
+<tr><td>20</td><td>141</td><td>28.4%</td><td>██████</td></tr>
+</table></div>
+<h3>解約（2 種類）</h3>
+<div class='tw'><table><tr><th>値</th><th>件数</th><th>割合</th><th></th></tr>
+<tr><td>0</td><td>383</td><td>77.1%</td><td>███████████████</td></tr>
+<tr><td>1</td><td>114</td><td>22.9%</td><td>█████</td></tr>
+</table></div>
+<h2>5. 日時・文章・ID の列</h2>
+<div class='tw'><table><tr><th>列</th><th>種類</th><th>内容</th></tr>
+<tr><td>顧客ＩＤ</td><td>文章</td><td>種類数 488、文字数 6〜6（平均 6.0）</td></tr>
+<tr><td>登録日</td><td>日時</td><td>1899-12-31 〜 2099-01-01（72,685 日間）</td></tr>
+</table></div>
+<h2>6. データ品質の気づき（クレンジングで対応すること）</h2>
+<div class='tw'><table><tr><th>対応する段階</th><th>列</th><th>気づいたこと</th><th>件数</th><th>例</th></tr>
+<tr><td>1 構造</td><td>（行）</td><td>完全に重複した行</td><td>11</td><td></td></tr>
+<tr><td>2 文字の正規化</td><td> 年齢 </td><td>前後の空白・全角英数字・制御文字がある</td><td>2</td><td>&#x27;３５&#x27; / &#x27;５１&#x27;</td></tr>
+<tr><td>2 文字の正規化</td><td> 年齢 </td><td>欠損を表す文字（NA, - など）が入っている</td><td>1</td><td>-</td></tr>
+<tr><td>2 文字の正規化</td><td>性別</td><td>前後の空白・全角英数字・制御文字がある</td><td>10</td><td>&#x27;Ｍ&#x27; / &#x27; 女性&#x27;</td></tr>
+<tr><td>2 文字の正規化</td><td>プラン</td><td>前後の空白・全角英数字・制御文字がある</td><td>18</td><td>&#x27;ｂａｓｉｃ&#x27; / &#x27;FREE &#x27; / &#x27;Premium\u3000&#x27;</td></tr>
+<tr><td>2 文字の正規化</td><td>年収</td><td>前後の空白・全角英数字・制御文字がある</td><td>464</td><td class=w>&#x27;￥2,473,000&#x27; / &#x27;￥5,085,000&#x27; / &#x27;￥2,474,000&#x27;</td></tr>
+<tr><td>2 文字の正規化</td><td>年収</td><td>欠損を表す文字（NA, - など）が入っている</td><td>22</td><td>N/A / NA / -</td></tr>
+<tr><td>2 文字の正規化</td><td>平均滞在分</td><td>欠損を表す文字（NA, - など）が入っている</td><td>1</td><td>null</td></tr>
+<tr><td>2 文字の正規化</td><td>年齢コピー</td><td>前後の空白・全角英数字・制御文字がある</td><td>2</td><td>&#x27;３５&#x27; / &#x27;５１&#x27;</td></tr>
+<tr><td>2 文字の正規化</td><td>年齢コピー</td><td>欠損を表す文字（NA, - など）が入っている</td><td>1</td><td>-</td></tr>
+<tr><td>3 型の変換</td><td> 年齢 </td><td>数値として読めない値が混ざっている</td><td>1</td><td>四十</td></tr>
+<tr><td>3 型の変換</td><td>登録日</td><td>日時として読めない値が混ざっている</td><td>3</td><td>2024-02-30 / R5.4.1 / 不明</td></tr>
+<tr><td>3 型の変換</td><td>年齢コピー</td><td>数値として読めない値が混ざっている</td><td>1</td><td>四十</td></tr>
+<tr><td>4 カテゴリの統一</td><td>プラン</td><td>同じ意味と思われる書き方の違い（表記ゆれ）</td><td>3</td><td>Free = FREE = free / Basic = basic</td></tr>
+<tr><td>5 欠損</td><td> 年齢 </td><td>欠損コードらしい値 999</td><td>13</td><td>意味を確認する</td></tr>
+<tr><td>5 欠損</td><td>会員ランク</td><td>「不明」などの値。欠損として扱うか確認</td><td>10</td><td>不明</td></tr>
+<tr><td>5 欠損</td><td>月間来店回数</td><td>欠損コードらしい値 -1</td><td>7</td><td>意味を確認する</td></tr>
+<tr><td>5 欠損</td><td>備考</td><td>欠損が半分以上</td><td>500</td><td>100.0%</td></tr>
+<tr><td>5 欠損</td><td>年齢コピー</td><td>欠損コードらしい値 999</td><td>13</td><td>意味を確認する</td></tr>
+<tr><td>6 外れ値</td><td> 年齢 </td><td>他の値から大きく離れた値（四分位範囲の3倍より外）</td><td>13</td><td>999</td></tr>
+<tr><td>6 外れ値</td><td>年収</td><td>他の値から大きく離れた値（四分位範囲の3倍より外）</td><td>3</td><td>980,000,000 / 16,543,000 / 15,715,000</td></tr>
+<tr><td>6 外れ値</td><td>年収</td><td>負の値が少数だけある</td><td>1</td><td>-500,000</td></tr>
+<tr><td>6 外れ値</td><td>月間来店回数</td><td>負の値が少数だけある</td><td>7</td><td>-1</td></tr>
+<tr><td>6 外れ値</td><td>平均滞在分</td><td>他の値から大きく離れた値（四分位範囲の3倍より外）</td><td>3</td><td>2,000 / 1,440 / 136.2</td></tr>
+<tr><td>6 外れ値</td><td>平均滞在分</td><td>負の値が少数だけある</td><td>1</td><td>-5</td></tr>
+<tr><td>6 外れ値</td><td>登録日</td><td>未来の日時がある</td><td>1</td><td>2099-01-01</td></tr>
+<tr><td>6 外れ値</td><td>登録日</td><td>1900年より前の日時がある</td><td>1</td><td>1899-12-31</td></tr>
+<tr><td>6 外れ値</td><td>年齢コピー</td><td>他の値から大きく離れた値（四分位範囲の3倍より外）</td><td>13</td><td>999</td></tr>
+</table></div>
+<ul><li><code>割引率</code>: % 表記（% を外した数値にする。100 で割ってはいない）</li><li><code>備考</code>: 値が1つもない</li></ul>
+<h2>7. 相関の強い数値列の組</h2>
+<div class='tw'><table><tr><th>列A</th><th>列B</th><th>相関係数</th></tr>
+<tr><td> 年齢 </td><td>年齢コピー</td><td>1</td></tr>
+</table></div>
+<p>ほぼ同じ情報の列。線形モデルでは片方を外すか、差・比に作り直すことを検討する。</p>
+<h2>8. おすすめのエンコーディング</h2>
+<div class='tw'><table><tr><th>列</th><th>種類</th><th>方法</th><th>理由</th><th>代わりの案</th></tr>
+<tr><td>顧客ＩＤ</td><td>文章</td><td>文字数・単語数 (<code>text_stats</code>)</td><td>自由記述。まず文字数・単語数だけを数値にする</td><td>TF-IDF や埋め込み（この処理の対象外。別途） ／ drop</td></tr>
+<tr><td> 年齢 </td><td>数値</td><td>対数変換 log1p (<code>log1p</code>)</td><td>右に裾が長い（歪度 5.9、0 以上）。対数で裾を縮める</td><td>木のモデル（LightGBM など）だけなら passthrough でよい</td></tr>
+<tr><td>性別</td><td>カテゴリ</td><td>One-Hot (<code>onehot</code>)</td><td>5 種類と少ない。列が増えすぎず、順序の仮定も置かない</td><td>木のモデルだけなら label</td></tr>
+<tr><td>都道府県</td><td>カテゴリ</td><td>ターゲット(目的変数の平均) (<code>target</code>)</td><td class=w>18 種類。One-Hot では列が増えすぎるので目的変数の平均に置き換える（fold 外で計算）</td><td>frequency ／ onehot（上位だけ残す）</td></tr>
+<tr><td>郵便番号</td><td>数値</td><td>そのまま (<code>passthrough</code>)</td><td>分布に大きな偏りがない。木のモデルならそのまま使える</td><td>線形モデル・ニューラルネットなら standard（標準化）</td></tr>
+<tr><td>プラン</td><td>カテゴリ</td><td>One-Hot (<code>onehot</code>)</td><td>7 種類と少ない。列が増えすぎず、順序の仮定も置かない</td><td>木のモデルだけなら label</td></tr>
+<tr><td>会員ランク</td><td>カテゴリ</td><td>One-Hot (<code>onehot</code>)</td><td>4 種類と少ない。列が増えすぎず、順序の仮定も置かない</td><td>木のモデルだけなら label</td></tr>
+<tr><td>年収</td><td>数値</td><td>そのまま (<code>passthrough</code>)</td><td>分布に大きな偏りがない。木のモデルならそのまま使える</td><td>線形モデル・ニューラルネットなら standard（標準化）</td></tr>
+<tr><td>月間来店回数</td><td>数値</td><td>そのまま (<code>passthrough</code>)</td><td>分布に大きな偏りがない。木のモデルならそのまま使える</td><td>線形モデル・ニューラルネットなら standard（標準化）</td></tr>
+<tr><td>平均滞在分</td><td>数値</td><td>そのまま (<code>passthrough</code>)</td><td>分布に大きな偏りがない。木のモデルならそのまま使える</td><td>線形モデル・ニューラルネットなら standard（標準化）</td></tr>
+<tr><td>登録日</td><td>日時</td><td>日時の分解＋周期 (<code>datetime</code>)</td><td>年・月・曜日などに分解し、月と曜日は sin/cos で周期を表す</td><td>基準日からの経過日数だけ使う</td></tr>
+<tr><td>メール受信</td><td>真偽(0/1)</td><td>0/1 化 (<code>binary</code>)</td><td>値が2種類。0/1 にすれば十分</td><td>-</td></tr>
+<tr><td>割引率</td><td>数値</td><td>そのまま (<code>passthrough</code>)</td><td>数値だが 4 種類しかない。大小に意味があればそのまま</td><td>コード値（大小に意味がない）なら onehot</td></tr>
+<tr><td>コメント</td><td>カテゴリ</td><td>One-Hot (<code>onehot</code>)</td><td>4 種類と少ない。列が増えすぎず、順序の仮定も置かない</td><td>木のモデルだけなら label</td></tr>
+<tr><td>国</td><td>カテゴリ</td><td>使わない（除外） (<code>drop</code>)</td><td>値が1種類しかなく情報がない</td><td>-</td></tr>
+<tr><td>備考</td><td>カテゴリ</td><td>使わない（除外） (<code>drop</code>)</td><td>値が1種類しかなく情報がない</td><td>-</td></tr>
+<tr><td>年齢コピー</td><td>数値</td><td>対数変換 log1p (<code>log1p</code>)</td><td>右に裾が長い（歪度 5.9、0 以上）。対数で裾を縮める</td><td>木のモデル（LightGBM など）だけなら passthrough でよい</td></tr>
+<tr><td>解約</td><td>数値</td><td>目的変数: クラス→整数 (<code>target_label</code>)</td><td>目的変数（2 クラスの分類）。クラスを整数にする</td><td>-</td></tr>
+</table></div>
+<p>この内容は <code>encoding_plan.json</code> に書き出してある。変えたい列は <code>method</code> を書き換えてからエンコーディングに渡す。 <strong>未クレンジングのデータでの推定なので、クレンジング後にもう一度プロファイリングして計画を作り直すこと。</strong></p>
+<h2>9. 次の処理</h2>
+<ul><li>クレンジング（段階的）: <code>.claude/skills/data-cleansing/SKILL.md</code></li></ul>
+</body></html>

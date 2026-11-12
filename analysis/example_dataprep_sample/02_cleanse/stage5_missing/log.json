@@ -1,0 +1,44 @@
+{
+ "stage": 5,
+ "name": "missing",
+ "title": "欠損の整理",
+ "input": "analysis/example_dataprep_sample/02_cleanse/stage4_categories/data.csv",
+ "before": {
+  "rows": 488,
+  "cols": 15,
+  "missing": 259
+ },
+ "after": {
+  "rows": 488,
+  "cols": 15,
+  "missing": 289
+ },
+ "actions": [
+  [
+   "年齢",
+   "欠損コード 999 を欠損にした",
+   13,
+   ""
+  ],
+  [
+   "月間来店回数",
+   "欠損コード -1 を欠損にした",
+   7,
+   ""
+  ],
+  [
+   "会員ランク",
+   "`不明` を欠損にした",
+   10,
+   ""
+  ]
+ ],
+ "review": [],
+ "args": {
+  "out": "analysis/example_dataprep_sample/02_cleanse",
+  "stage": "5",
+  "sentinel": "年齢=999,月間来店回数=-1",
+  "null_category": "会員ランク=不明",
+  "iqr_k": 3.0
+ }
+}

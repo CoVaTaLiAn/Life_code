@@ -1,0 +1,62 @@
+<!doctype html><html lang='ja'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>データクレンジング まとめ</title><style>
+:root{--bg:#fff;--fg:#1c1c1e;--sub:#5b6068;--line:#d9dce1;--head:#f3f4f6;--acc:#1f5fbf}
+@media(prefers-color-scheme:dark){:root{--bg:#16181c;--fg:#e8e9eb;--sub:#a0a5ad;--line:#33373e;--head:#22252b;--acc:#7fb0ff}}
+body{background:var(--bg);color:var(--fg);font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;
+line-height:1.7;margin:0 auto;padding:16px;max-width:1080px}
+h1{font-size:1.4rem;margin:.2em 0}h2{font-size:1.15rem;border-bottom:2px solid var(--line);padding-bottom:4px;margin-top:2em}
+h3{font-size:1rem;margin-top:1.4em}.meta{color:var(--sub);font-size:.9rem}
+.tw{overflow-x:auto}table{border-collapse:collapse;font-size:.85rem;margin:.5em 0}
+th,td{border:1px solid var(--line);padding:4px 8px;text-align:left;vertical-align:top;white-space:nowrap}
+td.w{white-space:normal;min-width:14em}th{background:var(--head)}
+code{background:var(--head);padding:1px 4px;border-radius:3px;font-size:.9em}
+pre{background:var(--head);padding:10px;overflow-x:auto;font-size:.85rem}strong{color:var(--acc)}
+</style></head><body>
+<h1>データクレンジング まとめ</h1><p><strong>役割</strong>: 段階ごとのクレンジング結果を1つにまとめる（詳細は各段階のレポート）</p><p class='meta'>
+元データ: analysis/example_dataprep_sample/data/raw_test.csv<br>進み具合: 段階6 まで実行（完了）<br>出力: analysis/example_dataprep_sample/05_cleanse_test/cleaned.csv<br>作成日時: 2026-11-12 08:50
+</p>
+<h2>1. 段階ごとの結果</h2>
+<div class='tw'><table><tr><th>段階</th><th>行 × 列（前→後）</th><th>欠損セル（前→後）</th><th>変更の種類</th><th>変更したセル・行の数</th><th>要確認</th><th>レポート</th></tr>
+<tr><td>1 構造を整える</td><td>115×17 → 115×14</td><td>168 → 53</td><td>4</td><td>5</td><td>0</td><td>stage1_structure/report.html</td></tr>
+<tr><td>2 文字の正規化</td><td>115×14 → 115×14</td><td>53 → 61</td><td>6</td><td>122</td><td>0</td><td>stage2_text/report.html</td></tr>
+<tr><td>3 型の変換</td><td>115×14 → 115×14</td><td>61 → 62</td><td>7</td><td>794</td><td>1</td><td>stage3_types/report.html</td></tr>
+<tr><td>4 カテゴリの統一</td><td>115×14 → 115×14</td><td>62 → 62</td><td>3</td><td>9</td><td>0</td><td>stage4_categories/report.html</td></tr>
+<tr><td>5 欠損の整理</td><td>115×14 → 115×14</td><td>62 → 65</td><td>3</td><td>3</td><td>0</td><td>stage5_missing/report.html</td></tr>
+<tr><td>6 外れ値</td><td>115×14 → 115×14</td><td>65 → 65</td><td>3</td><td>0</td><td>1</td><td>stage6_outliers/report.html</td></tr>
+</table></div>
+<h2>2. 実施した変更（全段階）</h2>
+<div class='tw'><table><tr><th>段階</th><th>列</th><th>内容</th><th>件数</th><th>例</th></tr>
+<tr><td>1</td><td>（列名）</td><td>列名を正規化（全角→半角、空白→_、空の名前に仮の名前）</td><td>2</td><td>&#x27;顧客ＩＤ&#x27;→顧客ID / &#x27; 年齢 &#x27;→年齢</td></tr>
+<tr><td>1</td><td>（列）</td><td>すべて空の列を削除</td><td>1</td><td>備考</td></tr>
+<tr><td>1</td><td>年齢コピー</td><td><code>年齢</code> と中身が同じ列を削除</td><td>1</td><td></td></tr>
+<tr><td>1</td><td>（列）</td><td>値が1種類しかない列を削除</td><td>1</td><td>国</td></tr>
+<tr><td>2</td><td>年齢</td><td>空白・全角英数字・制御文字を正規化</td><td>1</td><td>&#x27;２８&#x27;→&#x27;28&#x27;</td></tr>
+<tr><td>2</td><td>年齢</td><td>欠損を表す文字を欠損にした</td><td>1</td><td>-</td></tr>
+<tr><td>2</td><td>性別</td><td>空白・全角英数字・制御文字を正規化</td><td>4</td><td>&#x27;Ｍ&#x27;→&#x27;M&#x27; / &#x27; 女性&#x27;→&#x27;女性&#x27;</td></tr>
+<tr><td>2</td><td>プラン</td><td>空白・全角英数字・制御文字を正規化</td><td>2</td><td class=w>&#x27;FREE &#x27;→&#x27;FREE&#x27; / &#x27;Premium\u3000&#x27;→&#x27;Premium&#x27;</td></tr>
+<tr><td>2</td><td>年収</td><td>空白・全角英数字・制御文字を正規化</td><td>107</td><td class=w>&#x27;￥7,419,000&#x27;→&#x27;¥7,419,000&#x27; / &#x27;￥5,489,000&#x27;→&#x27;¥5,489,000&#x27; / &#x27;￥4,025,000&#x27;→&#x27;¥4,025,000&#x27;</td></tr>
+<tr><td>2</td><td>年収</td><td>欠損を表す文字を欠損にした</td><td>7</td><td>NA / N/A / -</td></tr>
+<tr><td>3</td><td>年齢</td><td>数値に変換</td><td>113</td><td>33→33 / 44→44 / 42→42</td></tr>
+<tr><td>3</td><td>年収</td><td>数値に変換</td><td>107</td><td class=w>¥7,419,000→7,419,000 / ¥5,489,000→5,489,000 / ¥4,025,000→4,025,000</td></tr>
+<tr><td>3</td><td>月間来店回数</td><td>数値に変換</td><td>115</td><td>5→5 / 1→1 / 2→2</td></tr>
+<tr><td>3</td><td>平均滞在分</td><td>数値に変換</td><td>115</td><td>21.2→21.2 / 32.1→32.1 / 17.1→17.1</td></tr>
+<tr><td>3</td><td>登録日</td><td>日時に変換</td><td>115</td><td class=w>2023/11/17→2023-11-17 / 2025/05/12→2025-05-12 / 2025/01/19→2025-01-19</td></tr>
+<tr><td>3</td><td>メール受信</td><td>真偽(0/1)に変換</td><td>114</td><td>はい→1 / いいえ→0</td></tr>
+<tr><td>3</td><td>割引率</td><td>数値に変換</td><td>115</td><td>5%→5 / 0%→0 / 10%→10</td></tr>
+<tr><td>4</td><td>性別</td><td>指定どおりに統一</td><td>4</td><td>男→男性 / M→男性 / 女→女性</td></tr>
+<tr><td>4</td><td>都道府県</td><td>指定どおりに統一</td><td>4</td><td>東京→東京都 / TOKYO→東京都 / 大阪→大阪府</td></tr>
+<tr><td>4</td><td>プラン</td><td>指定どおりに統一</td><td>1</td><td>FREE→Free / free→Free / basic→Basic</td></tr>
+<tr><td>5</td><td>年齢</td><td>欠損コード 999 を欠損にした</td><td>2</td><td></td></tr>
+<tr><td>5</td><td>月間来店回数</td><td>欠損コード -1 を欠損にした</td><td>1</td><td></td></tr>
+<tr><td>5</td><td>会員ランク</td><td><code>不明</code> を欠損にした</td><td>0</td><td></td></tr>
+<tr><td>6</td><td>年収</td><td>範囲 0:100000000 の外の値を欠損にした</td><td>0</td><td></td></tr>
+<tr><td>6</td><td>平均滞在分</td><td>範囲 0:600 の外の値を欠損にした</td><td>0</td><td></td></tr>
+<tr><td>6</td><td>登録日</td><td>範囲 2000-01-01:2026-12-31 の外の値を欠損にした</td><td>0</td><td></td></tr>
+</table></div>
+<h2>3. 要確認のまま残っているもの</h2>
+<div class='tw'><table><tr><th>段階</th><th>列</th><th>内容</th><th>件数</th><th>例</th></tr>
+<tr><td>3</td><td>年齢</td><td>数値として読めず欠損にした値</td><td>1</td><td>不明</td></tr>
+<tr><td>6</td><td>年収</td><td>極端な値（境界 -6,328,500〜15,420,500 の外）</td><td>1</td><td>15,606,000</td></tr>
+</table></div>
+<h2>4. 次の処理</h2>
+<ul><li>クレンジング後のデータをプロファイリングし直す（<code>cleaned.csv</code> を渡す）→ <code>encoding_plan.json</code> ができる</li><li>その計画でエンコーディングする</li></ul>
+</body></html>

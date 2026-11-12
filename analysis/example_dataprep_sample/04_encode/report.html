@@ -1,0 +1,106 @@
+<!doctype html><html lang='ja'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>エンコーディング（fit）</title><style>
+:root{--bg:#fff;--fg:#1c1c1e;--sub:#5b6068;--line:#d9dce1;--head:#f3f4f6;--acc:#1f5fbf}
+@media(prefers-color-scheme:dark){:root{--bg:#16181c;--fg:#e8e9eb;--sub:#a0a5ad;--line:#33373e;--head:#22252b;--acc:#7fb0ff}}
+body{background:var(--bg);color:var(--fg);font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;
+line-height:1.7;margin:0 auto;padding:16px;max-width:1080px}
+h1{font-size:1.4rem;margin:.2em 0}h2{font-size:1.15rem;border-bottom:2px solid var(--line);padding-bottom:4px;margin-top:2em}
+h3{font-size:1rem;margin-top:1.4em}.meta{color:var(--sub);font-size:.9rem}
+.tw{overflow-x:auto}table{border-collapse:collapse;font-size:.85rem;margin:.5em 0}
+th,td{border:1px solid var(--line);padding:4px 8px;text-align:left;vertical-align:top;white-space:nowrap}
+td.w{white-space:normal;min-width:14em}th{background:var(--head)}
+code{background:var(--head);padding:1px 4px;border-radius:3px;font-size:.9em}
+pre{background:var(--head);padding:10px;overflow-x:auto;font-size:.85rem}strong{color:var(--acc)}
+</style></head><body>
+<h1>エンコーディング（fit）</h1><p><strong>役割</strong>: 計画に従って各列を数値に変換する。変換の中身は学習用データで決めて保存し、別のデータにも同じ変換をかけられるようにする</p><p class='meta'>
+入力: analysis/example_dataprep_sample/02_cleanse/cleaned.csv<br>出力: analysis/example_dataprep_sample/04_encode/encoded.csv<br>計画: analysis/example_dataprep_sample/03_profile_cleaned/encoding_plan.json<br>変換の保存先: analysis/example_dataprep_sample/04_encode/encoder_state.json<br>行 × 列: 488 × 15 → 488 × 28（特徴量 27 列＋目的変数 <code>解約</code>）<br>作成日時: 2026-11-12 08:50
+</p>
+<h2>1. 列ごとの変換</h2>
+<div class='tw'><table><tr><th>元の列</th><th>種類</th><th>方法</th><th>出力の列数</th><th>出力の列</th><th>変換の中身</th><th>未知の値</th></tr>
+<tr><td>顧客ID</td><td>ID</td><td>drop</td><td>0</td><td></td><td>行を識別するだけの値。学習に使うと丸暗記になる</td><td>-</td></tr>
+<tr><td>年齢</td><td>数値</td><td>passthrough</td><td>1</td><td>年齢</td><td>欠損の補完: none</td><td>-</td></tr>
+<tr><td>性別</td><td>カテゴリ</td><td>binary</td><td>1</td><td>性別</td><td>女性→0、男性→1</td><td>-</td></tr>
+<tr><td>都道府県</td><td>カテゴリ</td><td>target</td><td>1</td><td>都道府県__te</td><td class=w>目的変数の平均（5 fold の fold 外、平滑化 10、全体平均 0.2275）</td><td>-</td></tr>
+<tr><td>郵便番号</td><td>ID</td><td>drop</td><td>0</td><td></td><td>行を識別するだけの値。学習に使うと丸暗記になる</td><td>-</td></tr>
+<tr><td>プラン</td><td>カテゴリ</td><td>onehot</td><td>3</td><td>プラン=Free / プラン=Basic / プラン=Premium</td><td>3 カテゴリ</td><td>-</td></tr>
+<tr><td>会員ランク</td><td>カテゴリ</td><td>ordinal</td><td>1</td><td>会員ランク__ord</td><td>ブロンズ &lt; シルバー &lt; ゴールド</td><td>-</td></tr>
+<tr><td>年収</td><td>数値</td><td>log1p</td><td>1</td><td>年収__log1p</td><td>欠損の補完: none</td><td>-</td></tr>
+<tr><td>月間来店回数</td><td>数値</td><td>passthrough</td><td>1</td><td>月間来店回数</td><td>欠損の補完: none</td><td>-</td></tr>
+<tr><td>平均滞在分</td><td>数値</td><td>log1p</td><td>1</td><td>平均滞在分__log1p</td><td>欠損の補完: none</td><td>-</td></tr>
+<tr><td>登録日</td><td>日時</td><td>datetime</td><td>10</td><td class=w>登録日__year / 登録日__month / 登録日__day / 登録日__dayofweek …</td><td class=w>year、month、day、dayofweek、is_weekend、month_sin、month_cos、dow_sin、dow_cos、elapsed_days（経過日数の基準日 2023-01-03）</td><td>-</td></tr>
+<tr><td>メール受信</td><td>真偽(0/1)</td><td>binary</td><td>1</td><td>メール受信</td><td>0→0、1→1</td><td>-</td></tr>
+<tr><td>割引率</td><td>数値</td><td>passthrough</td><td>1</td><td>割引率</td><td>欠損の補完: none</td><td>-</td></tr>
+<tr><td>コメント</td><td>カテゴリ</td><td>onehot</td><td>5</td><td class=w>コメント=特になし / コメント=店員さんの対応がとても丁寧で、また利用したいと思… / コメント=待ち時間が長いのが気になります。改善を期待してい… / コメント=商品の種類が豊富で選ぶのが楽しいです。 …</td><td>4 カテゴリ＋欠損</td><td>-</td></tr>
+<tr><td>解約</td><td>数値</td><td>target_label</td><td>1</td><td>解約</td><td>0→0、1→1</td><td>-</td></tr>
+</table></div>
+<h2>2. 方法ごとの集計</h2>
+<div class='tw'><table><tr><th>方法</th><th>元の列数</th><th>出力の列数</th></tr>
+<tr><td>binary</td><td>2</td><td>2</td></tr>
+<tr><td>datetime</td><td>1</td><td>10</td></tr>
+<tr><td>drop</td><td>2</td><td>0</td></tr>
+<tr><td>log1p</td><td>2</td><td>2</td></tr>
+<tr><td>onehot</td><td>2</td><td>8</td></tr>
+<tr><td>ordinal</td><td>1</td><td>1</td></tr>
+<tr><td>passthrough</td><td>3</td><td>3</td></tr>
+<tr><td>target</td><td>1</td><td>1</td></tr>
+<tr><td>target_label</td><td>1</td><td>1</td></tr>
+</table></div>
+<h2>3. 出力の確認</h2>
+<div class='tw'><table><tr><th>確認</th><th>結果</th></tr>
+<tr><td>すべての列が数値か</td><td>はい</td></tr>
+<tr><td>欠損が残っている列</td><td>16 列（131 セル）</td></tr>
+<tr><td>値が1種類しかない列</td><td>なし</td></tr>
+</table></div>
+<h3>欠損が残っている列</h3>
+<div class='tw'><table><tr><th>列</th><th>欠損数</th><th>欠損率</th></tr>
+<tr><td>年齢</td><td>15</td><td>3.1%</td></tr>
+<tr><td>会員ランク__ord</td><td>10</td><td>2.0%</td></tr>
+<tr><td>年収__log1p</td><td>33</td><td>6.8%</td></tr>
+<tr><td>月間来店回数</td><td>7</td><td>1.4%</td></tr>
+<tr><td>平均滞在分__log1p</td><td>4</td><td>0.8%</td></tr>
+<tr><td>登録日__year</td><td>6</td><td>1.2%</td></tr>
+<tr><td>登録日__month</td><td>6</td><td>1.2%</td></tr>
+<tr><td>登録日__day</td><td>6</td><td>1.2%</td></tr>
+<tr><td>登録日__dayofweek</td><td>6</td><td>1.2%</td></tr>
+<tr><td>登録日__is_weekend</td><td>6</td><td>1.2%</td></tr>
+<tr><td>登録日__month_sin</td><td>6</td><td>1.2%</td></tr>
+<tr><td>登録日__month_cos</td><td>6</td><td>1.2%</td></tr>
+<tr><td>登録日__dow_sin</td><td>6</td><td>1.2%</td></tr>
+<tr><td>登録日__dow_cos</td><td>6</td><td>1.2%</td></tr>
+<tr><td>登録日__elapsed_days</td><td>6</td><td>1.2%</td></tr>
+<tr><td>メール受信</td><td>2</td><td>0.4%</td></tr>
+</table></div>
+<p>LightGBM などの木のモデルは欠損のまま学習できる。線形モデルなどで使うなら、計画で <code>standard</code> にするか <code>params</code> に <code>{&quot;impute&quot;: &quot;median&quot;}</code> を足す。</p>
+<h2>4. 注意</h2>
+<ul><li>ターゲットエンコーディングの列は、学習用データでは fold 外の平均、apply では全データの平均を使う。交差検証のスコアを厳密に見るときは、検証の fold ごとに fit し直す</li></ul>
+<h2>5. 出力した列の統計値</h2>
+<div class='tw'><table><tr><th>列</th><th>平均</th><th>標準偏差</th><th>最小</th><th>中央値</th><th>最大</th><th>分布</th></tr>
+<tr><td>年齢</td><td>41.556</td><td>12.441</td><td>18</td><td>41</td><td>83</td><td>▄▅█▇▇▅▃▂▂▁</td></tr>
+<tr><td>性別</td><td>0.535</td><td>0.499</td><td>0</td><td>1</td><td>1</td><td>▇▁▁▁▁▁▁▁▁█</td></tr>
+<tr><td>都道府県__te</td><td>0.23</td><td>0.041</td><td>0.114</td><td>0.239</td><td>0.332</td><td>▂▁▂▄▄▅█▂▁▂</td></tr>
+<tr><td>プラン=Free</td><td>0.465</td><td>0.499</td><td>0</td><td>0</td><td>1</td><td>█▁▁▁▁▁▁▁▁▇</td></tr>
+<tr><td>プラン=Basic</td><td>0.359</td><td>0.48</td><td>0</td><td>0</td><td>1</td><td>█▁▁▁▁▁▁▁▁▅</td></tr>
+<tr><td>プラン=Premium</td><td>0.176</td><td>0.381</td><td>0</td><td>0</td><td>1</td><td>█▁▁▁▁▁▁▁▁▂</td></tr>
+<tr><td>会員ランク__ord</td><td>0.508</td><td>0.684</td><td>0</td><td>0</td><td>2</td><td>█▁▁▁▁▄▁▁▁▂</td></tr>
+<tr><td>年収__log1p</td><td>15.32</td><td>0.475</td><td>13.802</td><td>15.334</td><td>16.621</td><td>▁▁▃▅▇█▇▄▂▂</td></tr>
+<tr><td>月間来店回数</td><td>5.792</td><td>2.364</td><td>0</td><td>6</td><td>14</td><td>▂▂█▇▆▇▃▃▁▁</td></tr>
+<tr><td>平均滞在分__log1p</td><td>3.175</td><td>0.76</td><td>0.642</td><td>3.266</td><td>4.921</td><td>▁▁▂▄▅▆█▆▄▁</td></tr>
+<tr><td>登録日__year</td><td>2,023.774</td><td>0.721</td><td>2,023</td><td>2,024</td><td>2,025</td><td>▇▁▁▁▁█▁▁▁▄</td></tr>
+<tr><td>登録日__month</td><td>6.172</td><td>3.548</td><td>1</td><td>6</td><td>12</td><td>█▅▄▄▄▃▄▃▄▇</td></tr>
+<tr><td>登録日__day</td><td>15.51</td><td>8.494</td><td>1</td><td>16</td><td>31</td><td>▇▆▄▇▇▇█▅▆▆</td></tr>
+<tr><td>登録日__dayofweek</td><td>3.019</td><td>1.966</td><td>0</td><td>3</td><td>6</td><td>▇▆▁▇▁██▁▇▇</td></tr>
+<tr><td>登録日__is_weekend</td><td>0.274</td><td>0.446</td><td>0</td><td>0</td><td>1</td><td>█▁▁▁▁▁▁▁▁▄</td></tr>
+<tr><td>登録日__month_sin</td><td>0.064</td><td>0.711</td><td>-1</td><td>1.22e-16</td><td>1</td><td>▇▁▅▁▁▅▁▅▁█</td></tr>
+<tr><td>登録日__month_cos</td><td>0.076</td><td>0.697</td><td>-1</td><td>6.12e-17</td><td>1</td><td>▆▁▅▁▃▃▁▆▁█</td></tr>
+<tr><td>登録日__dow_sin</td><td>-0.009</td><td>0.696</td><td>-0.975</td><td>0</td><td>0.975</td><td>█▁▅▁▁▅▁▅▁█</td></tr>
+<tr><td>登録日__dow_cos</td><td>-0.044</td><td>0.718</td><td>-0.901</td><td>-0.223</td><td>1</td><td>█▁▁▇▁▁▁▁▇▄</td></tr>
+<tr><td>登録日__elapsed_days</td><td>452.052</td><td>262.697</td><td>0</td><td>462</td><td>896</td><td>▇▆▅▆▅▅▆█▅▆</td></tr>
+<tr><td>メール受信</td><td>0.632</td><td>0.483</td><td>0</td><td>1</td><td>1</td><td>▅▁▁▁▁▁▁▁▁█</td></tr>
+<tr><td>割引率</td><td>9.221</td><td>7.677</td><td>0</td><td>10</td><td>20</td><td>▇▁▇▁▁▇▁▁▁█</td></tr>
+<tr><td>コメント=特になし</td><td>0.227</td><td>0.42</td><td>0</td><td>0</td><td>1</td><td>█▁▁▁▁▁▁▁▁▃</td></tr>
+<tr><td>コメント=店員さんの対応がとても丁寧で、また利用したいと思いました。</td><td>0.139</td><td>0.347</td><td>0</td><td>0</td><td>1</td><td>█▁▁▁▁▁▁▁▁▂</td></tr>
+<tr><td>コメント=待ち時間が長いのが気になります。改善を期待しています。</td><td>0.117</td><td>0.322</td><td>0</td><td>0</td><td>1</td><td>█▁▁▁▁▁▁▁▁▂</td></tr>
+<tr><td>コメント=商品の種類が豊富で選ぶのが楽しいです。</td><td>0.068</td><td>0.251</td><td>0</td><td>0</td><td>1</td><td>█▁▁▁▁▁▁▁▁▂</td></tr>
+<tr><td>コメント=__nan</td><td>0.449</td><td>0.498</td><td>0</td><td>0</td><td>1</td><td>█▁▁▁▁▁▁▁▁▇</td></tr>
+<tr><td>解約</td><td>0.227</td><td>0.42</td><td>0</td><td>0</td><td>1</td><td>█▁▁▁▁▁▁▁▁▃</td></tr>
+</table></div>
+</body></html>

@@ -1,0 +1,80 @@
+{
+ "stage": 3,
+ "name": "types",
+ "title": "型の変換",
+ "input": "analysis/example_dataprep_sample/05_cleanse_test/stage2_text/data.csv",
+ "before": {
+  "rows": 115,
+  "cols": 14,
+  "missing": 61
+ },
+ "after": {
+  "rows": 115,
+  "cols": 14,
+  "missing": 62
+ },
+ "actions": [
+  [
+   "年齢",
+   "数値に変換",
+   113,
+   "33→33 / 44→44 / 42→42"
+  ],
+  [
+   "年収",
+   "数値に変換",
+   107,
+   "¥7,419,000→7,419,000 / ¥5,489,000→5,489,000 / ¥4,025,000→4,025,000"
+  ],
+  [
+   "月間来店回数",
+   "数値に変換",
+   115,
+   "5→5 / 1→1 / 2→2"
+  ],
+  [
+   "平均滞在分",
+   "数値に変換",
+   115,
+   "21.2→21.2 / 32.1→32.1 / 17.1→17.1"
+  ],
+  [
+   "登録日",
+   "日時に変換",
+   115,
+   "2023/11/17→2023-11-17 / 2025/05/12→2025-05-12 / 2025/01/19→2025-01-19"
+  ],
+  [
+   "メール受信",
+   "真偽(0/1)に変換",
+   114,
+   "はい→1 / いいえ→0"
+  ],
+  [
+   "割引率",
+   "数値に変換",
+   115,
+   "5%→5 / 0%→0 / 10%→10"
+  ]
+ ],
+ "review": [
+  [
+   "年齢",
+   "数値として読めず欠損にした値",
+   1,
+   "不明"
+  ]
+ ],
+ "args": {
+  "input": "analysis/example_dataprep_sample/data/raw_test.csv",
+  "out": "analysis/example_dataprep_sample/05_cleanse_test",
+  "stage": "all",
+  "drop_constant": true,
+  "schema_from": "analysis/example_dataprep_sample/02_cleanse/cleaned.schema.json",
+  "category_map": "analysis/example_dataprep_sample/02_cleanse/stage4_categories/category_map.json",
+  "sentinel": "年齢=999,月間来店回数=-1",
+  "null_category": "会員ランク=不明",
+  "range": "年収=0:100000000,平均滞在分=0:600,登録日=2000-01-01:2026-12-31",
+  "iqr_k": 3.0
+ }
+}

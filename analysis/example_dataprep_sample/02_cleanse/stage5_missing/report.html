@@ -1,0 +1,40 @@
+<!doctype html><html lang='ja'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>クレンジング 段階5: 欠損の整理</title><style>
+:root{--bg:#fff;--fg:#1c1c1e;--sub:#5b6068;--line:#d9dce1;--head:#f3f4f6;--acc:#1f5fbf}
+@media(prefers-color-scheme:dark){:root{--bg:#16181c;--fg:#e8e9eb;--sub:#a0a5ad;--line:#33373e;--head:#22252b;--acc:#7fb0ff}}
+body{background:var(--bg);color:var(--fg);font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;
+line-height:1.7;margin:0 auto;padding:16px;max-width:1080px}
+h1{font-size:1.4rem;margin:.2em 0}h2{font-size:1.15rem;border-bottom:2px solid var(--line);padding-bottom:4px;margin-top:2em}
+h3{font-size:1rem;margin-top:1.4em}.meta{color:var(--sub);font-size:.9rem}
+.tw{overflow-x:auto}table{border-collapse:collapse;font-size:.85rem;margin:.5em 0}
+th,td{border:1px solid var(--line);padding:4px 8px;text-align:left;vertical-align:top;white-space:nowrap}
+td.w{white-space:normal;min-width:14em}th{background:var(--head)}
+code{background:var(--head);padding:1px 4px;border-radius:3px;font-size:.9em}
+pre{background:var(--head);padding:10px;overflow-x:auto;font-size:.85rem}strong{color:var(--acc)}
+</style></head><body>
+<h1>クレンジング 段階5: 欠損の整理</h1><p><strong>役割</strong>: 欠損の状況を列ごとにまとめ、欠損コードの候補を挙げる。指定された欠損コードだけを欠損にし、すべて空の列・行を除く。値の補完はしない</p><p class='meta'>
+入力: analysis/example_dataprep_sample/02_cleanse/stage4_categories/data.csv<br>出力: analysis/example_dataprep_sample/02_cleanse/stage5_missing/data.csv<br>行 × 列: 488 × 15 → 488 × 15<br>欠損セル: 259 → 289<br>作成日時: 2026-11-12 08:49
+</p>
+<h2>1. 実施した変更</h2>
+<div class='tw'><table><tr><th>列</th><th>内容</th><th>件数</th><th>例</th></tr>
+<tr><td>年齢</td><td>欠損コード 999 を欠損にした</td><td>13</td><td></td></tr>
+<tr><td>月間来店回数</td><td>欠損コード -1 を欠損にした</td><td>7</td><td></td></tr>
+<tr><td>会員ランク</td><td><code>不明</code> を欠損にした</td><td>10</td><td></td></tr>
+</table></div>
+<h2>2. 要確認（自動では変更していない）</h2>
+<p>なし</p>
+<h2>3. 状況</h2>
+<h3>欠損のある列</h3>
+<div class='tw'><table><tr><th>列</th><th>種類</th><th>欠損数</th><th>欠損率</th><th></th></tr>
+<tr><td>コメント</td><td>カテゴリ</td><td>219</td><td>44.9%</td><td>█████████</td></tr>
+<tr><td>年収</td><td>数値</td><td>31</td><td>6.4%</td><td>█</td></tr>
+<tr><td>年齢</td><td>数値</td><td>15</td><td>3.1%</td><td>█</td></tr>
+<tr><td>会員ランク</td><td>カテゴリ</td><td>10</td><td>2.0%</td><td></td></tr>
+<tr><td>月間来店回数</td><td>数値</td><td>7</td><td>1.4%</td><td></td></tr>
+<tr><td>登録日</td><td>日時</td><td>4</td><td>0.8%</td><td></td></tr>
+<tr><td>メール受信</td><td>真偽(0/1)</td><td>2</td><td>0.4%</td><td></td></tr>
+<tr><td>平均滞在分</td><td>数値</td><td>1</td><td>0.2%</td><td></td></tr>
+</table></div>
+<ul><li>欠損が1つもない行: 228 / 488（46.7%）</li><li>値の補完（中央値など）はここではしない。補完の値は学習用データから決める必要があるため、エンコーディングで行う。</li></ul>
+<h2>4. 次の処理</h2>
+<p>段階6（外れ値）</p>
+</body></html>

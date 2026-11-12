@@ -1,0 +1,39 @@
+<!doctype html><html lang='ja'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>クレンジング 段階2: 文字の正規化</title><style>
+:root{--bg:#fff;--fg:#1c1c1e;--sub:#5b6068;--line:#d9dce1;--head:#f3f4f6;--acc:#1f5fbf}
+@media(prefers-color-scheme:dark){:root{--bg:#16181c;--fg:#e8e9eb;--sub:#a0a5ad;--line:#33373e;--head:#22252b;--acc:#7fb0ff}}
+body{background:var(--bg);color:var(--fg);font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;
+line-height:1.7;margin:0 auto;padding:16px;max-width:1080px}
+h1{font-size:1.4rem;margin:.2em 0}h2{font-size:1.15rem;border-bottom:2px solid var(--line);padding-bottom:4px;margin-top:2em}
+h3{font-size:1rem;margin-top:1.4em}.meta{color:var(--sub);font-size:.9rem}
+.tw{overflow-x:auto}table{border-collapse:collapse;font-size:.85rem;margin:.5em 0}
+th,td{border:1px solid var(--line);padding:4px 8px;text-align:left;vertical-align:top;white-space:nowrap}
+td.w{white-space:normal;min-width:14em}th{background:var(--head)}
+code{background:var(--head);padding:1px 4px;border-radius:3px;font-size:.9em}
+pre{background:var(--head);padding:10px;overflow-x:auto;font-size:.85rem}strong{color:var(--acc)}
+</style></head><body>
+<h1>クレンジング 段階2: 文字の正規化</h1><p><strong>役割</strong>: 全角英数字→半角、前後や連続した空白・制御文字の除去、欠損を表す文字（NA, - など）を欠損に統一する。値の意味は変えない</p><p class='meta'>
+入力: analysis/example_dataprep_sample/05_cleanse_test/stage1_structure/data.csv<br>出力: analysis/example_dataprep_sample/05_cleanse_test/stage2_text/data.csv<br>行 × 列: 115 × 14 → 115 × 14<br>欠損セル: 53 → 61<br>作成日時: 2026-11-12 08:50
+</p>
+<h2>1. 実施した変更</h2>
+<div class='tw'><table><tr><th>列</th><th>内容</th><th>件数</th><th>例</th></tr>
+<tr><td>年齢</td><td>空白・全角英数字・制御文字を正規化</td><td>1</td><td>&#x27;２８&#x27;→&#x27;28&#x27;</td></tr>
+<tr><td>年齢</td><td>欠損を表す文字を欠損にした</td><td>1</td><td>-</td></tr>
+<tr><td>性別</td><td>空白・全角英数字・制御文字を正規化</td><td>4</td><td>&#x27;Ｍ&#x27;→&#x27;M&#x27; / &#x27; 女性&#x27;→&#x27;女性&#x27;</td></tr>
+<tr><td>プラン</td><td>空白・全角英数字・制御文字を正規化</td><td>2</td><td class=w>&#x27;FREE &#x27;→&#x27;FREE&#x27; / &#x27;Premium\u3000&#x27;→&#x27;Premium&#x27;</td></tr>
+<tr><td>年収</td><td>空白・全角英数字・制御文字を正規化</td><td>107</td><td class=w>&#x27;￥7,419,000&#x27;→&#x27;¥7,419,000&#x27; / &#x27;￥5,489,000&#x27;→&#x27;¥5,489,000&#x27; / &#x27;￥4,025,000&#x27;→&#x27;¥4,025,000&#x27;</td></tr>
+<tr><td>年収</td><td>欠損を表す文字を欠損にした</td><td>7</td><td>NA / N/A / -</td></tr>
+</table></div>
+<h2>2. 要確認（自動では変更していない）</h2>
+<p>なし</p>
+<h2>3. 状況</h2>
+<h3>列ごとの件数</h3>
+<div class='tw'><table><tr><th>列</th><th>正規化したセル</th><th>欠損にしたセル</th><th>処理後の欠損</th></tr>
+<tr><td>年齢</td><td>1</td><td>1</td><td>1</td></tr>
+<tr><td>性別</td><td>4</td><td>0</td><td>0</td></tr>
+<tr><td>プラン</td><td>2</td><td>0</td><td>0</td></tr>
+<tr><td>年収</td><td>107</td><td>7</td><td>8</td></tr>
+</table></div>
+<ul><li>欠損として扱った文字: <code>#div/0!</code>、<code>#n/a</code>、<code>#null!</code>、<code>#value!</code>、<code>(blank)</code>、<code>-</code>、<code>--</code>、<code>?</code>、<code>missing</code>、<code>n/a</code>、<code>na</code>、<code>nan</code>、<code>nil</code>、<code>none</code>、<code>null</code>、<code>undefined</code>、<code>—</code>、<code>―</code></li><li>半角カナは全角カナになる（Unicode の NFKC 正規化）。大文字と小文字の違いはここでは触らない（段階4）。</li></ul>
+<h2>4. 次の処理</h2>
+<p>段階3（型の変換）</p>
+</body></html>

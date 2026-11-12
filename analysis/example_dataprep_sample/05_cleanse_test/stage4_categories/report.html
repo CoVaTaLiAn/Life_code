@@ -1,0 +1,37 @@
+<!doctype html><html lang='ja'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>クレンジング 段階4: カテゴリの統一</title><style>
+:root{--bg:#fff;--fg:#1c1c1e;--sub:#5b6068;--line:#d9dce1;--head:#f3f4f6;--acc:#1f5fbf}
+@media(prefers-color-scheme:dark){:root{--bg:#16181c;--fg:#e8e9eb;--sub:#a0a5ad;--line:#33373e;--head:#22252b;--acc:#7fb0ff}}
+body{background:var(--bg);color:var(--fg);font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;
+line-height:1.7;margin:0 auto;padding:16px;max-width:1080px}
+h1{font-size:1.4rem;margin:.2em 0}h2{font-size:1.15rem;border-bottom:2px solid var(--line);padding-bottom:4px;margin-top:2em}
+h3{font-size:1rem;margin-top:1.4em}.meta{color:var(--sub);font-size:.9rem}
+.tw{overflow-x:auto}table{border-collapse:collapse;font-size:.85rem;margin:.5em 0}
+th,td{border:1px solid var(--line);padding:4px 8px;text-align:left;vertical-align:top;white-space:nowrap}
+td.w{white-space:normal;min-width:14em}th{background:var(--head)}
+code{background:var(--head);padding:1px 4px;border-radius:3px;font-size:.9em}
+pre{background:var(--head);padding:10px;overflow-x:auto;font-size:.85rem}strong{color:var(--acc)}
+</style></head><body>
+<h1>クレンジング 段階4: カテゴリの統一</h1><p><strong>役割</strong>: カテゴリ列で、大文字小文字・空白・記号だけが違う書き方を最多の書き方に統一する。似ているだけの値は統一せず確認に回す</p><p class='meta'>
+入力: analysis/example_dataprep_sample/05_cleanse_test/stage3_types/data.csv<br>出力: analysis/example_dataprep_sample/05_cleanse_test/stage4_categories/data.csv<br>行 × 列: 115 × 14 → 115 × 14<br>欠損セル: 62 → 62<br>作成日時: 2026-11-12 08:50
+</p>
+<h2>1. 実施した変更</h2>
+<div class='tw'><table><tr><th>列</th><th>内容</th><th>件数</th><th>例</th></tr>
+<tr><td>性別</td><td>指定どおりに統一</td><td>4</td><td>男→男性 / M→男性 / 女→女性</td></tr>
+<tr><td>都道府県</td><td>指定どおりに統一</td><td>4</td><td>東京→東京都 / TOKYO→東京都 / 大阪→大阪府</td></tr>
+<tr><td>プラン</td><td>指定どおりに統一</td><td>1</td><td>FREE→Free / free→Free / basic→Basic</td></tr>
+</table></div>
+<h2>2. 要確認（自動では変更していない）</h2>
+<p>なし</p>
+<h2>3. 状況</h2>
+<h3>カテゴリ列の種類数</h3>
+<div class='tw'><table><tr><th>列</th><th>統一前の種類数</th><th>統一後の種類数</th><th>1% 未満の値の数</th><th>多い値</th></tr>
+<tr><td>性別</td><td>5</td><td>2</td><td>0</td><td>男性 / 女性</td></tr>
+<tr><td>都道府県</td><td>19</td><td>16</td><td>0</td><td>東京都 / 大阪府 / 愛知県</td></tr>
+<tr><td>プラン</td><td>4</td><td>3</td><td>0</td><td>Free / Basic / Premium</td></tr>
+<tr><td>会員ランク</td><td>3</td><td>3</td><td>0</td><td>ブロンズ / シルバー / ゴールド</td></tr>
+<tr><td>コメント</td><td>4</td><td>4</td><td>0</td><td class=w>特になし / 店員さんの対応がとても丁寧で、また利用したいと… / 待ち時間が長いのが気になります。改善を期待して…</td></tr>
+</table></div>
+<ul><li>統一の対応表は <code>category_map.json</code> に保存した。テスト用データには <code>--category-map</code> で同じ対応を適用する。</li><li>件数の少ない値をまとめる処理（「その他」化）はここではしない。エンコーディングで扱う。</li></ul>
+<h2>4. 次の処理</h2>
+<p>段階5（欠損の整理）</p>
+</body></html>

@@ -1,0 +1,53 @@
+<!doctype html><html lang='ja'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>クレンジング 段階3: 型の変換</title><style>
+:root{--bg:#fff;--fg:#1c1c1e;--sub:#5b6068;--line:#d9dce1;--head:#f3f4f6;--acc:#1f5fbf}
+@media(prefers-color-scheme:dark){:root{--bg:#16181c;--fg:#e8e9eb;--sub:#a0a5ad;--line:#33373e;--head:#22252b;--acc:#7fb0ff}}
+body{background:var(--bg);color:var(--fg);font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;
+line-height:1.7;margin:0 auto;padding:16px;max-width:1080px}
+h1{font-size:1.4rem;margin:.2em 0}h2{font-size:1.15rem;border-bottom:2px solid var(--line);padding-bottom:4px;margin-top:2em}
+h3{font-size:1rem;margin-top:1.4em}.meta{color:var(--sub);font-size:.9rem}
+.tw{overflow-x:auto}table{border-collapse:collapse;font-size:.85rem;margin:.5em 0}
+th,td{border:1px solid var(--line);padding:4px 8px;text-align:left;vertical-align:top;white-space:nowrap}
+td.w{white-space:normal;min-width:14em}th{background:var(--head)}
+code{background:var(--head);padding:1px 4px;border-radius:3px;font-size:.9em}
+pre{background:var(--head);padding:10px;overflow-x:auto;font-size:.85rem}strong{color:var(--acc)}
+</style></head><body>
+<h1>クレンジング 段階3: 型の変換</h1><p><strong>役割</strong>: 各列の種類を決め、数値（¥ , % を外す）・真偽（はい/いいえ→1/0）・日時に変換する。読めなかった値は欠損にして一覧にする</p><p class='meta'>
+入力: analysis/example_dataprep_sample/05_cleanse_test/stage2_text/data.csv<br>出力: analysis/example_dataprep_sample/05_cleanse_test/stage3_types/data.csv<br>行 × 列: 115 × 14 → 115 × 14<br>欠損セル: 61 → 62<br>作成日時: 2026-11-12 08:50
+</p>
+<h2>1. 実施した変更</h2>
+<div class='tw'><table><tr><th>列</th><th>内容</th><th>件数</th><th>例</th></tr>
+<tr><td>年齢</td><td>数値に変換</td><td>113</td><td>33→33 / 44→44 / 42→42</td></tr>
+<tr><td>年収</td><td>数値に変換</td><td>107</td><td class=w>¥7,419,000→7,419,000 / ¥5,489,000→5,489,000 / ¥4,025,000→4,025,000</td></tr>
+<tr><td>月間来店回数</td><td>数値に変換</td><td>115</td><td>5→5 / 1→1 / 2→2</td></tr>
+<tr><td>平均滞在分</td><td>数値に変換</td><td>115</td><td>21.2→21.2 / 32.1→32.1 / 17.1→17.1</td></tr>
+<tr><td>登録日</td><td>日時に変換</td><td>115</td><td class=w>2023/11/17→2023-11-17 / 2025/05/12→2025-05-12 / 2025/01/19→2025-01-19</td></tr>
+<tr><td>メール受信</td><td>真偽(0/1)に変換</td><td>114</td><td>はい→1 / いいえ→0</td></tr>
+<tr><td>割引率</td><td>数値に変換</td><td>115</td><td>5%→5 / 0%→0 / 10%→10</td></tr>
+</table></div>
+<h2>2. 要確認（自動では変更していない）</h2>
+<div class='tw'><table><tr><th>列</th><th>内容</th><th>件数</th><th>例</th></tr>
+<tr><td>年齢</td><td>数値として読めず欠損にした値</td><td>1</td><td>不明</td></tr>
+</table></div>
+<p>対応するときは、表に書いたオプションを付けてこの段階をやり直す（後の段階の出力は作り直しになる）。</p>
+<h2>3. 状況</h2>
+<h3>列の種類</h3>
+<div class='tw'><table><tr><th>列</th><th>種類</th><th>値のあるセル</th><th>読めなかったセル</th><th>変換後の例</th></tr>
+<tr><td>顧客ID</td><td>ID</td><td>115</td><td>0</td><td>C00171 / C00402 / C00390</td></tr>
+<tr><td>年齢</td><td>数値</td><td>114</td><td>1</td><td>33 / 44 / 42</td></tr>
+<tr><td>性別</td><td>カテゴリ</td><td>115</td><td>0</td><td>女性 / 男性 / M</td></tr>
+<tr><td>都道府県</td><td>カテゴリ</td><td>115</td><td>0</td><td>沖縄県 / 大阪府 / 宮城県</td></tr>
+<tr><td>郵便番号</td><td>ID</td><td>115</td><td>0</td><td>8672166 / 2809180 / 9577404</td></tr>
+<tr><td>プラン</td><td>カテゴリ</td><td>115</td><td>0</td><td>Premium / Free / Basic</td></tr>
+<tr><td>会員ランク</td><td>カテゴリ</td><td>115</td><td>0</td><td>シルバー / ブロンズ / ゴールド</td></tr>
+<tr><td>年収</td><td>数値</td><td>107</td><td>0</td><td>7,419,000 / 5,489,000 / 4,025,000</td></tr>
+<tr><td>月間来店回数</td><td>数値</td><td>115</td><td>0</td><td>5 / 1 / 2</td></tr>
+<tr><td>平均滞在分</td><td>数値</td><td>115</td><td>0</td><td>21.2 / 32.1 / 17.1</td></tr>
+<tr><td>登録日</td><td>日時</td><td>115</td><td>0</td><td>2023-11-17 / 2025-05-12 / 2025-01-19</td></tr>
+<tr><td>メール受信</td><td>真偽(0/1)</td><td>114</td><td>0</td><td>1 / 0</td></tr>
+<tr><td>割引率</td><td>数値</td><td>115</td><td>0</td><td>5 / 0 / 10</td></tr>
+<tr><td>コメント</td><td>カテゴリ</td><td>64</td><td>0</td><td class=w>特になし / 待ち時間が長いのが気になります。改善を期待して… / 店員さんの対応がとても丁寧で、また利用したいと…</td></tr>
+</table></div>
+<ul><li><code>顧客ID</code>: 種類は指定による</li><li><code>年齢</code>: 種類は指定による</li><li><code>性別</code>: 種類は指定による</li><li><code>都道府県</code>: 種類は指定による</li><li><code>郵便番号</code>: 種類は指定による</li><li><code>プラン</code>: 種類は指定による</li><li><code>会員ランク</code>: 種類は指定による</li><li><code>年収</code>: 種類は指定による</li><li><code>月間来店回数</code>: 種類は指定による</li><li><code>平均滞在分</code>: 種類は指定による</li><li><code>登録日</code>: 種類は指定による</li><li><code>メール受信</code>: 種類は指定による</li><li><code>割引率</code>: 種類は指定による</li><li><code>コメント</code>: 種類は指定による</li><li>種類の判定が違う列は <code>--kind 列=種類</code> を付けてこの段階をやり直す。</li></ul>
+<h2>4. 次の処理</h2>
+<p>段階4（カテゴリの統一）</p>
+</body></html>
