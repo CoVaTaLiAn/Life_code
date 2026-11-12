@@ -1,0 +1,69 @@
+<!doctype html><html lang='ja'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>特徴量候補のピックアップ: cleaned.csv</title><style>
+:root{--bg:#fff;--fg:#1c1c1e;--sub:#5b6068;--line:#d9dce1;--head:#f3f4f6;--acc:#1f5fbf}
+@media(prefers-color-scheme:dark){:root{--bg:#16181c;--fg:#e8e9eb;--sub:#a0a5ad;--line:#33373e;--head:#22252b;--acc:#7fb0ff}}
+body{background:var(--bg);color:var(--fg);font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;
+line-height:1.7;margin:0 auto;padding:16px;max-width:1080px}
+h1{font-size:1.4rem;margin:.2em 0}h2{font-size:1.15rem;border-bottom:2px solid var(--line);padding-bottom:4px;margin-top:2em}
+h3{font-size:1rem;margin-top:1.4em}.meta{color:var(--sub);font-size:.9rem}
+.tw{overflow-x:auto}table{border-collapse:collapse;font-size:.85rem;margin:.5em 0}
+th,td{border:1px solid var(--line);padding:4px 8px;text-align:left;vertical-align:top;white-space:nowrap}
+td.w{white-space:normal;min-width:14em}th{background:var(--head)}
+code{background:var(--head);padding:1px 4px;border-radius:3px;font-size:.9em}
+pre{background:var(--head);padding:10px;overflow-x:auto;font-size:.85rem}strong{color:var(--acc)}
+</style></head><body>
+<h1>特徴量候補のピックアップ: cleaned.csv</h1><p><strong>役割</strong>: カテゴリ別の統計から特徴量になりそうなものを選び、根拠の数字と作り方を付けて報告する（データは変更せず、特徴量も作らない）</p><p class='meta'>
+入力: analysis/example_dataprep_sample/02_cleanse/cleaned.csv<br>状態: クレンジング済み（schema あり）<br>目的変数: 解約<br>見た列: カテゴリ列 7 個 × 数値列 4 個<br>並べ替え検定: 500 回<br>作成日時: 2026-11-12 10:17
+</p>
+<h2>1. ピックアップした特徴量候補（優先度の高い順）</h2>
+<div class='tw'><table><tr><th>#</th><th>優先度</th><th>種類</th><th>特徴量の案</th><th>作り方</th><th>根拠</th></tr>
+<tr><td>1</td><td>中</td><td>A カテゴリそのもの</td><td>プラン</td><td><code>プラン</code> を そのまま One-Hot / 順序 で入れる</td><td class=w>η² 0.050、p 0.002。Free 0.33 ↔ Premium 0.105</td></tr>
+<tr><td>2</td><td>中</td><td>B 際立つカテゴリ</td><td>プラン=Free フラグ</td><td><code>プラン</code> が <code>Free</code> なら 1、それ以外は 0</td><td class=w>解約 の平均 0.33（全体 0.227、227 件、差は標準誤差の 3.7 倍）</td></tr>
+<tr><td>3</td><td>中</td><td>B 際立つカテゴリ</td><td>プラン=Premium フラグ</td><td><code>プラン</code> が <code>Premium</code> なら 1、それ以外は 0</td><td class=w>解約 の平均 0.105（全体 0.227、86 件、差は標準誤差の 2.7 倍）</td></tr>
+<tr><td>4</td><td>中</td><td>D 組み合わせ</td><td>都道府県 × 会員ランク</td><td class=w><code>都道府県</code> と <code>会員ランク</code> をつなげた新しいカテゴリを作り、頻度かターゲットエンコーディングで入れる</td><td class=w>組み合わせの η² 0.023（単独 0.000 と 0.004 の和より 0.019 多い、p 0.014）</td></tr>
+</table></div>
+<p>優先度の決め方: <strong>高</strong> = η² が 0.06 以上で p &lt; 0.01、<strong>中</strong> = η² が 0.01 以上で p &lt; 0.05、それ以外は低（見送り）。今回は 58 組を調べているので、p が 0.05 に近い「中」は偶然でも 3 件ほど出うる。ここに載ったものは「試す価値がある候補」で、効くかどうかはモデルに入れて交差検証で確かめる。</p>
+<ul><li>η²（相関比）: その数値のばらつきのうち、カテゴリの違いで説明できる割合。0〜1。グループ数の多さで大きく見えないよう補正した値を使っている</li><li>p: カテゴリと数値の対応をでたらめに入れ替えても、同じかそれ以上の強さになる割合（並べ替え検定）</li><li>件数が 20 未満のカテゴリは「その他」にまとめ、個別には評価していない</li></ul>
+<h2>2. A カテゴリ列 → 目的変数 <code>解約</code></h2>
+<div class='tw'><table><tr><th>カテゴリ列</th><th>グループ数</th><th>η²</th><th>p</th><th>平均が最も高い</th><th>平均が最も低い</th><th>優先度</th><th></th></tr>
+<tr><td>プラン</td><td>3</td><td>0.05</td><td>0.002</td><td>Free（0.33、227件）</td><td>Premium（0.105、86件）</td><td>中</td><td>█████</td></tr>
+<tr><td>会員ランク</td><td>3</td><td>0.004</td><td>0.138</td><td>ゴールド（0.269、52件）</td><td>シルバー（0.165、139件）</td><td>低</td><td></td></tr>
+<tr><td>性別</td><td>2</td><td>0</td><td>1</td><td>女性（0.229、227件）</td><td>男性（0.226、261件）</td><td>低</td><td></td></tr>
+<tr><td>都道府県</td><td>9</td><td>0</td><td>0.671</td><td>北海道（0.341、41件）</td><td>福岡県（0.148、27件）</td><td>低</td><td></td></tr>
+<tr><td>メール受信</td><td>2</td><td>0</td><td>0.701</td><td>0（0.24、179件）</td><td>1（0.221、307件）</td><td>低</td><td></td></tr>
+<tr><td>割引率</td><td>4</td><td>0</td><td>0.926</td><td>20（0.243、140件）</td><td>0（0.213、122件）</td><td>低</td><td></td></tr>
+<tr><td>コメント</td><td>4</td><td>0</td><td>0.403</td><td>待ち時間が長いのが気になります。改善を期待しています。（0.263、57件）</td><td>商品の種類が豊富で選ぶのが楽しいです。（0.121、33件）</td><td>低</td><td></td></tr>
+</table></div>
+<h2>3. B 際立つカテゴリ（フラグの候補）</h2>
+<div class='tw'><table><tr><th>カテゴリ列</th><th>カテゴリ</th><th>件数</th><th>解約 の平均</th><th>全体の平均</th><th>差</th><th>差 ÷ 標準誤差</th></tr>
+<tr><td>プラン</td><td>Free</td><td>227</td><td>0.33</td><td>0.227</td><td>0.103</td><td>3.7</td></tr>
+<tr><td>プラン</td><td>Premium</td><td>86</td><td>0.105</td><td>0.227</td><td>-0.123</td><td>-2.7</td></tr>
+</table></div>
+<p>2 グループしかない列は、列そのものを入れれば足りるのでここには出さない。</p>
+<h2>4. C カテゴリ列 × 数値列（カテゴリ内での相対値の候補）</h2>
+<div class='tw'><table><tr><th>カテゴリ列</th><th>数値列</th><th>η²</th><th>p</th><th>中央値が最も高い</th><th>中央値が最も低い</th><th>優先度</th><th></th></tr>
+<tr><td>都道府県</td><td>年齢</td><td>0.027</td><td>0.008</td><td>北海道（45）</td><td>その他（37）</td><td>中</td><td>███</td></tr>
+</table></div>
+<p>調べた 28 組のうち、優先度が中以上のものだけを表示。カテゴリによって水準が違う数値は、「そのカテゴリの中で高いか低いか」に直すと、カテゴリの影響と個人差を分けられる。目的変数との関係は直接は見ていないので、候補一覧では優先度を1段下げている。</p>
+<h2>5. D カテゴリ列の組み合わせ</h2>
+<div class='tw'><table><tr><th>組み合わせ</th><th>グループ数</th><th>η²（組み合わせ）</th><th>η²（1つ目だけ）</th><th>η²（2つ目だけ）</th><th>上乗せ</th><th>p</th><th>平均が最も高い</th><th>平均が最も低い</th></tr>
+<tr><td>都道府県 × 会員ランク</td><td>10</td><td>0.023</td><td>0</td><td>0.004</td><td>0.019</td><td>0.014</td><td>北海道 × ブロンズ（0.435、23件）</td><td>東京都 × シルバー（0.032、31件）</td></tr>
+</table></div>
+<p>上乗せ: 組み合わせの η² から、それぞれ単独の η² を引いた値。木のモデルは組み合わせを自分で見つけられるので、効果は線形モデルで大きい。</p>
+<h2>6. E 欠損かどうか（欠損フラグの候補）</h2>
+<div class='tw'><table><tr><th>列</th><th>欠損数</th><th>欠損率</th><th>解約 の平均（欠損）</th><th>解約 の平均（値あり）</th><th>差</th><th>p</th><th>優先度</th></tr>
+<tr><td>年収</td><td>33</td><td>6.8%</td><td>0.182</td><td>0.231</td><td>-0.049</td><td>0.517</td><td>低</td></tr>
+<tr><td>コメント</td><td>219</td><td>44.9%</td><td>0.233</td><td>0.223</td><td>0.01</td><td>0.816</td><td>低</td></tr>
+</table></div>
+<h2>7. 見送ったもの</h2>
+<div class='tw'><table><tr><th>種類</th><th>特徴量の案</th><th>根拠</th></tr>
+<tr><td>C カテゴリ内での相対値</td><td>年齢 ÷ 都道府県別の中央値</td><td class=w><code>都道府県</code> によって <code>年齢</code> が違う（η² 0.027、p 0.008。中央値 北海道 45 ↔ その他 37）</td></tr>
+<tr><td>A カテゴリそのもの</td><td>会員ランク</td><td>η² 0.004、p 0.138。ゴールド 0.269 ↔ シルバー 0.165</td></tr>
+<tr><td>A カテゴリそのもの</td><td>性別</td><td>η² 0.000、p 1.000。女性 0.229 ↔ 男性 0.226</td></tr>
+<tr><td>A カテゴリそのもの</td><td>都道府県</td><td>η² 0.000、p 0.671。北海道 0.341 ↔ 福岡県 0.148</td></tr>
+<tr><td>A カテゴリそのもの</td><td>メール受信</td><td>η² 0.000、p 0.701。0 0.24 ↔ 1 0.221</td></tr>
+<tr><td>A カテゴリそのもの</td><td>割引率</td><td>η² 0.000、p 0.926。20 0.243 ↔ 0 0.213</td></tr>
+<tr><td>A カテゴリそのもの</td><td>コメント</td><td class=w>η² 0.000、p 0.403。待ち時間が長いのが気になります。改善を期待しています。 0.263 ↔ 商品の種類が豊富で選ぶのが楽しいです。 0.121</td></tr>
+</table></div>
+<h2>8. 使うときの注意</h2>
+<ul><li>目的変数を使って作る特徴量（ターゲットエンコーディング、カテゴリ別の目的変数の平均）は、必ず fold 外の値で作る。そうしないと検証スコアが良く見えすぎる</li><li>カテゴリ別の中央値などの集計は学習用データだけで計算し、テスト用データには同じ値を当てる</li><li>ここで見たのはカテゴリを軸にした関係だけ。数値列そのものと目的変数の関係、時間の流れ、リーク（予測時点で分からない情報）は別に確認する</li><li>候補を採用したら、1つずつ足して交差検証のスコアで効果を確かめる。効かなかったものも記録する</li></ul>
+</body></html>
