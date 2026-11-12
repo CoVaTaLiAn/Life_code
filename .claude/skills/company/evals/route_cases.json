@@ -1,0 +1,132 @@
+[
+ {
+  "text": "副業でデータ分析の仕事を始めたい。市場と相場を調べて、3か月の計画書にまとめて",
+  "team": [
+   "web-researcher",
+   "writer"
+  ],
+  "multi": true,
+  "outward": false
+ },
+ {
+  "text": "このCSVで来月の解約を予測したい。初期分析して",
+  "team": [
+   "data-analyst"
+  ],
+  "multi": false,
+  "outward": false
+ },
+ {
+  "text": "腸内細菌と睡眠の関係について先行研究を調べて",
+  "team": [
+   "paper-researcher"
+  ],
+  "multi": false,
+  "outward": false
+ },
+ {
+  "text": "洗濯物の乾き具合をセンサーで判定して通知する仕組みを思いついた。もう特許や論文があるか調べて",
+  "team": [
+   "patent-search",
+   "web-researcher"
+  ],
+  "multi": true,
+  "outward": false
+ },
+ {
+  "text": "今週届いたメールと予定を整理して、返信が必要なものは下書きを作って",
+  "team": [
+   "secretary"
+  ],
+  "multi": false,
+  "outward": false
+ },
+ {
+  "text": "毎朝7時に天気予報をLINEに送るスクリプトを作って",
+  "team": [
+   "engineer"
+  ],
+  "multi": false,
+  "outward": false
+ },
+ {
+  "text": "先週の分析結果をブログ記事にして、公開までやって",
+  "team": [
+   "writer"
+  ],
+  "multi": false,
+  "outward": true
+ },
+ {
+  "text": "転職エージェントの田中さんに、面談の日程を来週火曜に変えてほしいとメールを送って",
+  "team": [
+   "secretary"
+  ],
+  "multi": false,
+  "outward": true
+ },
+ {
+  "text": "Pythonのリスト内包表記ってなに？",
+  "team": [],
+  "multi": false,
+  "outward": false
+ },
+ {
+  "text": "家計簿のCSVを分析して、支出を減らせるところを見つけて、月次で自動集計するスクリプトも作って、結果を読みやすいレポートにして",
+  "team": [
+   "data-analyst",
+   "engineer"
+  ],
+  "multi": true,
+  "outward": false
+ },
+ {
+  "text": "いい感じにして",
+  "team": [],
+  "multi": false,
+  "outward": false,
+  "unclear": true
+ },
+ {
+  "text": "Obsidianのノートを毎日Notionに同期する方法を調べて、できそうならツールを作って",
+  "team": [
+   "web-researcher",
+   "engineer"
+  ],
+  "multi": true,
+  "outward": false
+ },
+ {
+  "text": "ヘルスケアIT業界のデータサイエンティスト求人の動向を調べて",
+  "team": [
+   "web-researcher"
+  ],
+  "multi": false,
+  "outward": false
+ },
+ {
+  "text": "来週の空いている時間を教えて",
+  "team": [
+   "secretary"
+  ],
+  "multi": false,
+  "outward": false
+ },
+ {
+  "text": "READMEの誤字を直して",
+  "team": [],
+  "multi": false,
+  "outward": false
+ },
+ {
+  "text": "新しい睡眠トラッキングアプリを作りたい。競合アプリ、関連する論文、特許を調べて、企画書を書いて",
+  "team": [
+   "web-researcher",
+   "paper-researcher",
+   "patent-search",
+   "writer"
+  ],
+  "multi": true,
+  "outward": false
+ }
+]

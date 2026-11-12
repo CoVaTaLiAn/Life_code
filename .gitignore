@@ -13,3 +13,7 @@ catboost_info/
 
 __pycache__/
 *.pyc
+
+# 会社スキル（company）の案件フォルダ・記録は公開リポジトリに入れない（個人情報を含みうる）
+company/*
+!company/README.md
