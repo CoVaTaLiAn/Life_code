@@ -7,6 +7,7 @@
     python3 sort_yahoo_mail.py --restore-folders  # 以前の振り分けで作ったフォルダのメールを受信箱に戻し、フォルダを消す
 
 「緊急」の判定は URGENT_SUBJECT / URGENT_FROM（件名・差出人に含む語）で変えられる。
+ALWAYS_READ に当たるメールは、緊急っぽくても必ず既読にする。
 
 ログイン情報は、環境変数 YAHOO_USER / YAHOO_PASS → macOS キーチェーン
 （setup_mac.sh で保存）→ 画面での入力、の順に探す。
@@ -39,6 +40,12 @@ URGENT_SUBJECT = [
 ]
 # これらを差出人に含む未読メールも残す（例: "bank", "@example.co.jp"）
 URGENT_FROM = []
+
+# これらを件名か差出人に含むメールは、緊急っぽい語があっても必ず既読にする
+ALWAYS_READ = [
+    "路線情報",                                # Yahoo!路線情報
+    "ベネフィット", "m3-benefit", "benefit.m3",  # M3ベネフィット
+]
 
 # 以前の振り分け機能で作ったフォルダ（--restore-folders で受信箱に戻す）
 OLD_FOLDERS = ["要確認", "買い物", "会員登録", "メルマガ"]
@@ -85,6 +92,8 @@ def decode_header(value):
 
 def is_urgent(subject, sender):
     s, f = subject.lower(), sender.lower()
+    if any(k.lower() in s or k.lower() in f for k in ALWAYS_READ):
+        return False
     return any(k.lower() in s for k in URGENT_SUBJECT) or any(k.lower() in f for k in URGENT_FROM)
 
 
