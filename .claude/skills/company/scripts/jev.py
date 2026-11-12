@@ -6,6 +6,7 @@ Jev は文章を書かない。「はい/いいえ（noul）」「選択（choic
 
 使い方:
   jev.py route  "依頼文"                     どの部署の仕事か・会社を動かす規模か・依頼が明確か
+  jev.py tier   "タスク文" --agent engineer  難しさから使うモデル（haiku/sonnet/opus）を決める
   jev.py check  成果物.md --goal "目的"      成果物の一次チェック（問題がありそうな項目を返す）
   jev.py rank   候補.txt --goal "目的"       候補（1行1件 or JSONL）を目的との関連度で並べる
   jev.py ask    状態.txt 質問.json           質問を自由に指定（公式の questions 形式）
@@ -61,7 +62,19 @@ def call(state, questions, retries=3):
 
 
 def chunks(text):
-    return [text[i:i + CHUNK] for i in range(0, len(text), CHUNK)] or [""]
+    """行の切れ目で CHUNK 字前後に分ける（文の途中で切ると「書きかけ」と誤判定されるため）。"""
+    parts, cur, size = [], [], 0
+    for line in text.splitlines(keepends=True):
+        while len(line) > CHUNK:  # 改行のない長い行
+            if cur:
+                parts.append("".join(cur)); cur, size = [], 0
+            parts.append(line[:CHUNK]); line = line[CHUNK:]
+        if size + len(line) > CHUNK and cur:
+            parts.append("".join(cur)); cur, size = [], 0
+        cur.append(line); size += len(line)
+    if cur:
+        parts.append("".join(cur))
+    return parts or [""]
 
 
 def add_usage(total, usage):
@@ -126,8 +139,13 @@ def cmd_route(args):
     need = {n: round(ans["need_" + n]["noul"], 2) for n in depts}
     team = [n for n, p in sorted(need.items(), key=lambda x: -x[1]) if p >= args.threshold]
     trivial = round(ans["trivial"]["noul"], 2)
-    if trivial >= 0.5:
+    clarity = ans["clarity"]["score"]
+    if clarity < 1.0:  # 曖昧な依頼は編成しない（先に質問する）
         team = []
+    elif trivial >= 0.5 and max(need.values()) < 0.7:  # はっきり部署の仕事なら小さくても任せる
+        team = []
+    elif ans["lead"]["confidence"] >= 0.8 and ans["lead"]["choice"] not in team:
+        team.insert(0, ans["lead"]["choice"])  # 個別の判定が弱くても、主担当がはっきりしていれば入れる
     out = {
         "lead": ans["lead"]["choice"],
         "lead_confidence": round(ans["lead"]["confidence"], 2),
@@ -155,6 +173,46 @@ def cmd_route(args):
     return 0
 
 
+# ---------- tier: タスクの難しさ → 使うモデル ----------
+
+TIERS = ["haiku", "sonnet", "opus"]
+
+
+def pick_tier(task, agent="", save=False):
+    depts = json.loads(DEPARTMENTS.read_text(encoding="utf-8"))
+    question = {
+        "hard": {
+            "type": "score",
+            "instructions": "この作業を任せるのに必要な力量。",
+            "criteria": [
+                "定型作業：決まった手順どおりに探す・写す・並べる・整形する・一覧にする",
+                "ふつうの作業：調べて要点をまとめる、短い文章を書く、よくある小さなプログラムを書く",
+                "難しい作業：複数の情報を突き合わせて判断する、設計する、原因の分からない不具合を調べる、長い文章を構成する",
+                "とても難しい、または間違えた時の影響が大きい作業：専門的な分析や評価、最終的な検収、重要な判断の材料づくり",
+            ],
+        }
+    }
+    ans, usage = call("作業: " + task, question)
+    score = ans["hard"]["score"]
+    level = 0 if score < 0.8 else (1 if score < 2.3 else 2)
+    floor = TIERS.index(depts.get(agent, {}).get("min_model", "haiku"))
+    if agent == "reviewer":
+        floor = 1
+    level = max(level, floor)
+    if save:  # 節約モード：1段下げる（部署の下限は守る）
+        level = max(level - 1, floor)
+    return {"model": TIERS[level], "difficulty": round(score, 2), "confidence": round(ans["hard"]["confidence"], 2)}, usage
+
+
+def cmd_tier(args):
+    total = {}
+    out, usage = pick_tier(args.task, args.agent, args.save)
+    add_usage(total, usage)
+    out.update({"agent": args.agent, "save_mode": args.save, "usage": total, "usd": cost(total)})
+    print(json.dumps(out, ensure_ascii=False, indent=2))
+    return 0
+
+
 # ---------- check: 成果物の一次チェック ----------
 
 def cmd_check(args):
@@ -167,6 +225,7 @@ def cmd_check(args):
         items.update(lists[k])
     if not args.goal:
         items = {k: v for k, v in items.items() if not v.get("needs_goal")}
+    items = {k: v for k, v in items.items() if not set(v.get("skip_for", [])) & set(kinds)}
     text = Path(args.file).read_text(encoding="utf-8", errors="replace")
     parts = chunks(text)
     goal = "【この成果物の目的】" + args.goal + "\n" if args.goal else ""
@@ -185,10 +244,11 @@ def cmd_check(args):
     jobs = []  # (位置, state, questions)
     head_qs = build({"head", "any"})
     rest_qs = build({"any"})
-    jobs.append((0, goal + "【成果物（冒頭）】\n" + parts[0], head_qs))
+    note = "（長い文書の一部を抜き出したもの。抜粋の端で話が途切れていても書きかけとは見なさない）\n" if len(parts) > 1 else ""
+    jobs.append((0, goal + note + "【成果物（冒頭）】\n" + parts[0], head_qs))
     for i, p in enumerate(parts[1:], 1):
         if rest_qs:
-            jobs.append((i, goal + "【成果物（続き %d/%d）】\n" % (i + 1, len(parts)) + p, rest_qs))
+            jobs.append((i, goal + note + "【成果物（続き %d/%d）】\n" % (i + 1, len(parts)) + p, rest_qs))
 
     total, worst = {}, {}
     with cf.ThreadPoolExecutor(max_workers=8) as ex:
@@ -198,7 +258,9 @@ def cmd_check(args):
             add_usage(total, usage)
             for name, a in ans.items():
                 p = a.get("noul", 0.0)
-                if p > worst.get(name, (-1, 0))[0]:
+                absent = items[name].get("agg") == "all"  # どの部分にもない時だけ問題
+                cur = worst.get(name)
+                if cur is None or (p < cur[0] if absent else p > cur[0]):
                     worst[name] = (p, futs[f])
 
     flagged, passed = [], []
@@ -206,7 +268,8 @@ def cmd_check(args):
         p, where = worst.get(name, (0.0, 0))
         row = {"check": name, "label": it["label"], "p": round(p, 2), "severity": it.get("severity", "重要")}
         if p >= it.get("threshold", args.threshold):
-            row["near"] = "先頭から約 %d 字付近" % (where * CHUNK)
+            if it.get("agg") != "all" and len(parts) > 1:
+                row["near"] = "全 %d 区画のうち %d 番目（1区画 約%d字）" % (len(parts), where + 1, CHUNK)
             flagged.append(row)
         else:
             passed.append(row)
@@ -290,8 +353,14 @@ def main():
 
     p = sub.add_parser("route", help="依頼の振り分け")
     p.add_argument("text", help='依頼文（"-" で標準入力）')
-    p.add_argument("--threshold", type=float, default=0.5, help="この確率以上の部署を編成に入れる")
+    p.add_argument("--threshold", type=float, default=0.3, help="この確率以上の部署を編成に入れる")
     p.set_defaults(fn=cmd_route)
+
+    p = sub.add_parser("tier", help="タスクの難しさから使うモデルを決める")
+    p.add_argument("task", help="タスクの内容（発注書の【あなたの担当】の文）")
+    p.add_argument("--agent", default="", help="担当エージェント名（部署ごとの下限モデルを守る）")
+    p.add_argument("--save", action="store_true", help="節約モード（1段軽いモデルにする）")
+    p.set_defaults(fn=cmd_tier)
 
     p = sub.add_parser("check", help="成果物の一次チェック")
     p.add_argument("file")

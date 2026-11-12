@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Jev の判定を正解付きの例で確かめる。部署やチェック表を変えたら実行する。
 
-  python3 run_eval.py route   振り分け（route_cases.json）
+  python3 run_eval.py route   振り分け（route_cases.json。質問の調整に使った例）
+  python3 run_eval.py route route_holdout.json   調整に使っていない例（こちらの数字を信用する）
   python3 run_eval.py check   一次チェック（docs/ と check_cases.json）
 """
 import json
@@ -21,7 +22,7 @@ def run(*args):
 
 
 def route():
-    cases = json.loads((HERE / "route_cases.json").read_text(encoding="utf-8"))
+    cases = json.loads((HERE / (sys.argv[2] if len(sys.argv) > 2 else "route_cases.json")).read_text(encoding="utf-8"))
     tp = fp = fn = 0
     ok = {"team": 0, "multi": 0, "outward": 0, "unclear": 0}
     usd = 0

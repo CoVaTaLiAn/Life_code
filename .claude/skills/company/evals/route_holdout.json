@@ -1,0 +1,22 @@
+[
+ {"text": "ふるさと納税の上限額の計算方法を調べて、今年いくらまでできるか分かる表を作って", "team": ["web-researcher"], "multi": false, "outward": false},
+ {"text": "Gmail振り分けのGASで、要約メールが2通届くバグを直して", "team": ["engineer"], "multi": false, "outward": false},
+ {"text": "歩数と血糖値の関係を調べた論文を集めて", "team": ["paper-researcher"], "multi": false, "outward": false},
+ {"text": "来月の勉強会の案内文を書いて", "team": ["writer"], "multi": false, "outward": false},
+ {"text": "スマホのカメラで薬の飲み忘れを検知するアイデア、特許を取られていないか確認して", "team": ["patent-search"], "multi": false, "outward": false},
+ {"text": "Kaggleのtrain.csvで売上を予測するベースラインを作って、結果をブログ記事にまとめて", "team": ["data-analyst", "writer"], "multi": true, "outward": false},
+ {"text": "明日の予定を教えて", "team": ["secretary"], "multi": false, "outward": false},
+ {"text": "gitのrebaseとmergeの違いは？", "team": [], "multi": false, "outward": false},
+ {"text": "転職先候補の3社について事業内容と評判を調べて、比較して志望動機の下書きも書いて", "team": ["web-researcher", "writer"], "multi": true, "outward": false},
+ {"text": "この記事をnoteに投稿しておいて", "team": ["writer"], "multi": false, "outward": true, "any_team": true},
+ {"text": "あれどうなった？", "team": [], "multi": false, "outward": false, "unclear": true},
+ {"text": "Yahooメールの振り分けスクリプトに、添付ファイル付きメールを別フォルダに入れる機能を足して", "team": ["engineer"], "multi": false, "outward": false},
+ {"text": "未読メールのうち求人関係だけ拾って、条件に合うものには返信の下書きを作って", "team": ["secretary"], "multi": false, "outward": false},
+ {"text": "ウェアラブル端末の心拍データからストレスを推定する研究をしたい。先行研究と特許を調べて、研究計画書の骨子を書いて", "team": ["paper-researcher", "patent-search", "writer"], "multi": true, "outward": false},
+ {"text": "電気代のCSVを月別に集計してグラフにして", "team": ["data-analyst"], "multi": false, "outward": false},
+ {"text": "引っ越しの手続き一覧を調べて、期限順のチェックリストにして、役所に行く日をカレンダーに入れて", "team": ["web-researcher", "secretary"], "multi": true, "outward": true},
+ {"text": "この関数の変数名をもっと分かりやすくして", "team": [], "multi": false, "outward": false},
+ {"text": "英語の論文アブストを日本語に要約して", "team": ["writer"], "multi": false, "outward": false},
+ {"text": "家の近くのコワーキングスペースを料金と設備で比べて", "team": ["web-researcher"], "multi": false, "outward": false},
+ {"text": "PubMed検索ノートブックに、結果をGoogleスプレッドシートへ書き出す機能を足して、使い方の説明も更新して", "team": ["engineer"], "multi": false, "outward": false}
+]

@@ -1,0 +1,101 @@
+[
+ {
+  "file": "good_research.md",
+  "kind": "research",
+  "goal": "データ分析の副業の相場と注意点を調べる",
+  "flags": []
+ },
+ {
+  "file": "bad_research_nosource.md",
+  "kind": "research",
+  "goal": "データ分析の副業の相場と注意点を調べる",
+  "flags": [
+   "no_conclusion",
+   "no_sources",
+   "no_uncertainty"
+  ]
+ },
+ {
+  "file": "bad_offtarget.md",
+  "kind": "research",
+  "goal": "データ分析の副業の相場と注意点を調べる",
+  "flags": [
+   "off_target"
+  ]
+ },
+ {
+  "file": "bad_unfinished.md",
+  "kind": "draft",
+  "goal": "副業を始める3か月の計画書を作る",
+  "flags": [
+   "unfinished"
+  ]
+ },
+ {
+  "file": "bad_secret.md",
+  "kind": "code",
+  "goal": "天気予報を毎朝通知するスクリプトを作る",
+  "flags": [
+   "secret"
+  ]
+ },
+ {
+  "file": "good_dev.md",
+  "kind": "code",
+  "goal": "天気予報を毎朝通知するスクリプトを作る",
+  "flags": []
+ },
+ {
+  "file": "bad_dev_notrun.md",
+  "kind": "code",
+  "goal": "天気予報を毎朝通知するスクリプトを作る",
+  "flags": [
+   "not_run",
+   "no_usage"
+  ]
+ },
+ {
+  "file": "bad_did_send.md",
+  "kind": "",
+  "goal": "今週のメールと予定を整理して返信の下書きを作る",
+  "flags": [
+   "did_outward"
+  ]
+ },
+ {
+  "file": "good_secretary.md",
+  "kind": "",
+  "goal": "今週のメールと予定を整理して返信の下書きを作る",
+  "flags": []
+ },
+ {
+  "file": "good_mail.md",
+  "kind": "mail",
+  "goal": "面談の日程変更をお願いするメールを書く",
+  "flags": []
+ },
+ {
+  "file": "bad_mail.md",
+  "kind": "mail",
+  "goal": "面談の日程変更をお願いするメールを書く",
+  "flags": [
+   "rude",
+   "no_ask",
+   "off_target"
+  ]
+ },
+ {
+  "file": "bad_long_tail.md",
+  "kind": "",
+  "goal": "",
+  "flags": [
+   "unfinished"
+  ]
+ },
+ {
+  "file": "good_long.md",
+  "kind": "",
+  "goal": "",
+  "flags": []
+ }
+]
